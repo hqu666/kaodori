@@ -33,17 +33,25 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback, C
 	private Mat image;
 	private CascadeClassifier detector;
 	private MatOfRect objects;
-	private List<RectF> faces = new ArrayList<RectF>();
+	private List< RectF > faces = new ArrayList< RectF >();
 
-	public CameraView(Context context, int displayOrientationDegrees) {
+	public CameraView(Context context , int displayOrientationDegrees) {
 		super(context);
-		setWillNotDraw(false);
-		getHolder().addCallback(this);
+		final String TAG = "CameraView[CV]";
+		String dbMsg = "";
+		try {
+			dbMsg = "displayOrientationDegrees=" + displayOrientationDegrees;
+			setWillNotDraw(false);
+			getHolder().addCallback(this);
 
-		String filename = context.getFilesDir().getAbsolutePath() + "/haarcascades/haarcascade_frontalface_alt.xml";
-		detector = new CascadeClassifier(filename);
-		objects = new MatOfRect();
-		degrees = displayOrientationDegrees;
+			String filename = context.getFilesDir().getAbsolutePath() + "/haarcascades/haarcascade_frontalface_alt.xml";
+			detector = new CascadeClassifier(filename);
+			objects = new MatOfRect();
+			degrees = displayOrientationDegrees;
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
 	}
 
 	/*
@@ -52,74 +60,91 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback, C
 
 	@Override
 	public void surfaceCreated(SurfaceHolder holder) {
-		Log.d(TAG, "surfaceCreated: holder=" + holder);
-
-		if(camera == null) {
-			camera = Camera.open(0);
-		}
-		camera.setDisplayOrientation(degrees);
-		camera.setPreviewCallback(this);
+		final String TAG = "surfaceCreated[CV]";
+		String dbMsg = "";
 		try {
-			camera.setPreviewDisplay(holder);
-		} catch(IOException e) {
-			e.printStackTrace();
-		}
+			dbMsg = " holder=" + holder;
+			if ( camera == null ) {
+				camera = Camera.open(0);
+			}
+			camera.setDisplayOrientation(degrees);
+			camera.setPreviewCallback(this);
+			try {
+				camera.setPreviewDisplay(holder);
+			} catch (IOException er) {
+				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+			}
 
-		Camera.Parameters params = camera.getParameters();
-		for(Camera.Size size : params.getSupportedPreviewSizes()) {
-			Log.i(TAG, "preview size: " + size.width + "x" + size.height);
+			Camera.Parameters params = camera.getParameters();
+			for ( Camera.Size size : params.getSupportedPreviewSizes() ) {
+				Log.i(TAG , "preview size: " + size.width + "x" + size.height);
+			}
+			for ( Camera.Size size : params.getSupportedPictureSizes() ) {
+				Log.i(TAG , "picture size: " + size.width + "x" + size.height);
+			}
+			params.setPreviewSize(640 , 480);
+			camera.setParameters(params);
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
-		for(Camera.Size size : params.getSupportedPictureSizes()) {
-			Log.i(TAG, "picture size: " + size.width + "x" + size.height);
-		}
-		params.setPreviewSize(640, 480);
-		camera.setParameters(params);
 	}
 
 	@Override
-	public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-		Log.d(TAG, "surfaceChanged: holder=" + holder + ", format=" + format + ", width=" + width + ", height=" + height);
-
-		if(image != null) {
-			image.release();
-			image = null;
-		}
-		if(bitmap != null) {
-			if(!bitmap.isRecycled()) {
-				bitmap.recycle();
+	public void surfaceChanged(SurfaceHolder holder , int format , int width , int height) {
+		final String TAG = "surfaceChanged[CV]";
+		String dbMsg = "";
+		try {
+			dbMsg = "holder=" + holder + ", format=" + format + ", width=" + width + ", height=" + height;
+			if ( image != null ) {
+				image.release();
+				image = null;
 			}
-			bitmap = null;
+			if ( bitmap != null ) {
+				if ( !bitmap.isRecycled() ) {
+					bitmap.recycle();
+				}
+				bitmap = null;
+			}
+			if ( rgb != null ) {
+				rgb = null;
+			}
+			faces.clear();
+			camera.startPreview();
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
-		if(rgb != null) {
-			rgb = null;
-		}
-		faces.clear();
-		camera.startPreview();
 	}
 
 	@Override
 	public void surfaceDestroyed(SurfaceHolder holder) {
-		Log.d(TAG, "surfaceDestroyed: holder=" + holder);
-
-		if(camera != null) {
-			camera.stopPreview();
-			camera.release();
-			camera = null;
-		}
-		if(image != null) {
-			image.release();
-			image = null;
-		}
-		if(bitmap != null) {
-			if(!bitmap.isRecycled()) {
-				bitmap.recycle();
+		final String TAG = "surfaceDestroyed[CV]";
+		String dbMsg = "holder=" + holder;
+		try {
+			if ( camera != null ) {
+				camera.stopPreview();
+				camera.release();
+				camera = null;
 			}
-			bitmap = null;
+			if ( image != null ) {
+				image.release();
+				image = null;
+			}
+			if ( bitmap != null ) {
+				if ( !bitmap.isRecycled() ) {
+					bitmap.recycle();
+				}
+				bitmap = null;
+			}
+			if ( rgb != null ) {
+				rgb = null;
+			}
+			faces.clear();
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
-		if(rgb != null) {
-			rgb = null;
-		}
-		faces.clear();
 	}
 
 	/*
@@ -127,35 +152,40 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback, C
 	 */
 
 	@Override
-	public void onPreviewFrame(byte[] data, Camera camera) {
-		//Log.d(TAG, "onPreviewFrame: ");
+	public void onPreviewFrame(byte[] data , Camera camera) {
+		final String TAG = "onPreviewFrame[CV]";
+		String dbMsg = "";
+		try {
+			int width = camera.getParameters().getPreviewSize().width;
+			int height = camera.getParameters().getPreviewSize().height;
+			Log.d(TAG , "onPreviewFrame: width=" + width + ", height=" + height);
 
-		int width = camera.getParameters().getPreviewSize().width;
-		int height = camera.getParameters().getPreviewSize().height;
-		Log.d(TAG, "onPreviewFrame: width=" + width + ", height=" + height);
+			Bitmap bitmap = decode(data , width , height , degrees);
+			if ( degrees == 90 ) {
+				int tmp = width;
+				width = height;
+				height = tmp;
+			}
 
-		Bitmap bitmap = decode(data, width, height, degrees);
-		if(degrees == 90) {
-			int tmp = width;
-			width = height;
-			height = tmp;
+			if ( image == null ) {
+				image = new Mat(height , width , CvType.CV_8U , new Scalar(4));
+			}
+			Utils.bitmapToMat(bitmap , image);
+			detector.detectMultiScale(image , objects);
+
+			faces.clear();
+			for ( org.opencv.core.Rect rect : objects.toArray() ) {
+				float left = ( float ) (1.0 * rect.x / width);
+				float top = ( float ) (1.0 * rect.y / height);
+				float right = left + ( float ) (1.0 * rect.width / width);
+				float bottom = top + ( float ) (1.0 * rect.height / height);
+				faces.add(new RectF(left , top , right , bottom));
+			}
+			invalidate();
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
-
-		if(image == null) {
-			image = new Mat(height, width, CvType.CV_8U, new Scalar(4));
-		}
-		Utils.bitmapToMat(bitmap, image);
-		detector.detectMultiScale(image, objects);
-
-		faces.clear();
-		for(org.opencv.core.Rect rect : objects.toArray()) {
-			float left = (float)(1.0 * rect.x / width);
-			float top = (float)(1.0 * rect.y / height);
-			float right = left + (float)(1.0 * rect.width / width);
-			float bottom = top + (float)(1.0 * rect.height / height);
-			faces.add(new RectF(left, top, right, bottom));
-		}
-		invalidate();
 	}
 
 	/*
@@ -166,18 +196,24 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback, C
 	protected void onDraw(Canvas canvas) {
 		//もともとSurfaceView は setWillNotDraw(true) なので super.onDraw(canvas) を呼ばなくてもよい。
 		//super.onDraw(canvas);
+		final String TAG = "onDraw[CV]";
+		String dbMsg = "";
+		try {
+			Paint paint = new Paint();
+			paint.setColor(Color.GREEN);
+			paint.setStyle(Paint.Style.STROKE);
+			paint.setStrokeWidth(4);
 
-		Paint paint = new Paint();
-		paint.setColor(Color.GREEN);
-		paint.setStyle(Paint.Style.STROKE);
-		paint.setStrokeWidth(4);
+			int width = getWidth();
+			int height = getHeight();
 
-		int width = getWidth();
-		int height = getHeight();
-
-		for(RectF face : faces) {
-			RectF r = new RectF(width * face.left, height * face.top, width * face.right, height * face.bottom);
-			canvas.drawRect(r, paint);
+			for ( RectF face : faces ) {
+				RectF r = new RectF(width * face.left , height * face.top , width * face.right , height * face.bottom);
+				canvas.drawRect(r , paint);
+			}
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}
 
@@ -185,66 +221,94 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback, C
 	 *
 	 */
 
-	/**Camera.PreviewCallback.onPreviewFrame で渡されたデータを Bitmap に変換します。
-	 *
+	/**
+	 * Camera.PreviewCallback.onPreviewFrame で渡されたデータを Bitmap に変換します。
 	 * @param data
 	 * @param width
 	 * @param height
 	 * @param degrees
 	 * @return
 	 */
-	private Bitmap decode(byte[] data, int width, int height, int degrees) {
-		if (rgb == null) {
-			rgb = new int[width * height];
-		}
-
-		final int frameSize = width * height;
-		for (int j = 0, yp = 0; j < height; j++) {
-			int uvp = frameSize + (j >> 1) * width, u = 0, v = 0;
-			for (int i = 0; i < width; i++, yp++) {
-				int y = (0xff & ((int) data[yp])) - 16;
-				if (y < 0) y = 0;
-				if ((i & 1) == 0) {
-					v = (0xff & data[uvp++]) - 128;
-					u = (0xff & data[uvp++]) - 128;
-				}
-
-				int y1192 = 1192 * y;
-				int r = (y1192 + 1634 * v);
-				int g = (y1192 - 833 * v - 400 * u);
-				int b = (y1192 + 2066 * u);
-
-				if (r < 0) r = 0; else if (r > 262143) r = 262143;
-				if (g < 0) g = 0; else if (g > 262143) g = 262143;
-				if (b < 0) b = 0; else if (b > 262143) b = 262143;
-
-				rgb[yp] = 0xff000000 | ((r << 6) & 0xff0000) | ((g >> 2) & 0xff00) | ((b >> 10) & 0xff);
+	private Bitmap decode(byte[] data , int width , int height , int degrees) {
+		final String TAG = "decode[CV]";
+		String dbMsg = "";
+		try {
+			if ( rgb == null ) {
+				rgb = new int[width * height];
 			}
-		}
 
-		if(degrees == 90) {
-			int[] rotatedData = new int[rgb.length];
-			for (int y = 0; y < height; y++) {
-				for (int x = 0; x < width; x++) {
-					rotatedData[x * height + height - y - 1] = rgb[x + y * width];
+			final int frameSize = width * height;
+			for ( int j = 0, yp = 0 ; j < height ; j++ ) {
+				int uvp = frameSize + (j >> 1) * width, u = 0, v = 0;
+				for ( int i = 0 ; i < width ; i++ , yp++ ) {
+					int y = (0xff & (( int ) data[yp])) - 16;
+					if ( y < 0 )
+						y = 0;
+					if ( (i & 1) == 0 ) {
+						v = (0xff & data[uvp++]) - 128;
+						u = (0xff & data[uvp++]) - 128;
+					}
+
+					int y1192 = 1192 * y;
+					int r = (y1192 + 1634 * v);
+					int g = (y1192 - 833 * v - 400 * u);
+					int b = (y1192 + 2066 * u);
+
+					if ( r < 0 )
+						r = 0;
+					else if ( r > 262143 )
+						r = 262143;
+					if ( g < 0 )
+						g = 0;
+					else if ( g > 262143 )
+						g = 262143;
+					if ( b < 0 )
+						b = 0;
+					else if ( b > 262143 )
+						b = 262143;
+
+					rgb[yp] = 0xff000000 | ((r << 6) & 0xff0000) | ((g >> 2) & 0xff00) | ((b >> 10) & 0xff);
 				}
 			}
-			int tmp = width;
-			width = height;
-			height = tmp;
-			rgb = rotatedData;
-		}
 
-		if(bitmap == null) {
-			bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-		}
+			if ( degrees == 90 ) {
+				int[] rotatedData = new int[rgb.length];
+				for ( int y = 0 ; y < height ; y++ ) {
+					for ( int x = 0 ; x < width ; x++ ) {
+						rotatedData[x * height + height - y - 1] = rgb[x + y * width];
+					}
+				}
+				int tmp = width;
+				width = height;
+				height = tmp;
+				rgb = rotatedData;
+			}
 
-		bitmap.setPixels(rgb, 0, width, 0, 0, width, height);
+			if ( bitmap == null ) {
+				bitmap = Bitmap.createBitmap(width , height , Bitmap.Config.ARGB_8888);
+			}
+
+			bitmap.setPixels(rgb , 0 , width , 0 , 0 , width , height);
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
 		return bitmap;
 	}
+
+	////////////////////////////////////////////////////////////////////////////////////////////////
+	public static void myLog(String TAG , String dbMsg) {
+		CS_Util UTIL = new CS_Util();
+		UTIL.myLog(TAG , dbMsg);
+	}
+
+	public static void myErrorLog(String TAG , String dbMsg) {
+		CS_Util UTIL = new CS_Util();
+		UTIL.myErrorLog(TAG , dbMsg);
+	}
+
 }
 
 /**
- *
- * 		2017-02-10		AndroidでOpenCV 3.2を使って顔検出をする			https://blogs.osdn.jp/2017/02/10/opencv.html
- * */
+ * 2017-02-10		AndroidでOpenCV 3.2を使って顔検出をする			https://blogs.osdn.jp/2017/02/10/opencv.html
+ */

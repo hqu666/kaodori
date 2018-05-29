@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:tools="http://schemas.android.com/tools"
+				  xmlns:android="http://schemas.android.com/apk/res/android">
+	<EditTextPreference
+		android:id="@+id/write_folder_key"
+		android:defaultValue="12345native"
+		android:inputType="text"
+		android:key="write_folder_key"
+		android:summary="9999999999"
+		android:title="@string/write_folder"/>
+	<EditTextPreference
+		android:defaultValue="Default value"
+		android:key="up_scale_key"
+		android:selectAllOnFocus="true"
+		android:singleLine="true"
+		android:summary="1.2"
+		android:title="@string/up_scale"/>
+
+	<!--<SwitchPreference-->
+	<!--android:defaultValue="false"-->
+	<!--android:inputType="none"-->
+	<!--android:key="accountName_cbp"-->
+	<!--android:title="保存先サーバのアカウントをリセット" />-->
+
+
+	<!--<PreferenceScreen-->
+		<!--android:key="socketio_setting_key"-->
+		<!--android:title="@string/socketio_setting">-->
+
+		<!--<Preference-->
+			<!--android:key="socketio_url_key"-->
+			<!--android:summary=""-->
+			<!--android:title="@string/socketio_url"/>-->
+
+
+
+
+</PreferenceScreen>

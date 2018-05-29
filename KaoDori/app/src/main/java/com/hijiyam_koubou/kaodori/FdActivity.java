@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -17,59 +18,12 @@ import java.io.OutputStream;
 public class FdActivity extends Activity {
 
 	static {
-		System.loadLibrary("opencv_java3");    // opencv\_java3.so をロードしています。      ; rm64-v8a
+		System.loadLibrary("opencv_java3");    // opencv\_java3.so をロード	;	\jniLibsmの中のプロセッサー分、検索
 	}
 
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		final String TAG = "readPref[MA]";
-		String dbMsg = "許諾済み";//////////////////
-		try {
-			readPref();
 
-			setContentView(R.layout.face_detect_surface_view);
-
-			try {
-				copyAssets("haarcascades");                    // assetsの内容を /data/data/*/files/ にコピーします。
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-
-			CameraView cameraView = new CameraView(this , 90);
-
-			ViewGroup activityMain = ( ViewGroup ) findViewById(R.id.fd_activity_surface_view);
-			activityMain.addView(cameraView);
-
-			myLog(TAG , dbMsg);
-		} catch (Exception er) {
-			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-		}
-	}
-
-	static final int REQUEST_PREF = 100;                          //Prefarensからの戻り
-	static final int REQUEST_SWOPEN = REQUEST_PREF + 1;        //skyway接続開始
-
-	/**
-	 * Cameraパーミッションが通った時点でstartLocalStream
-	 */
-	@Override
-	public void onRequestPermissionsResult(int requestCode , String permissions[] , int[] grantResults) {
-		final String TAG = "onRequestPermissionsResult[MA]";
-		String dbMsg = "";
-		try {
-			dbMsg = "requestCode=" + requestCode;
-			switch ( requestCode ) {
-				case REQUEST_PREF:
-					readPref();        //ループする？
-					break;
-			}
-
-			myLog(TAG , dbMsg);
-		} catch (Exception er) {
-			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-		}
-	}
+	public String writeFolder;
+	public float upScale=1.2f;
 
 	/**
 	 * このアプリケーションの設定ファイル読出し
@@ -80,7 +34,7 @@ public class FdActivity extends Activity {
 		try {
 			if ( Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ) {                //(初回起動で)全パーミッションの許諾を取る
 				dbMsg = "許諾確認";
-				String[] PERMISSIONS = {Manifest.permission.CAMERA , Manifest.permission.MODIFY_AUDIO_SETTINGS , Manifest.permission.RECORD_AUDIO , Manifest.permission.READ_EXTERNAL_STORAGE , Manifest.permission.MODIFY_AUDIO_SETTINGS};
+				String[] PERMISSIONS = {Manifest.permission.CAMERA , Manifest.permission.WRITE_EXTERNAL_STORAGE , Manifest.permission.READ_EXTERNAL_STORAGE };
 				boolean isNeedParmissionReqest = false;
 				for ( String permissionName : PERMISSIONS ) {
 					dbMsg += "," + permissionName;
@@ -126,34 +80,213 @@ public class FdActivity extends Activity {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}
+	
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		final String TAG = "readPref[MA]";
+		String dbMsg = "許諾済み";//////////////////
+		try {
+			readPref();
 
+			setContentView(R.layout.face_detect_surface_view);
+
+			try {
+				copyAssets("haarcascades");                    // assetsの内容を /data/data/*/files/ にコピーします。
+			} catch (IOException  er) {
+				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+			}
+
+			//5/30；向きの判定が必要
+			CameraView cameraView = new CameraView(this , 90);
+			ViewGroup activityMain = ( ViewGroup ) findViewById(R.id.fd_activity_surface_view);
+			activityMain.addView(cameraView);
+
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+	@Override
+	protected void onStart() {
+		super.onStart();
+		final String TAG = "onStart[MA]";
+		String dbMsg = "";
+		try {
+      			myLog(TAG, dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG, dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+		final String TAG = "onResume[MA]";
+		String dbMsg = "";
+		try {
+
+			myLog(TAG, dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG, dbMsg + ";でエラー発生；" + er);
+		}
+	}                                                                 // onStart, onPauseの次
+
+	@Override
+	protected void onPause() {
+		super.onPause();
+		final String TAG = "onPause[MA]";
+		String dbMsg = "";
+		try {
+
+			myLog(TAG, dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG, dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+	@Override
+	protected void onStop() {
+		super.onStop();
+		final String TAG = "onStop[MA]";
+		String dbMsg = "";
+		try {
+
+			myLog(TAG, dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG, dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		final String TAG = "onDestroy[MA]";
+		String dbMsg = "";
+		try {
+
+			myLog(TAG, dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG, dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+	@Override
+	public void onWindowFocusChanged(boolean hasFocus) {
+		super.onWindowFocusChanged(hasFocus);
+		final String TAG = "onDestroy[MA]";
+		String dbMsg = "hasFocus="+hasFocus;
+		try {
+
+			myLog(TAG, dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG, dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+	@Override
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		final String TAG = "onKeyDown";
+		String dbMsg = "開始";
+		try {
+			dbMsg = "keyCode=" + keyCode;//+",getDisplayLabel="+String.valueOf(MyEvent.getDisplayLabel())+",getAction="+MyEvent.getAction();////////////////////////////////
+			myLog(TAG, dbMsg);
+			switch ( keyCode ) {    //キーにデフォルト以外の動作を与えるもののみを記述★KEYCODE_MENUをここに書くとメニュー表示されない
+				case KeyEvent.KEYCODE_BACK:            //4KEYCODE_BACK :keyCode；09SH: keyCode；4,MyEvent=KeyEvent{action=0 code=4 repeat=0 meta=0 scancode=158 mFlags=72}
+//                    if (fragmentNo == mainFragmentNo) {
+					callQuit();
+//                    } else {
+//                        callMain();
+//                    }
+					return true;
+//				case KeyEvent.KEYCODE_HOME:            //3
+////					ComponentName compNmae = startService(new Intent(MainActivity.this, NotificationChangeService.class));                           //     makeNotificationを持つクラスへ
+////					dbMsg = "compNmae=" + compNmae;     //compNmae=ComponentInfo{hijiyama_koubou.com.residualquantityofthesleep/hijiyama_koubou.com.residualquantityofthesleep.NotificationChangeService}
+////						NotificationManager mNotificationManager = ( NotificationManager ) mainActivity.getSystemService(NOTIFICATION_SERVICE);
+////						mNotificationManager.cancel(NOTIFICATION_ID);            //サービスの停止時、通知内容を破棄する
+//					myLog(TAG, dbMsg);
+//					return true;
+				default:
+					return false;
+			}
+		} catch (Exception er) {
+			myErrorLog(TAG, dbMsg + ";でエラー発生；" + er);
+			return false;
+		}
+	}
+
+	static final int REQUEST_PREF = 100;                          //Prefarensからの戻り
+	static final int REQUEST_SWOPEN = REQUEST_PREF + 1;        //skyway接続開始
+	/**
+	 * Cameraパーミッションが通った時点でstartLocalStream
+	 */
+	@Override
+	public void onRequestPermissionsResult(int requestCode , String permissions[] , int[] grantResults) {
+		final String TAG = "onRequestPermissionsResult[MA]";
+		String dbMsg = "";
+		try {
+			dbMsg = "requestCode=" + requestCode;
+			switch ( requestCode ) {
+				case REQUEST_PREF:
+					readPref();        //ループする？
+					break;
+			}
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+	public void callQuit() {
+		final String TAG = "callQuit[MA]";
+		String dbMsg = "";
+		try {
+			this.finish();
+			if ( Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ) {
+				finishAndRemoveTask();                      //アプリケーションのタスクを消去する事でデバッガーも停止する。
+			} else {
+				moveTaskToBack(true);                       //ホームボタン相当でアプリケーション全体が中断状態
+			}
+			myLog(TAG, dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG, dbMsg + ";でエラー発生；" + er);
+		}
+	}
 
 	private void copyAssets(String dir) throws IOException {
-		byte[] buf = new byte[8192];
-		int size;
+		final String TAG = "copyAssets[MA]";
+		String dbMsg = "";
+		try {
+			byte[] buf = new byte[8192];
+			int size;
 
-		File dst = new File(getFilesDir() , dir);
-		if ( !dst.exists() ) {
-			dst.mkdirs();
-			dst.setReadable(true , false);
-			dst.setWritable(true , false);
-			dst.setExecutable(true , false);
-		}
-
-		for ( String filename : getAssets().list(dir) ) {
-			File file = new File(dst , filename);
-			OutputStream out = new FileOutputStream(file);
-			InputStream in = getAssets().open(dir + "/" + filename);
-			while ( (size = in.read(buf)) >= 0 ) {
-				if ( size > 0 ) {
-					out.write(buf , 0 , size);
-				}
+			File dst = new File(getFilesDir() , dir);
+			if ( !dst.exists() ) {
+				dst.mkdirs();
+				dst.setReadable(true , false);
+				dst.setWritable(true , false);
+				dst.setExecutable(true , false);
 			}
-			in.close();
-			out.close();
-			file.setReadable(true , false);
-			file.setWritable(true , false);
-			file.setExecutable(true , false);
+
+			for ( String filename : getAssets().list(dir) ) {
+				File file = new File(dst , filename);
+				OutputStream out = new FileOutputStream(file);
+				InputStream in = getAssets().open(dir + "/" + filename);
+				while ( (size = in.read(buf)) >= 0 ) {
+					if ( size > 0 ) {
+						out.write(buf , 0 , size);
+					}
+				}
+				in.close();
+				out.close();
+				file.setReadable(true , false);
+				file.setWritable(true , false);
+				file.setExecutable(true , false);
+			}
+			myLog(TAG, dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG, dbMsg + ";でエラー発生；" + er);
 		}
 	}
 

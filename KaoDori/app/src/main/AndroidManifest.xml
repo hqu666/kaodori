@@ -3,27 +3,27 @@
 		  package="com.hijiyam_koubou.kaodori">
 
 	<uses-permission android:name="android.permission.CAMERA"/>
-	<uses-permission android:name="android.permission.RECORD_AUDIO"/>
-	<uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
 	<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
 	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 	<uses-feature android:name="android.hardware.camera" />
-	<uses-feature android:name="android.hardware.camera.autofocus" />
+	<!--<uses-feature android:name="android.hardware.camera.autofocus" />-->
 
 	<application
-		android:allowBackup="true"
 		android:icon="@mipmap/ic_launcher"
 		android:label="@string/app_name"
 		android:roundIcon="@mipmap/ic_launcher_round"
-		android:supportsRtl="true"
 		android:theme="@style/AppTheme">
+
+		<!--android:allowBackup="true"	バックアップサービスを利-->
+		<!--android:supportsRtl="true"	アプリケーションが右から左へのレイアウト（RTL）をサポートするか 右から左方向へ文字を書く、アラビア語、ヘブライ語、ペルシャ語などへ対応するための属-->
+
 		<activity android:name=".FdActivity">
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN"/>
-
 				<category android:name="android.intent.category.LAUNCHER"/>
 			</intent-filter>
 		</activity>
+		<activity android:name=".MyPreferencesActivty"/>
 	</application>
 
 </manifest>
