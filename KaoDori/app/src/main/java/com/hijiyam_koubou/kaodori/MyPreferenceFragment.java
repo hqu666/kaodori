@@ -1,8 +1,10 @@
 package com.hijiyam_koubou.kaodori;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.preference.EditTextPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
@@ -12,6 +14,7 @@ import android.preference.PreferenceScreen;
 import android.util.Log;
 import android.widget.ListAdapter;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -25,12 +28,13 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 	public Context context;
 	public static SharedPreferences sharedPref;
 	public SharedPreferences.Editor myEditor;
-	public EditTextPreference write_folder_key;		//書込みルートフォルダ
-	public EditTextPreference up_scale_key;			//顔から何割増しの枠で保存するか
+	public EditTextPreference write_folder_key;                    //書込みルートフォルダ
+	public EditTextPreference up_scale_key;                        //顔から何割増しの枠で保存するか
+	public EditTextPreference haarcascades_last_modified_key;            //顔認証プロファイルの最新更新日
 
-	public String writeFolder;			//書込みルートフォルダ
-	public String upScale="1.2";			//顔から何割増しの枠で保存するか
-
+	public String write_folder="";            //書込みルートフォルダ
+	public String up_scale = "1.2";            //顔から何割増しの枠で保存するか
+	public String haarcascades_last_modified = "0";
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -41,7 +45,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 			MyPreferenceFragment.this.addPreferencesFromResource(R.xml.preferences);
 			//		Log.i(TAG, dbMsg);
 		} catch (Exception er) {
-			Log.e(TAG, dbMsg + "で" + er.toString());
+			Log.e(TAG , dbMsg + "で" + er.toString());
 		}
 	}
 
@@ -55,11 +59,11 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 		try {
 			this.context = this.getActivity().getApplicationContext();    //( MainActivity ) context;
 			readPref(context);
-			myLog(TAG, dbMsg);
+			myLog(TAG , dbMsg);
 		} catch (ClassCastException e) {
 			throw new ClassCastException(context.toString() + " must implement OnFragmentInteractionListener");
 		} catch (Exception er) {
-			myLog(TAG, dbMsg + "で" + er.toString());
+			myLog(TAG , dbMsg + "で" + er.toString());
 		}
 	}
 
@@ -71,25 +75,32 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 		try {
 			sps = this.getPreferenceScreen();            //☆PreferenceFragmentなら必要  .
 			dbMsg = dbMsg + ",sps=" + sps;
-			write_folder_key = ( EditTextPreference ) sps.findPreference("service_id_key");		//書込みルートフォルダ
-			dbMsg = dbMsg + ",書込みルートフォルダ=" + writeFolder;
+			write_folder_key = ( EditTextPreference ) sps.findPreference("service_id_key");        //書込みルートフォルダ
+			dbMsg = dbMsg + ",書込みルートフォルダ=" + write_folder;
 			if ( findPreference("write_folder_key") != null ) {
-				write_folder_key.setDefaultValue(writeFolder);
-				write_folder_key.setSummary(writeFolder);
+				write_folder_key.setDefaultValue(write_folder);
+				write_folder_key.setSummary(write_folder);
 			} else {
-				(( EditTextPreference ) findPreference("write_folder_key")).setText(writeFolder);
+				(( EditTextPreference ) findPreference("write_folder_key")).setText(write_folder);
 			}
-			up_scale_key = ( EditTextPreference ) sps.findPreference("up_scale_key");			//顔から何割増しの枠で保存するか
-			dbMsg = dbMsg + ",顔から何割増しの枠で保存するか=" + upScale;
+			up_scale_key = ( EditTextPreference ) sps.findPreference("up_scale_key");            //顔から何割増しの枠で保存するか
+			dbMsg = dbMsg + ",顔から何割増しの枠で保存するか=" + up_scale;
 			if ( findPreference("up_scale_key") != null ) {
-				up_scale_key.setDefaultValue(upScale);
-				up_scale_key.setSummary(upScale);
+				up_scale_key.setDefaultValue(up_scale);
+				up_scale_key.setSummary(up_scale);
 			} else {
-				(( EditTextPreference ) findPreference("up_scale_key")).setText(upScale);
+				(( EditTextPreference ) findPreference("up_scale_key")).setText(up_scale);
 			}
-			myLog(TAG, dbMsg);
+			dbMsg = dbMsg + ",顔認証プロファイルの最新更新日=" + haarcascades_last_modified;
+			if ( findPreference("haarcascades_last_modified_key") != null ) {
+				haarcascades_last_modified_key.setDefaultValue(haarcascades_last_modified);
+				haarcascades_last_modified_key.setSummary(haarcascades_last_modified);
+			} else {
+				(( EditTextPreference ) findPreference("haarcascades_last_modified_key")).setText(haarcascades_last_modified);
+			}
+			myLog(TAG , dbMsg);
 		} catch (Exception e) {
-			Log.e(TAG, dbMsg + "で" + e.toString());
+			Log.e(TAG , dbMsg + "で" + e.toString());
 		}
 	}
 
@@ -103,9 +114,9 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 		final String TAG = "onSaveInstanceState";
 		String dbMsg = "開始";/////////////////////////////////////////////////
 		try {
-			myLog(TAG, dbMsg);
+			myLog(TAG , dbMsg);
 		} catch (Exception e) {
-			Log.e(TAG, dbMsg + "で" + e.toString());
+			Log.e(TAG , dbMsg + "で" + e.toString());
 		}
 	}
 
@@ -117,9 +128,9 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 		try {
 			sharedPref.registerOnSharedPreferenceChangeListener(this);   //Attempt to invoke virtual method 'android.content.SharedPreferences android.preference.PreferenceScreen.getSharedPreferences()
 			reloadSummary();
-			myLog(TAG, dbMsg);
+			myLog(TAG , dbMsg);
 		} catch (Exception e) {
-			Log.e(TAG, dbMsg + "で" + e.toString());
+			Log.e(TAG , dbMsg + "で" + e.toString());
 			//      myLog(TAG, dbMsg + "で" + e.toString(), "e");
 		}
 	}
@@ -131,9 +142,9 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 		String dbMsg = "開始";/////////////////////////////////////////////////
 		try {
 			sharedPref.unregisterOnSharedPreferenceChangeListener(this);
-			myLog(TAG, dbMsg);
+			myLog(TAG , dbMsg);
 		} catch (Exception e) {
-			Log.e(TAG, dbMsg + "で" + e.toString());
+			Log.e(TAG , dbMsg + "で" + e.toString());
 			//      myLog(TAG, dbMsg + "で" + e.toString(), "e");
 		}
 	}
@@ -145,9 +156,9 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 		String dbMsg = "開始";
 		try {
 
-			myLog(TAG, dbMsg);
+			myLog(TAG , dbMsg);
 		} catch (Exception e) {
-			Log.e(TAG, dbMsg + "で" + e.toString());
+			Log.e(TAG , dbMsg + "で" + e.toString());
 			//      myLog(TAG, dbMsg + "で" + e.toString(), "e");
 		}
 	}                                                            //切替時⑥
@@ -158,7 +169,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 	 *            照合の為に文字列定数を使う
 	 */
 	@Override
-	public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+	public void onSharedPreferenceChanged(SharedPreferences sharedPreferences , String key) {
 		final String TAG = "onSharedPrefChd[MPF]";
 		String dbMsg = "設定が変更された";/////////////////////////////////////////////////
 		try {
@@ -193,9 +204,9 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 //            boolean kakikomi = MA.myEditor.commit();
 //            dbMsg = dbMsg + ",書込み=" + kakikomi;
 
-			myLog(TAG, dbMsg);
+			myLog(TAG , dbMsg);
 		} catch (Exception e) {
-			Log.e(TAG, dbMsg + "で" + e.toString());
+			Log.e(TAG , dbMsg + "で" + e.toString());
 			//      myLog(TAG, dbMsg + "で" + e.toString(), "e");
 		}
 	}
@@ -241,7 +252,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 				if ( item instanceof EditTextPreference ) {
 					EditTextPreference pref = ( EditTextPreference ) item;
 					String key = pref.getKey();
-					String val = PreferenceManager.getDefaultSharedPreferences(this.getActivity()).getString(key, "");
+					String val = PreferenceManager.getDefaultSharedPreferences(this.getActivity()).getString(key , "");
 					dbMsg += ";" + key + ";" + val;
 					pref.setSummary(val);
 					//if (key.Equals("waiting_scond_key")) {
@@ -278,7 +289,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 				} else if ( item instanceof Preference ) {                    //PreferenceScreenもここに来る
 					Preference pref = ( Preference ) item;
 					String key = pref.getKey();
-					String val = PreferenceManager.getDefaultSharedPreferences(this.getActivity()).getString(key, "");
+					String val = PreferenceManager.getDefaultSharedPreferences(this.getActivity()).getString(key , "");
 //					if ( key.equals("drive_setting_key") ) {
 //						dbMsg += ",accountName=" + accountName + ",rootFolderID=" + rootFolderID + ",lastFolderID=" + lastFolderID + ",lastFolderPath=" + lastFolderPath;
 //						val = getResources().getString(R.string.account_Name) + "=" + accountName + "\n" +
@@ -366,9 +377,9 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 //					pref.setSummary(wrString);
 				}
 			}
-			myLog(TAG, dbMsg);
+			myLog(TAG , dbMsg);
 		} catch (Exception er) {
-			myErrorLog(TAG, dbMsg + "でエラー発生；" + er);
+			myErrorLog(TAG , dbMsg + "でエラー発生；" + er);
 		}
 	}
 
@@ -379,50 +390,102 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 		String TAG = "readPref[MPF]";
 		String dbMsg = "開始";
 		try {
-			setSaveParameter();
+			this.context = context;
 			sharedPref = PreferenceManager.getDefaultSharedPreferences(context);
 			myEditor = sharedPref.edit();
+			setSaveParameter(context);
+			setHaarcascadesParameter(context);
 			Map< String, ? > keys = sharedPref.getAll();                          //System.collections.Generic.IDictionary<string, object>
 			dbMsg = dbMsg + ",読み込み開始;keys=" + keys.size() + "件";        // keys.size()
 			int i = 0;
 			for ( String key : keys.keySet() ) {
 				i++;
-				dbMsg = dbMsg + "\n" + i + "/" + keys.size() + ")" + key;// + "は" + rStr;
+				dbMsg +=  "\n" + i + "/" + keys.size() + ")" + key;// + "は" + rStr;
 				if ( key.equals("write_folder_key") ) {
-					writeFolder = sharedPref.getString(key, writeFolder);
-					dbMsg = dbMsg + ",書込みルートフォルダ=" + writeFolder;
+					write_folder = sharedPref.getString(key , write_folder);
+					dbMsg +=  ",書込みルートフォルダ=" + write_folder;
 				} else if ( key.equals("up_scale_key") ) {
-					upScale = sharedPref.getString(key, "1.2");
-					dbMsg +=  ",顔から何割増しの枠で保存するか=" + upScale;
+					up_scale = sharedPref.getString(key , "1.2");
+					dbMsg += ",顔から何割増しの枠で保存するか=" + up_scale;
+				} else if ( key.equals("haarcascades_last_modified_key") ) {
+					haarcascades_last_modified = sharedPref.getString(key , "1.2");
+					dbMsg += ",顔認証プロファイルの最新更新日=" + haarcascades_last_modified;
 				}
 			}
-			myLog(TAG, dbMsg);
+			myLog(TAG , dbMsg);
 		} catch (Exception er) {
-			myErrorLog(TAG, dbMsg + "でエラー発生；" + er);
+			myErrorLog(TAG , dbMsg + "でエラー発生；" + er);
 		}
 	}                                                                     //プリファレンスの読込み
 
-	public void setSaveParameter() {                //端末内にファイル保存する為のパラメータ調整
-		final String TAG = "setSaveParameter";
+	/**
+	 * 端末内にファイル保存する為のパラメータ調整
+	 */
+	public void setSaveParameter(Context context) {
+		final String TAG = "setSaveParameter[MPF]";
 		String dbMsg = "開始";
 		try {
-			java.io.File wrDir = MyPreferenceFragment.this.getActivity().getApplicationContext().getFilesDir();				//自分のアプリ用の内部ディレクトリ
-			dbMsg = ",端末内の保存先=" + writeFolder;
-			if ( writeFolder.isEmpty() ) {
-				writeFolder = wrDir.getPath()+ getResources().getString(R.string.app_name);
-				dbMsg = dbMsg + ",>>" + writeFolder;
+			dbMsg = ",端末内の保存先=" + write_folder;
+			if (write_folder.isEmpty()) {  
+				File photDir =Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+				//              //自分のアプリ用の内部ディレクトリ    context.getFilesDir();
+				dbMsg += ",photDir=" + photDir.getPath() + File.separator;      //pathSeparatorは：
+				write_folder = photDir.getPath() + File.separator+ context.getResources().getString(R.string.app_name);
+				dbMsg +=  ",>>" + write_folder;
+				myEditor.putString("write_folder_key" , write_folder);
+				dbMsg += ",更新";
+				myEditor.commit();
+				dbMsg += "完了";
 			}
-			String local_dir_size = wrDir.getFreeSpace() + "";// "5000000";
-			dbMsg = dbMsg + ",保存先の空き容量=" + local_dir_size;
-			if ( local_dir_size.isEmpty() ) {
-				local_dir_size = "5000000";
-				dbMsg = dbMsg + ">>" + local_dir_size;
-			}
-				myLog(TAG, dbMsg);
+//			String local_dir_size = userDir.getFreeSpace() + "";// "5000000";
+//			dbMsg = dbMsg + ",保存先の空き容量=" + local_dir_size;
+//			if ( local_dir_size.isEmpty() ) {
+//				local_dir_size = "5000000";
+//				dbMsg = dbMsg + ">>" + local_dir_size;
+//			}
+			myLog(TAG , dbMsg);
 		} catch (Exception er) {
-			myErrorLog(TAG, dbMsg + ";でエラー発生；" + er);
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}            //端末内にファイル保存する為のパラメータ調整
+
+	/**
+	 * 顔認証プロファイルの情報
+	 */
+	public void setHaarcascadesParameter(Context context) {
+		final String TAG = "setHaarcascadesParameter[MPF]";
+		String dbMsg = "開始";
+		try {
+			long haarcascadesLastMdified = Long.parseLong(haarcascades_last_modified);
+			dbMsg += "現在の最終=" + haarcascades_last_modified;
+			File userDir = context.getFilesDir();
+			File dst = new File(userDir , "haarcascades");
+			if ( !dst.exists() ) {
+				dbMsg += "未作成";
+				haarcascades_last_modified = "0";
+			} else {
+				for ( String filename : context.getAssets().list("haarcascades") ) {
+					dbMsg += "," + filename;
+					File file = new File(dst , filename);
+					Long lastModified = file.lastModified();
+					dbMsg += ",更新日=" + lastModified;
+					if ( haarcascadesLastMdified < lastModified ) {
+						haarcascadesLastMdified = lastModified;
+					}
+				}
+				haarcascades_last_modified = haarcascadesLastMdified + "";
+			}
+			dbMsg = dbMsg + ",>最終更新日>" + haarcascades_last_modified;
+			myEditor.putString("haarcascades_last_modified_key" , haarcascades_last_modified);
+			dbMsg += ",更新";
+			myEditor.commit();
+			dbMsg += "完了";
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}            //顔認証プロファイルの情報
+
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////
 	public interface OnFragmentInteractionListener {

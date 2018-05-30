@@ -3,4 +3,5 @@
 	<string name="write_folder_key"/>
 	<string name="write_folder">書込みフォルダ</string>
 	<string name="up_scale">保存時の枠拡大</string>
+	<string name="haarcascades_last_modified">最新の顔認証プロファイル</string>
 </resources>

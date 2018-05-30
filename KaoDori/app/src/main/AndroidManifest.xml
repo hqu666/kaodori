@@ -12,12 +12,16 @@
 		android:icon="@mipmap/ic_launcher"
 		android:label="@string/app_name"
 		android:roundIcon="@mipmap/ic_launcher_round"
+		android:resizeableActivity="true"
 		android:theme="@style/AppTheme">
-
+		<!--android:resizeableActivity="true" MultiWindowを有効にする		-->
 		<!--android:allowBackup="true"	バックアップサービスを利-->
 		<!--android:supportsRtl="true"	アプリケーションが右から左へのレイアウト（RTL）をサポートするか 右から左方向へ文字を書く、アラビア語、ヘブライ語、ペルシャ語などへ対応するための属-->
 
 		<activity android:name=".FdActivity">
+				  <!--android:configChanges="orientation">-->
+			<!-- ★Androidで特定の設定が変更された場合にアクティビティが再生成されるのを防止★ 回転で更新されなくなる
+					orientation		|mcc|	mnc|	locale|		touchscreen|	keyboard|	keyboardHidden|	navigation|fontScale-->
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN"/>
 				<category android:name="android.intent.category.LAUNCHER"/>
