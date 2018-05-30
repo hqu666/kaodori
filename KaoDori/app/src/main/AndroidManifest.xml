@@ -18,8 +18,8 @@
 		<!--android:allowBackup="true"	バックアップサービスを利-->
 		<!--android:supportsRtl="true"	アプリケーションが右から左へのレイアウト（RTL）をサポートするか 右から左方向へ文字を書く、アラビア語、ヘブライ語、ペルシャ語などへ対応するための属-->
 
-		<activity android:name=".FdActivity">
-				  <!--android:configChanges="orientation">-->
+		<activity android:name=".FdActivity"
+				  android:configChanges="orientation|screenSize">
 			<!-- ★Androidで特定の設定が変更された場合にアクティビティが再生成されるのを防止★ 回転で更新されなくなる
 					orientation		|mcc|	mnc|	locale|		touchscreen|	keyboard|	keyboardHidden|	navigation|fontScale-->
 			<intent-filter>

@@ -156,30 +156,64 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback, C
 		}
 	}
 
-	@Override
-	public void surfaceDestroyed(SurfaceHolder holder) {
-		final String TAG = "surfaceDestroyed[CV]";
-		String dbMsg = "holder=" + holder;
+	public void surfaceDestroy() {
+		final String TAG = "surfaceDestroy[CV]";
+		String dbMsg = "";
 		try {
 			if ( camera != null ) {
 				camera.stopPreview();
 				camera.release();
 				camera = null;
+				dbMsg = "camera破棄";
 			}
 			if ( image != null ) {
 				image.release();
 				image = null;
+				dbMsg += "image破棄";
 			}
 			if ( bitmap != null ) {
 				if ( !bitmap.isRecycled() ) {
 					bitmap.recycle();
 				}
 				bitmap = null;
+				dbMsg += "bitmap破棄";
 			}
 			if ( rgb != null ) {
 				rgb = null;
+				dbMsg += "rgb破棄";
 			}
 			faces.clear();
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+	@Override
+	public void surfaceDestroyed(SurfaceHolder holder) {
+		final String TAG = "surfaceDestroyed[CV]";
+		String dbMsg = "holder=" + holder;
+		try {
+			surfaceDestroy();
+//			if ( camera != null ) {
+//				camera.stopPreview();
+//				camera.release();
+//				camera = null;
+//			}
+//			if ( image != null ) {
+//				image.release();
+//				image = null;
+//			}
+//			if ( bitmap != null ) {
+//				if ( !bitmap.isRecycled() ) {
+//					bitmap.recycle();
+//				}
+//				bitmap = null;
+//			}
+//			if ( rgb != null ) {
+//				rgb = null;
+//			}
+//			faces.clear();
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -253,10 +287,6 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback, C
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}
-
-	/*
-	 *
-	 */
 
 	/**
 	 * Camera.PreviewCallback.onPreviewFrame で渡されたデータを Bitmap に変換します。
@@ -333,7 +363,25 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback, C
 		return bitmap;
 	}
 
-//
+	/**
+	 * カメラに方向を与える
+	 */
+	public void setDig2Cam(int _degrees) {
+		final String TAG = "setDig2Cam[CV]";
+		String dbMsg = "_degrees=" + _degrees;
+		try {
+			this.degrees = _degrees;
+			camera.stopPreview();
+			camera.setDisplayOrientation(degrees);
+			camera.startPreview();
+
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+
 //	public void choosePreviewSize(String cameraId) {
 //		WindowManager windowManager = getWindowManager();
 //		Display display = windowManager.getDefaultDisplay();
@@ -416,4 +464,6 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback, C
 
 /**
  * 2017-02-10		AndroidでOpenCV 3.2を使って顔検出をする			https://blogs.osdn.jp/2017/02/10/opencv.html
+ * <p>
+ * mm-camera: <STATS_AF ><ERROR> 4436: af_port_handle_pdaf_stats: Fail to init buf divert ack ctrl
  */

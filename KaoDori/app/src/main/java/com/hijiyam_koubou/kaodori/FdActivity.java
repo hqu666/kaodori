@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
@@ -12,6 +13,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.view.KeyEvent;
+import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
 
@@ -29,7 +31,7 @@ public class FdActivity extends Activity {
 	}
 
 	public ViewGroup activityMain;
-	public 	CameraView cameraView;
+	public CameraView cameraView;
 	public int sensorOrientation;    //カメラの向き
 	public int displayRotation;            //端末の位置番号（上端；上＝、右=1 , 左＝,下= ）
 
@@ -151,7 +153,6 @@ public class FdActivity extends Activity {
 		final String TAG = "onStop[MA]";
 		String dbMsg = "";
 		try {
-
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -164,7 +165,6 @@ public class FdActivity extends Activity {
 		final String TAG = "onDestroy[MA]";
 		String dbMsg = "";
 		try {
-			cameraView =null;
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -174,7 +174,7 @@ public class FdActivity extends Activity {
 	@Override
 	public void onWindowFocusChanged(boolean hasFocus) {
 		super.onWindowFocusChanged(hasFocus);
-		final String TAG = "onDestroy[MA]";
+		final String TAG = "onWindowFocusChanged[MA]";
 		String dbMsg = "hasFocus=" + hasFocus;
 		try {
 //			laterCreate();
@@ -188,6 +188,26 @@ public class FdActivity extends Activity {
 //	public void onMultiWindowChanged(boolean isInMultiWindowMode) {
 //		super.onMultiWindowModeChanged(isInMultiWindowMode);
 //	}
+
+	/**
+	 * 画面回転を検出
+	 */
+	@Override
+	public void onConfigurationChanged(Configuration newConfig) {
+		final String TAG = "onConfigurationChanged[MA]";
+		String dbMsg = "";
+		try {
+			displayRotation = getWindowManager().getDefaultDisplay().getRotation();
+			dbMsg += ",端末の向き=" + displayRotation;    //上端； 上=0,右=1,左=3,下=0
+			dbMsg = "newConfig.screenLayout=" + newConfig.screenLayout;
+			dbMsg = "newConfig.orientation=" + newConfig.orientation;
+			cameraView.setDig2Cam(getCameraPreveiwDeg());
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+		super.onConfigurationChanged(newConfig);
+	}
 
 	@Override
 	public boolean onKeyDown(int keyCode , KeyEvent event) {
@@ -243,6 +263,52 @@ public class FdActivity extends Activity {
 		}
 	}
 
+	public int getCameraPreveiwDeg() {
+		final String TAG = "getCameraPreveiwDeg[MA]";
+		String dbMsg = "";
+		int orientationDeg = 90;
+		try {
+			android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
+			android.hardware.Camera.getCameraInfo(0 , info);
+			int rotation = getWindowManager().getDefaultDisplay().getRotation();
+			dbMsg += ",rotation="+rotation;
+			int degrees = 0;
+			switch ( rotation ) {
+				case Surface.ROTATION_0:
+					degrees = 0;
+					break;
+				case Surface.ROTATION_90:
+					degrees = 90;
+					break;
+				case Surface.ROTATION_180:
+					degrees = 180;
+					break;
+				case Surface.ROTATION_270:
+					degrees = 270;
+					break;
+			}
+			dbMsg += ",degrees="+degrees;
+			dbMsg += ".facing=" + info.facing;
+			if ( info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT ) {
+				orientationDeg = (info.orientation + degrees) % 360;
+				orientationDeg = (360 - orientationDeg) % 360;  // compensate the mirror
+			} else {  // back-facing
+				orientationDeg = (info.orientation - degrees + 360) % 360;
+			}
+			dbMsg += ".orientationDeg=" + orientationDeg;
+			/**
+			 * rotation=0,degrees=0.facing=0.orientationDeg=90
+			 * rotation=1,degrees=90.facing=0.orientationDeg=0
+			 * rotation=3,degrees=270.facing=0.orientationDeg=180
+			 * */
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+		return orientationDeg;
+	}
+
+
 	/**
 	 * onCreateに有ったイベントなどの処理パート
 	 * onCreateは終了処理後のonDestroyの後でも再度、呼び出されるので実データの割り付けなどを分離する
@@ -253,21 +319,22 @@ public class FdActivity extends Activity {
 		try {
 //			if(! isCrated) {
 //			getMyDiviceInfo();
-			displayRotation = getWindowManager().getDefaultDisplay().getRotation();
-			dbMsg += ",端末の向き=" + displayRotation;	//上端； 上=0,右=1,左=3,下=0
-				int orientation = getResources().getConfiguration().orientation;
-				dbMsg += "orientation=" + orientation;
-				int orientationDeg = 90;
-				if ( orientation == Configuration.ORIENTATION_LANDSCAPE ) {            //端末の向き=1
-					dbMsg += "=横向き";
-				} else if ( orientation == Configuration.ORIENTATION_PORTRAIT ) {
-					dbMsg += "=縦向き";
-					orientationDeg = 0;
-// setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);      //横向きに修正する場合
-				}
-				cameraView = new CameraView(this , orientationDeg  );
+//			displayRotation = getWindowManager().getDefaultDisplay().getRotation();
+//			dbMsg += ",端末の向き=" + displayRotation;    //上端； 上=0,右=1,左=3,下=0
+//			int orientation = getResources().getConfiguration().orientation;
+//			dbMsg += ",orientation=" + orientation;
+//			int orientationDeg = 90;
+//			if ( orientation == Configuration.ORIENTATION_LANDSCAPE ) {            //2:端末の向き=1
+//				dbMsg += "=横向き";
+//			} else if ( orientation == Configuration.ORIENTATION_PORTRAIT ) {            //1
+//				dbMsg += "=縦向き";
+//				orientationDeg = 0;
+//				// setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);      //横向きに修正する場合
+//			}
+			if ( cameraView == null ) {
+				cameraView = new CameraView(this , getCameraPreveiwDeg());
 				activityMain.addView(cameraView);
-
+			}
 //			}
 			isCrated = true;
 			myLog(TAG , dbMsg);
@@ -280,6 +347,9 @@ public class FdActivity extends Activity {
 		final String TAG = "callQuit[MA]";
 		String dbMsg = "";
 		try {
+			if ( cameraView == null ) {
+				cameraView.surfaceDestroy();
+			}
 			this.finish();
 			if ( Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ) {
 				finishAndRemoveTask();                      //アプリケーションのタスクを消去する事でデバッガーも停止する。
@@ -349,7 +419,7 @@ public class FdActivity extends Activity {
 			dbMsg += ",端末の向き=" + displayRotation;
 			CameraManager cameraManager = ( CameraManager ) getSystemService(CAMERA_SERVICE);
 
-			if ( Build.VERSION.SDK_INT >= 21) {
+			if ( Build.VERSION.SDK_INT >= 21 ) {
 
 				ArrayList backIds = new ArrayList<>();
 				try {
@@ -375,7 +445,7 @@ public class FdActivity extends Activity {
 					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 					sensorOrientation = 0;
 				}
-			} else{
+			} else {
 				//      http://acro-engineer.hatenablog.com/entry/20110824/1314200703
 //				int numberOfCameras = Camera.getNumberOfCameras();
 //  				for (int i = 0; i < numberOfCameras; i++) {      // 各カメラの情報を取得
@@ -393,15 +463,15 @@ public class FdActivity extends Activity {
 //					dbMsg += ",cameraId=" + Integer.toString(i)+ ", orientation=" + Integer.toString(orient);
 //				}
 			}
-			  /**
-			   * 上端；
-			   * 上；端末の向き=0,id=0,backIds=1件0,カメラの向き=90
-			   * 右；端末の向き=1,id=0,backIds=1件0,カメラの向き=90
-			   * 左；端末の向き=3,id=0,backIds=1件0,カメラの向き=90
-			   * 下：端末の向き=0,id=0,backIds=1件0,カメラの向き=90
-			   *
-			   *
-			   * */
+			/**
+			 * 上端；
+			 * 上；端末の向き=0,id=0,backIds=1件0,カメラの向き=90
+			 * 右；端末の向き=1,id=0,backIds=1件0,カメラの向き=90
+			 * 左；端末の向き=3,id=0,backIds=1件0,カメラの向き=90
+			 * 下：端末の向き=0,id=0,backIds=1件0,カメラの向き=90
+			 *
+			 *
+			 * */
 			dbMsg += ",カメラの向き=" + sensorOrientation;
 
 			myLog(TAG , dbMsg);
@@ -436,7 +506,12 @@ public class FdActivity extends Activity {
 
 /**
  * 2017-02-10		AndroidでOpenCV 3.2を使って顔検出をする			https://blogs.osdn.jp/2017/02/10/opencv.html
-
- Camera is being used after Camera.release() was called
-
+ 2012-02-15			Androidで縦向き（Portrait）でカメラを使う方法　（主にAndroid2.x向け）		 http://dai1741.hatenablog.com/entry/2012/02/15/011114
+ * <p>
+ *横向きでアスペクト比崩れ
+ * 下向きに追従せず
+ * 廃止前メソッドの置換え
+ * 終了時クラッシュ
+ * 	 java.lang.RuntimeException: Camera is being used after Camera.release() was called
+ * in-out切替
  */
