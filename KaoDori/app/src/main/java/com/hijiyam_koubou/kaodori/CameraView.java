@@ -336,11 +336,11 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback, C
 			dbMsg += "[" + surfaceWidth + "×" + surfacHight + "]degrees=" + degrees;
 			int nowWidth = surfaceWidth;
 			int nowHeight = surfacHight;
-//			if ( degrees == 90 || degrees == 270 ) {
-//				dbMsg += "；縦に入れ替え";
-//				nowWidth = surfacHight;
-//				nowHeight = surfaceWidth;
-//			}
+			if ( degrees == 90 || degrees == 270 ) {
+				dbMsg += "；縦に入れ替え";
+				nowWidth = surfacHight;
+				nowHeight = surfaceWidth;
+			}
 			int maxPictureWidth = 0;
 			int maxPictureHeight = 0;
 			int maxPreviewWidth = 640;   //オリジナルは640 , 480	固定だった
@@ -382,15 +382,15 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback, C
 							}
 						}
 						dbMsg += ">>[" + maxPreviewWidth + "x" + maxPreviewHeight + "]";
-						double fitScale = 1.0;//( double ) surfacHight / maxPreviewHeight;           //☆結果がfloatでint除算すると整数部分のみになり小数点が切捨てられる
+						double fitScale = ( double ) surfacHight / maxPreviewHeight;           //☆結果がfloatでint除算すると整数部分のみになり小数点が切捨てられる
 ////						double fitScaleH = ( double ) surfacHight / maxPreviewHeight;
 //////						if ( fitScale > fitScaleH ) {
 //////							fitScale = fitScaleH;
 //////						}
-//						if ( degrees == 90 || degrees == 270 ) {
-//							dbMsg += "；縦";
-//							fitScale =  ( double ) surfacHight/  maxPreviewWidth;
-//						}
+						if ( degrees == 90 || degrees == 270 ) {
+							dbMsg += "；縦";
+							fitScale =  ( double ) surfacHight/  maxPreviewWidth;
+						}
 						dbMsg += fitScale + "倍";
 						maxPreviewWidth = ( int ) (maxPreviewWidth * fitScale);
 						maxPreviewHeight = ( int ) (maxPreviewHeight * fitScale);
