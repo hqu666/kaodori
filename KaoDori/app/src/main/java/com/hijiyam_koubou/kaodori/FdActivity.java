@@ -263,6 +263,9 @@ public class FdActivity extends Activity {
 		}
 	}
 
+	/**
+	 * 端末のどこが上端になっているかを検出し、カメラにプレビュー角度を与える
+	 * */
 	public int getCameraPreveiwDeg() {
 		final String TAG = "getCameraPreveiwDeg[MA]";
 		String dbMsg = "";
@@ -513,5 +516,8 @@ public class FdActivity extends Activity {
  * 廃止前メソッドの置換え
  * 終了時クラッシュ
  * 	 java.lang.RuntimeException: Camera is being used after Camera.release() was called
+ *
+ * 	 E/mm-camera: <STATS_AF ><ERROR> 4436: af_port_handle_pdaf_stats: Fail to init buf divert ack ctrl
+
  * in-out切替
  */

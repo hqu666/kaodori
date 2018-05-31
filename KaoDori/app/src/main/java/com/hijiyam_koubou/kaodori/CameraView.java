@@ -11,6 +11,8 @@ import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
 import android.util.Log;
+import android.util.Size;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.ViewGroup;
@@ -26,6 +28,8 @@ import org.opencv.objdetect.CascadeClassifier;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 public class CameraView extends SurfaceView implements SurfaceHolder.Callback, Camera.PreviewCallback {
@@ -41,6 +45,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback, C
 	private List< RectF > faces = new ArrayList< RectF >();
 	public int surfaceWidth;
 	public int surfacHight;
+	public SurfaceHolder holder;
 
 	public CameraView(Context context , int displayOrientationDegrees) {
 		super(context);
@@ -73,6 +78,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback, C
 		String dbMsg = "";
 		try {
 			dbMsg = " holder=" + holder;
+			this.holder = holder;
 			this.surfaceWidth = holder.getSurfaceFrame().width();
 			this.surfacHight = holder.getSurfaceFrame().height();
 			dbMsg += "[" + surfaceWidth + "×" + surfacHight + "]";
@@ -86,43 +92,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback, C
 			} catch (IOException er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 			}
-
-			Camera.Parameters params = camera.getParameters();
-			dbMsg += "picture size: ";
-			int maxPictureWidth = 0;
-			int maxPictureHeight = 0;
-			//	List pictureSizes = params.getSupportedPictureSizes();
-			for ( Camera.Size size : params.getSupportedPictureSizes() ) {
-				//		dbMsg += size.width + "x" + size.height + ",";
-				if ( maxPictureWidth < size.width ) {
-					maxPictureWidth = size.width;
-					maxPictureHeight = size.height;
-				}
-			}
-			dbMsg += ">>" + maxPictureWidth + "x" + maxPictureHeight + ",";
-			double cameraAspect = ( double ) maxPictureWidth / maxPictureHeight;
-			dbMsg += "=" + cameraAspect;
-			dbMsg += "、preview size: ";
-			int maxPreviewWidth = 640;
-			int maxPreviewHeight = 480;
-			for ( Camera.Size size : params.getSupportedPreviewSizes() ) {            //params.getSupportedPreviewSizes()
-				if ( maxPreviewWidth < size.width ) {
-					if ( size.width <= surfaceWidth && size.height <= surfacHight ) {
-						dbMsg += "," + size.width + "x" + size.height + ",";
-						double previewAspect = ( double ) size.width / size.height;
-						dbMsg += "=" + previewAspect;
-						if ( cameraAspect == previewAspect ) {
-							maxPreviewWidth = size.width;
-							maxPreviewHeight = size.height;
-						}
-// holder.setFixedSize(maxPreviewWidth,maxPreviewHeight);      //viewのサイズを変えても扁平する
-					}
-				}
-			}
-			dbMsg += ">>" + maxPreviewWidth + "x" + maxPreviewHeight + ",";
-			params.setPreviewSize(maxPreviewWidth , maxPreviewHeight);          // 640 , 480	固定だった
-			//
-			camera.setParameters(params);
+			setMycameraParameters();
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -135,6 +105,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback, C
 		String dbMsg = "";
 		try {
 			dbMsg = "holder=" + holder + ", format=" + format + ", width=" + width + ", height=" + height;
+			this.holder = holder;
 			if ( image != null ) {
 				image.release();
 				image = null;
@@ -195,25 +166,6 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback, C
 		String dbMsg = "holder=" + holder;
 		try {
 			surfaceDestroy();
-//			if ( camera != null ) {
-//				camera.stopPreview();
-//				camera.release();
-//				camera = null;
-//			}
-//			if ( image != null ) {
-//				image.release();
-//				image = null;
-//			}
-//			if ( bitmap != null ) {
-//				if ( !bitmap.isRecycled() ) {
-//					bitmap.recycle();
-//				}
-//				bitmap = null;
-//			}
-//			if ( rgb != null ) {
-//				rgb = null;
-//			}
-//			faces.clear();
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -364,6 +316,62 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback, C
 	}
 
 	/**
+	 * プレビューサイズなど適切なパラメータを設定する
+	 **/
+	public void setMycameraParameters() {
+		final String TAG = "setMycameraParameters[CV]";
+		String dbMsg = "";
+		try {
+			dbMsg += "[" + surfaceWidth + "×" + surfacHight + "]degrees=" + degrees;
+			int nowWidth = surfaceWidth;
+			int nowHeight = surfacHight;
+			if ( degrees == 0 || degrees == 180 ) {
+				dbMsg += "；縦横入れ替え";
+				nowWidth = surfacHight;
+				nowHeight = surfaceWidth;
+			}
+			Camera.Parameters params = camera.getParameters();
+			dbMsg += "、picture size: ";
+			int maxPictureWidth = 0;
+			int maxPictureHeight = 0;
+			//	List pictureSizes = params.getSupportedPictureSizes();
+			for ( Camera.Size size : params.getSupportedPictureSizes() ) {
+				//		dbMsg += size.width + "x" + size.height + ",";
+				if ( maxPictureWidth < size.width ) {
+					maxPictureWidth = size.width;
+					maxPictureHeight = size.height;
+				}
+			}
+			dbMsg += ">>" + maxPictureWidth + "x" + maxPictureHeight + ",";
+			double cameraAspect = ( double ) maxPictureWidth / maxPictureHeight;
+			dbMsg += "=" + cameraAspect;
+			dbMsg += "、preview size: ";
+			int maxPreviewWidth = 640;   //オリジナルは640 , 480	固定だった
+			int maxPreviewHeight = 480;
+			for ( Camera.Size size : params.getSupportedPreviewSizes() ) {            //params.getSupportedPreviewSizes()
+				if ( maxPreviewWidth < size.width ) {
+					if ( size.width <= nowWidth && size.height <= nowHeight ) {
+						dbMsg += "," + size.width + "x" + size.height + ",";
+						double previewAspect = ( double ) size.width / size.height;
+						dbMsg += "=" + previewAspect;
+						if ( cameraAspect == previewAspect ) {
+							maxPreviewWidth = size.width;
+							maxPreviewHeight = size.height;
+						}
+//						holder.setFixedSize(maxPreviewWidth , maxPreviewHeight);      //viewのサイズを変えても扁平する
+					}
+				}
+			}
+			dbMsg += ">>" + maxPreviewWidth + "x" + maxPreviewHeight + ",";
+			params.setPreviewSize(maxPreviewWidth , maxPreviewHeight);
+			camera.setParameters(params);
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+	/**
 	 * カメラに方向を与える
 	 */
 	public void setDig2Cam(int _degrees) {
@@ -373,6 +381,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback, C
 			this.degrees = _degrees;
 			camera.stopPreview();
 			camera.setDisplayOrientation(degrees);
+			setMycameraParameters();
 			camera.startPreview();
 
 			myLog(TAG , dbMsg);
@@ -381,17 +390,21 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback, C
 		}
 	}
 
-
-//	public void choosePreviewSize(String cameraId) {
-//		WindowManager windowManager = getWindowManager();
+	/**
+	 * 端末の向きとカメラの向きから適切なプレビューサイズに調整する
+	 */
+//	public void choosePreviewSize(int displayRotation , int sensorOrientation) {
+//		final String TAG = "setDig2Cam[CV]";
+//		String dbMsg = "_degrees=" + _degrees;
+//		try {
+//			WindowManager windowManager = getWindowManager();
+//		}
 //		Display display = windowManager.getDefaultDisplay();
 //
-//		int displayRotation = getWindowManager().getDefaultDisplay().getRotation();  		// 端末の向き.
-//		//getActivity(). はフラグメントの場合
 //		CameraManager cameraManager =
-//				(CameraManager) getActivity().getSystemService(Context.CAMERA_SERVICE);   		// カメラの向き.
+//				(CameraManager) getActivity().getSystemService(Context.CAMERA_SERVICE);   		// .
 //
-//		int sensorOrientation;
+//		;
 //		try {
 //			CameraCharacteristics characteristics =
 //					cameraManager.getCameraCharacteristics(cameraId);
@@ -402,27 +415,29 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback, C
 //			sensorOrientation = 0;
 //		}
 //
-//		int viewWidth = mTextureView.getWidth();
-//		int viewHeight = mTextureView.getHeight();
+//		dbMsg += "[" + surfaceWidth + "×" + surfacHight + "]";
+//		int viewWidth = surfaceWidth;		//	mTextureView.getWidth();
+//		int viewHeight = surfacHight;		//mTextureView.getHeight();
 //		switch (displayRotation) {
 //			case Surface.ROTATION_0:
 //			case Surface.ROTATION_180:
 //				if (sensorOrientation == 90 || sensorOrientation == 270) {
-//					viewWidth = mTextureView.getHeight();
-//					viewHeight = mTextureView.getWidth();
+//					viewWidth  = surfacHight;		//mTextureView.getHeight();
+//					viewHeight = surfaceWidth;		//	mTextureView.getWidth();
 //				}
 //				break;
 //			case Surface.ROTATION_90:
 //			case Surface.ROTATION_270:
 //				if (sensorOrientation == 0 || sensorOrientation == 180) {
-//					viewWidth = mTextureView.getHeight();
-//					viewHeight = mTextureView.getWidth();
+//					viewWidth  = surfacHight;		//mTextureView.getHeight();
+//					viewHeight  = surfaceWidth;		//	mTextureView.getWidth();
 //				}
 //				break;
 //		}
 //
-//		List<Size> sameAspectSizes = new ArrayList<>();
-//		List<Size> previewSizes = getSupportedPreviewSizes();
+//		Camera.Parameters params = camera.getParameters();
+//		List<Size > sameAspectSizes = new ArrayList<>();
+//		List<Size> previewSizes = params.getSupportedPreviewSizes();
 //		for (Size previewSize : previewSizes) {
 //			int w = previewSize.getWidth();
 //			int h = previewSize.getHeight();
@@ -445,7 +460,12 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback, C
 //			Size previewSize = previewSizes.get(0);
 //			mPreviewSize.set(previewSize.getWidth(), previewSize.getHeight());
 //		}
+//		myLog(TAG , dbMsg);
+//	} catch (Exception er) {
+//		myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 //	}
+
+//}
 //
 
 
