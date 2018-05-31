@@ -4,7 +4,9 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
@@ -252,6 +254,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback, C
 		final String TAG = "decode[CV]";
 		String dbMsg = "";
 		try {
+			dbMsg += "["+width+"×"+height +"]"+degrees + "dig";
 			if ( rgb == null ) {
 				rgb = new int[width * height];
 			}
@@ -371,6 +374,30 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback, C
 		}
 	}
 
+	   /**
+		* https://qiita.com/cattaka/items/330321cb8c258c535e07
+		* */
+//	public void setMyTextureVeiw() {
+//		final String TAG = "setMyTextureVeiw[CV]";
+//		String dbMsg = "";
+//		try {
+//			dbMsg += "[" + surfaceWidth + "×" + surfacHight + "]degrees=" + degrees;
+//			WindowManager windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+//			int rotation = windowManager.getDefaultDisplay().getRotation();
+//			int viewWidth = surfaceWidth;	//textureView.getWidth();
+//			int viewHeight = surfacHight;	//textureView.getHeight();
+//			Matrix matrix = new Matrix();
+//			matrix.postRotate(- rotation, viewWidth * 0.5f, viewHeight * 0.5f);
+//			holder.setFixedSize(matrix);
+//	//			textureView.setTransform(matrix);
+//			myLog(TAG , dbMsg);
+//		} catch (Exception er) {
+//			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+//		}
+//	}
+
+
+
 	/**
 	 * カメラに方向を与える
 	 */
@@ -383,90 +410,11 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback, C
 			camera.setDisplayOrientation(degrees);
 			setMycameraParameters();
 			camera.startPreview();
-
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}
-
-	/**
-	 * 端末の向きとカメラの向きから適切なプレビューサイズに調整する
-	 */
-//	public void choosePreviewSize(int displayRotation , int sensorOrientation) {
-//		final String TAG = "setDig2Cam[CV]";
-//		String dbMsg = "_degrees=" + _degrees;
-//		try {
-//			WindowManager windowManager = getWindowManager();
-//		}
-//		Display display = windowManager.getDefaultDisplay();
-//
-//		CameraManager cameraManager =
-//				(CameraManager) getActivity().getSystemService(Context.CAMERA_SERVICE);   		// .
-//
-//		;
-//		try {
-//			CameraCharacteristics characteristics =
-//					cameraManager.getCameraCharacteristics(cameraId);
-//			Integer tempSO = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
-//			sensorOrientation = tempSO == null ? 0 : tempSO;
-//		} catch (CameraAccessException e) {
-//			e.printStackTrace();
-//			sensorOrientation = 0;
-//		}
-//
-//		dbMsg += "[" + surfaceWidth + "×" + surfacHight + "]";
-//		int viewWidth = surfaceWidth;		//	mTextureView.getWidth();
-//		int viewHeight = surfacHight;		//mTextureView.getHeight();
-//		switch (displayRotation) {
-//			case Surface.ROTATION_0:
-//			case Surface.ROTATION_180:
-//				if (sensorOrientation == 90 || sensorOrientation == 270) {
-//					viewWidth  = surfacHight;		//mTextureView.getHeight();
-//					viewHeight = surfaceWidth;		//	mTextureView.getWidth();
-//				}
-//				break;
-//			case Surface.ROTATION_90:
-//			case Surface.ROTATION_270:
-//				if (sensorOrientation == 0 || sensorOrientation == 180) {
-//					viewWidth  = surfacHight;		//mTextureView.getHeight();
-//					viewHeight  = surfaceWidth;		//	mTextureView.getWidth();
-//				}
-//				break;
-//		}
-//
-//		Camera.Parameters params = camera.getParameters();
-//		List<Size > sameAspectSizes = new ArrayList<>();
-//		List<Size> previewSizes = params.getSupportedPreviewSizes();
-//		for (Size previewSize : previewSizes) {
-//			int w = previewSize.getWidth();
-//			int h = previewSize.getHeight();
-//			if (h == w * mPictureSize.y / mPictureSize.x) {
-//				if (w >= viewWidth && h >= viewHeight) {
-//					sameAspectSizes.add(previewSize);
-//				}
-//			}
-//		}
-//
-//		if (0 < sameAspectSizes.size()) {
-//			Size previewSize = Collections.min(sameAspectSizes, new Comparator<Size>() {
-//				@Override
-//				public int compare(Size lhs, Size rhs) {
-//					return Long.signum(((long) lhs.getWidth() * lhs.getHeight()) - ((long) rhs.getWidth() * rhs.getHeight()));
-//				}
-//			});
-//			mPreviewSize.set(previewSize.getWidth(), previewSize.getHeight());
-//		} else {
-//			Size previewSize = previewSizes.get(0);
-//			mPreviewSize.set(previewSize.getWidth(), previewSize.getHeight());
-//		}
-//		myLog(TAG , dbMsg);
-//	} catch (Exception er) {
-//		myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-//	}
-
-//}
-//
 
 
 	////////////////////////////////////////////////////////////////////////////////////////////////

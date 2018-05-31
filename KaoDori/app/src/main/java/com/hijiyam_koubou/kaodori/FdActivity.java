@@ -16,6 +16,8 @@ import android.view.KeyEvent;
 import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
+import android.view.WindowManager;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -34,7 +36,7 @@ public class FdActivity extends Activity {
 	public CameraView cameraView;
 	public int sensorOrientation;    //カメラの向き
 	public int displayRotation;            //端末の位置番号（上端；上＝、右=1 , 左＝,下= ）
-
+	public String cameraId = "0";
 	public boolean isCrated = false;
 
 	public static SharedPreferences sharedPref;
@@ -94,6 +96,8 @@ public class FdActivity extends Activity {
 		try {
 			isCrated = false;
 			readPref();
+			getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+			requestWindowFeature(Window.FEATURE_NO_TITLE);
 			setContentView(R.layout.face_detect_surface_view);
 			activityMain = ( ViewGroup ) findViewById(R.id.fd_activity_surface_view);
 
@@ -199,8 +203,8 @@ public class FdActivity extends Activity {
 		try {
 			displayRotation = getWindowManager().getDefaultDisplay().getRotation();
 			dbMsg += ",端末の向き=" + displayRotation;    //上端； 上=0,右=1,左=3,下=0
-			dbMsg = "newConfig.screenLayout=" + newConfig.screenLayout;
-			dbMsg = "newConfig.orientation=" + newConfig.orientation;
+			dbMsg += "newConfig.screenLayout=" + newConfig.screenLayout;
+			dbMsg += "newConfig.orientation=" + newConfig.orientation;
 			cameraView.setDig2Cam(getCameraPreveiwDeg());
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
@@ -265,45 +269,57 @@ public class FdActivity extends Activity {
 
 	/**
 	 * 端末のどこが上端になっているかを検出し、カメラにプレビュー角度を与える
-	 * */
+	 */
 	public int getCameraPreveiwDeg() {
 		final String TAG = "getCameraPreveiwDeg[MA]";
 		String dbMsg = "";
 		int orientationDeg = 90;
 		try {
-			android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
-			android.hardware.Camera.getCameraInfo(0 , info);
 			int rotation = getWindowManager().getDefaultDisplay().getRotation();
-			dbMsg += ",rotation="+rotation;
-			int degrees = 0;
+			dbMsg += ",画面；rotation=" + rotation;
+			int dispDegrees = 0;
 			switch ( rotation ) {
 				case Surface.ROTATION_0:
-					degrees = 0;
+					dispDegrees = 0;
 					break;
 				case Surface.ROTATION_90:
-					degrees = 90;
+					dispDegrees = 90;
 					break;
 				case Surface.ROTATION_180:
-					degrees = 180;
+					dispDegrees = 180;
 					break;
 				case Surface.ROTATION_270:
-					degrees = 270;
+					dispDegrees = 270;
 					break;
 			}
-			dbMsg += ",degrees="+degrees;
-			dbMsg += ".facing=" + info.facing;
-			if ( info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT ) {
-				orientationDeg = (info.orientation + degrees) % 360;
+			dbMsg += "=" + dispDegrees + "dig";
+			Integer lensFacing;
+			int lensFacingFront;
+			Integer comOrientation;
+			if ( Build.VERSION.SDK_INT >= 21 ) {
+				CameraManager cameraManager = ( CameraManager ) getSystemService(CAMERA_SERVICE);
+				CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
+				comOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);       // 0, 90, 180, 270などの角度になっている
+				dbMsg += ",カメラ2；=" + comOrientation + "dig";
+				lensFacing = characteristics.get(CameraCharacteristics.LENS_FACING);
+				lensFacingFront = CameraCharacteristics.LENS_FACING_FRONT;
+			} else {
+				android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
+				android.hardware.Camera.getCameraInfo(0 , info);
+				comOrientation = info.orientation;                // 0, 90, 180, 270などの角度になっている
+				dbMsg += ",カメラ1；=" + comOrientation + "dig";
+				lensFacing = info.facing;
+				lensFacingFront = Camera.CameraInfo.CAMERA_FACING_FRONT;
+			}
+			dbMsg += ",内外=" + lensFacing;
+			dbMsg += ",CAMERA_FACING_FRONT=" + lensFacingFront;
+			if ( lensFacing == lensFacingFront ) {
+				orientationDeg = (comOrientation + dispDegrees) % 360;
 				orientationDeg = (360 - orientationDeg) % 360;  // compensate the mirror
 			} else {  // back-facing
-				orientationDeg = (info.orientation - degrees + 360) % 360;
+				orientationDeg = (comOrientation - dispDegrees + 360) % 360;
 			}
 			dbMsg += ".orientationDeg=" + orientationDeg;
-			/**
-			 * rotation=0,degrees=0.facing=0.orientationDeg=90
-			 * rotation=1,degrees=90.facing=0.orientationDeg=0
-			 * rotation=3,degrees=270.facing=0.orientationDeg=180
-			 * */
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -509,15 +525,19 @@ public class FdActivity extends Activity {
 
 /**
  * 2017-02-10		AndroidでOpenCV 3.2を使って顔検出をする			https://blogs.osdn.jp/2017/02/10/opencv.html
- 2012-02-15			Androidで縦向き（Portrait）でカメラを使う方法　（主にAndroid2.x向け）		 http://dai1741.hatenablog.com/entry/2012/02/15/011114
+ * 2017年01月02日	Androidデバイスのカメラの向き					 https://qiita.com/cattaka/items/330321cb8c258c535e07
+ * 2012-02-15			Androidで縦向き（Portrait）でカメラを使う方法　（主にAndroid2.x向け）		 http://dai1741.hatenablog.com/entry/2012/02/15/011114
  * <p>
- *横向きでアスペクト比崩れ
+ * 横向きでアスペクト比崩れ
  * 下向きに追従せず
  * 廃止前メソッドの置換え
  * 終了時クラッシュ
- * 	 java.lang.RuntimeException: Camera is being used after Camera.release() was called
- *
- * 	 E/mm-camera: <STATS_AF ><ERROR> 4436: af_port_handle_pdaf_stats: Fail to init buf divert ack ctrl
-
+ * java.lang.RuntimeException: Camera is being used after Camera.release() was called
+ * <p>
+ * E/mm-camera: <STATS_AF ><ERROR> 4436: af_port_handle_pdaf_stats: Fail to init buf divert ack ctrl
+ * <p>
  * in-out切替
+ *
+ *残留問題
+ * toolbarは組み込めない
  */
