@@ -5,13 +5,16 @@ import android.app.Activity;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.graphics.ImageFormat;
 import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
+import android.hardware.camera2.params.StreamConfigurationMap;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.util.Size;
 import android.view.KeyEvent;
 import android.view.Surface;
 import android.view.View;
@@ -25,6 +28,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public class FdActivity extends Activity {
 
@@ -267,6 +273,7 @@ public class FdActivity extends Activity {
 		}
 	}
 
+
 	/**
 	 * 端末のどこが上端になっているかを検出し、カメラにプレビュー角度を与える
 	 */
@@ -326,7 +333,6 @@ public class FdActivity extends Activity {
 		}
 		return orientationDeg;
 	}
-
 
 	/**
 	 * onCreateに有ったイベントなどの処理パート
