@@ -37,9 +37,13 @@ public class FdActivity extends Activity {
 	static {
 		System.loadLibrary("opencv_java3");    // opencv\_java3.so をロード	;	\jniLibsmの中のプロセッサー分、検索
 	}
+	public boolean isTextureView = true;
+
 
 	public ViewGroup activityMain;
+
 	public CameraView cameraView;
+	public FaceRecognition faceRecognition;
 	public int sensorOrientation;    //カメラの向き
 	public int displayRotation;            //端末の位置番号（上端；上＝、右=1 , 左＝,下= ）
 	public String cameraId = "0";
@@ -209,9 +213,29 @@ public class FdActivity extends Activity {
 		try {
 			displayRotation = getWindowManager().getDefaultDisplay().getRotation();
 			dbMsg += ",端末の向き=" + displayRotation;    //上端； 上=0,右=1,左=3,下=0
-			dbMsg += "newConfig.screenLayout=" + newConfig.screenLayout;
-			dbMsg += "newConfig.orientation=" + newConfig.orientation;
-			cameraView.setDig2Cam(getCameraPreveiwDeg());
+			int dispDegrees = 0;
+			switch ( displayRotation ) {
+				case Surface.ROTATION_0:
+					dispDegrees = 0;
+					break;
+				case Surface.ROTATION_90:
+					dispDegrees = 90;
+					break;
+				case Surface.ROTATION_180:
+					dispDegrees = 180;
+					break;
+				case Surface.ROTATION_270:
+					dispDegrees = 270;
+					break;
+			}
+			dbMsg += "=" + dispDegrees + "dig";
+			dbMsg += ",screenLayout=" + newConfig.screenLayout;
+			dbMsg += ",orientation=" + newConfig.orientation;
+			if(isTextureView){
+				faceRecognition.setDig2Cam(dispDegrees);
+			}  else{
+				cameraView.setDig2Cam(getCameraPreveiwDeg());
+			}
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -356,10 +380,16 @@ public class FdActivity extends Activity {
 //				orientationDeg = 0;
 //				// setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);      //横向きに修正する場合
 //			}
-			if ( cameraView == null ) {
-				cameraView = new CameraView(this , getCameraPreveiwDeg());
-				activityMain.addView(cameraView);
-			}
+			if(isTextureView){
+				if ( faceRecognition == null ) {
+					faceRecognition = new FaceRecognition(this , getCameraPreveiwDeg());
+					activityMain.addView(faceRecognition);
+				}
+			}  else{
+				if ( cameraView == null ) {
+					cameraView = new CameraView(this , getCameraPreveiwDeg());
+					activityMain.addView(cameraView);
+				}			}
 //			}
 			isCrated = true;
 			myLog(TAG , dbMsg);
@@ -372,8 +402,14 @@ public class FdActivity extends Activity {
 		final String TAG = "callQuit[MA]";
 		String dbMsg = "";
 		try {
-			if ( cameraView == null ) {
-				cameraView.surfaceDestroy();
+			if(isTextureView){
+				if ( faceRecognition == null ) {
+					faceRecognition.surfaceDestroy();
+				}
+			}  else{
+				if ( cameraView == null ) {
+					cameraView.surfaceDestroy();
+				}
 			}
 			this.finish();
 			if ( Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ) {
@@ -543,7 +579,7 @@ public class FdActivity extends Activity {
  * E/mm-camera: <STATS_AF ><ERROR> 4436: af_port_handle_pdaf_stats: Fail to init buf divert ack ctrl
  * <p>
  * in-out切替
- *
- *残留問題
+ * <p>
+ * 残留問題
  * toolbarは組み込めない
  */
