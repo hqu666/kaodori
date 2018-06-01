@@ -28,6 +28,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.AttributeSet;
 import android.util.Size;
+import android.util.SparseIntArray;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.TextureView;
@@ -58,6 +59,8 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 	//SurfaceHolder.Callback,
 //	private static final String TAG = "CameraView";
 	private Context context;
+	private WindowManager windowManager;
+
 	public SurfaceTexture surface;
 	public int surfaceWidth;            //プレビューエリアのサイズ
 	public int surfacHight;
@@ -65,6 +68,10 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 
 	private String cameraId;
 	private Camera frCamera;
+	public CameraManager frCameraManager;
+	public CameraCharacteristics frCharacteristics;
+	public CaptureRequest.Builder frPreviewBuilder;
+
 
 	private int degrees;
 	private int[] rgb;
@@ -217,7 +224,7 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 
 	/**
 	 * TextureViewのサイズ変更時にCallされる
-	 * surfaceChangedから
+	 * カメラの出力に合うよう、matrix の計算を行うためにonSurfaceTextureSizeChangedメソッドをoverride
 	 */
 	@Override
 	public void onSurfaceTextureSizeChanged(SurfaceTexture surface , int width , int height) {
@@ -377,7 +384,11 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 		}
 	}
 
-
+	/**
+	 * View自体の再レイアウトが必要なとき呼ばれる
+	 * 自分自身の幅高さを確定させるもの、onLayoutは子Viewの位置を決めるもの
+	 * 複数回呼ばれる
+	 */
 	@Override
 	protected void onMeasure(int widthMeasureSpec , int heightMeasureSpec) {
 		super.onMeasure(widthMeasureSpec , heightMeasureSpec);
@@ -408,39 +419,32 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 //			setAspectRatio(surfaceWidth , surfacHight);
 
 //			setTextureVeiwRotation();
+			followingRotation();
 
-			WindowManager windowManager = (( Activity ) getContext()).getWindowManager();
-			int rotation = windowManager.getDefaultDisplay().getRotation();
-			dbMsg += ",rotation="+rotation;
-			if(frCamera != null){
-//				Integer sensorOrientation = frCamera.characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
-//				dbMsg += ",sensorOrientation="+sensorOrientation;
-				int comDegrees = 0;
-				switch ( rotation ) {
-					case Surface.ROTATION_0:
-						comDegrees = 90;     //
-						break;
-					case Surface.ROTATION_90:
-						comDegrees = 0;
-						break;
-					case Surface.ROTATION_180:
-						comDegrees = 270;
-						break;
-					case Surface.ROTATION_270:
-						comDegrees = 180;
-						break;
-				}
-				dbMsg += "=" + comDegrees + "dig";
-				frCamera.mPreviewBuilder.set(CaptureRequest.JPEG_ORIENTATION,  comDegrees);
-//				sensorOrientation = frCamera.characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
-//				dbMsg += ",sensorOrientation="+sensorOrientation;
-			}
-			
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}
+
+	public void followingRotation() {
+		final String TAG = "followingRotation[FR]";
+		String dbMsg = "";
+		try {
+//			if ( windowManager == null ) {
+			WindowManager frWindowManager = (( Activity ) getContext()).getWindowManager();
+//			}
+			int rotation = frWindowManager.getDefaultDisplay().getRotation();
+			dbMsg += ",rotation=" + rotation;
+			if ( frCamera != null ) {
+				frCamera.setCameraRotation(rotation);
+			}
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
 
 	/**
 	 * 参照	https://qiita.com/cattaka/items/330321cb8c258c535e07
@@ -449,13 +453,15 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 		final String TAG = "setTextureVeiwRotation[FR]";
 		String dbMsg = "";
 		try {
-				if(context != null) {
-				WindowManager windowManager = ( WindowManager ) context.getSystemService(Context.WINDOW_SERVICE);
+			if ( context != null ) {
+				if ( windowManager != null ) {
+					windowManager = (( Activity ) getContext()).getWindowManager();
+				}
 				int rotation = windowManager.getDefaultDisplay().getRotation();
 				dbMsg += ",rotation=" + rotation;
 				int viewWidth = this.getWidth();
 				int viewHeight = this.getHeight();
-					dbMsg += "[" + viewWidth + "×" + viewHeight + "]";
+				dbMsg += "[" + viewWidth + "×" + viewHeight + "]";
 				Matrix matrix = new Matrix();
 				matrix.postRotate(-rotation , viewWidth * 0.5f , viewHeight * 0.5f);
 				this.setTransform(matrix);
@@ -630,9 +636,14 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 			int maxPictureHeight = 0;
 			int myPreviewWidth = 640;   //オリジナルは640 , 480	固定だった
 			int myPreviewHeight = 480;
-			CameraManager cameraManager = ( CameraManager ) context.getSystemService(CAMERA_SERVICE);
+
+			if ( frCamera == null ) {
+				frCameraManager = ( CameraManager ) context.getSystemService(Context.CAMERA_SERVICE);
+			} else {
+				frCameraManager = frCamera.mCameraManager;
+			}
 			try {
-				CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
+				CameraCharacteristics characteristics = frCameraManager.getCameraCharacteristics(cameraId);
 				StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
 				if ( map != null ) {
 					List< Size > previewSizes = new ArrayList<>();
@@ -704,8 +715,6 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 	}
 
 
-
-
 	/**
 	 * カメラに方向を与える
 	 */
@@ -728,13 +737,16 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 	///2015年12月06日	AndroidのCamera2 APIとOpenGL ESでカメラの映像を表示してみた		https://qiita.com/ueder/items/16be80bd1fc9ac8b0c1a/////////////////////////////////////////////////////
 	class Camera {
 		private CameraDevice mCamera;
-		public CameraCharacteristics characteristics;
+		public CameraManager mCameraManager;
+		public CameraCharacteristics mCharacteristics;
 		private TextureView mTextureView;
 		private Size mCameraSize;
-		private CaptureRequest.Builder mPreviewBuilder;
+		public CaptureRequest.Builder mPreviewBuilder;
 		private CameraCaptureSession mPreviewSession;
 		private Handler previewHandler;
 		private HandlerThread previewThread;
+
+		private CameraCaptureSession.CaptureCallback mCaptureCallback;
 
 		private CameraDevice.StateCallback mCameraDeviceCallback = new CameraDevice.StateCallback() {
 			@Override
@@ -830,13 +842,17 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 			final String TAG = "open[FR]";
 			String dbMsg = "";
 			try {
-				CameraManager manager = ( CameraManager ) context.getSystemService(Context.CAMERA_SERVICE);
-				for ( String cameraId : manager.getCameraIdList() ) {
+//				if ( mCameraManager != null ) {
+				CameraManager mCameraManager = ( CameraManager ) context.getSystemService(Context.CAMERA_SERVICE);
+//				}
+				for ( String cameraId : mCameraManager.getCameraIdList() ) {
 					dbMsg += "cameraId=" + cameraId;
-					characteristics = manager.getCameraCharacteristics(cameraId);
-					if ( characteristics.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_BACK ) {
+//					if ( mCharacteristics != null ) {
+						mCharacteristics = mCameraManager.getCameraCharacteristics(cameraId);
+//					}
+					if ( mCharacteristics.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_BACK ) {
 						dbMsg += ";LENS_FACING_BACK";
-						StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+						StreamConfigurationMap map = mCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
 						mCameraSize = map.getOutputSizes(SurfaceTexture.class)[0];
 						dbMsg += ">mCameraSize>[" + mCameraSize.getWidth() + "x" + mCameraSize.getHeight() + "]";
 						/**
@@ -848,7 +864,7 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 						 image.close();					// Imageを解放します。これを忘れるとバースト撮影などで失敗します。
 						 };
 						 * */
-						manager.openCamera(cameraId , mCameraDeviceCallback , null);             //CameraManagerにオープン要求を出します。
+						mCameraManager.openCamera(cameraId , mCameraDeviceCallback , null);             //CameraManagerにオープン要求を出します。
 						break;                    //	return;
 					}
 				}
@@ -933,7 +949,34 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 			}
 		}
 
-		CameraCaptureSession.CaptureCallback mCaptureCallback;
+		public void setCameraRotation(int rotation) {
+			final String TAG = "setCameraRotation[FR]";
+			String dbMsg = "";
+			try {
+				dbMsg += ",rotation=" + rotation;
+				if ( mCharacteristics != null && mPreviewBuilder != null ) {
+					Integer sensorOrientation = mCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
+					dbMsg += ",sensorOrientation=" + sensorOrientation;
+					 SparseIntArray ORIENTATIONS = new SparseIntArray();
+					{
+						ORIENTATIONS.append(Surface.ROTATION_0 , 90);
+						ORIENTATIONS.append(Surface.ROTATION_90 , 0);
+						ORIENTATIONS.append(Surface.ROTATION_180 , 270);
+						ORIENTATIONS.append(Surface.ROTATION_270 , 180);
+					}
+					int comDegrees = (ORIENTATIONS.get(rotation) + sensorOrientation + 270) % 360;
+					dbMsg += "=" + comDegrees + "dig";
+//					CaptureRequest.Builder mPreviewBuilder =mCamera.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+					mPreviewBuilder.set(CaptureRequest.JPEG_ORIENTATION, comDegrees);
+					mPreviewSession.capture(mPreviewBuilder.build(), mCaptureCallback, null);
+					sensorOrientation = mCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
+					dbMsg += ",sensorOrientation=" + sensorOrientation;
+				}
+				myLog(TAG , dbMsg);
+			} catch (Exception er) {
+				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+			}
+		}
 
 		/***
 		 *   camera2Dの静止画撮影
@@ -942,7 +985,7 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 			final String TAG = "camera2Shot[FR]";
 			String dbMsg = "";
 			try {
-				CaptureRequest.Builder mPreviewBuilder = mCamera.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);            //撮影用のCaptureRequest.Builderを生成
+				mPreviewBuilder = mCamera.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);            //撮影用のCaptureRequest.Builderを生成
 				ImageReader mImageReader = ImageReader.newInstance(1920 , 1080 , ImageFormat.JPEG , 3);        //   ImageReaderを生成
 //				mImageReader.setOnImageAvailableListener(mTakePictureAvailableListener, null);
 				mPreviewBuilder.addTarget(mImageReader.getSurface());                                                                //CaptureRequest.Builderに撮影用のSurfaceを設定
@@ -982,8 +1025,6 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 			}
 		}
-
-
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
