@@ -3,6 +3,7 @@ package com.hijiyam_koubou.kaodori;
 import android.Manifest;
 import android.app.Activity;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.ImageFormat;
@@ -37,6 +38,7 @@ public class FdActivity extends Activity {
 	static {
 		System.loadLibrary("opencv_java3");    // opencv\_java3.so をロード	;	\jniLibsmの中のプロセッサー分、検索
 	}
+
 	public boolean isTextureView = true;
 
 
@@ -108,6 +110,8 @@ public class FdActivity extends Activity {
 			readPref();
 			getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 			requestWindowFeature(Window.FEATURE_NO_TITLE);
+			setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);        //縦画面で止めておく	横	ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+//方向固定するとonConfigurationChangedも一切発生しなくなる
 			setContentView(R.layout.face_detect_surface_view);
 			activityMain = ( ViewGroup ) findViewById(R.id.fd_activity_surface_view);
 
@@ -154,6 +158,10 @@ public class FdActivity extends Activity {
 		final String TAG = "onPause[MA]";
 		String dbMsg = "";
 		try {
+			if(faceRecognition != null){
+//				camera2Dispose();
+//				faceRecognition.frCameraManager.stopBackgroundThread();
+			}
 
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
@@ -231,9 +239,9 @@ public class FdActivity extends Activity {
 			dbMsg += "=" + dispDegrees + "dig";
 			dbMsg += ",screenLayout=" + newConfig.screenLayout;
 			dbMsg += ",orientation=" + newConfig.orientation;
-			if(isTextureView){
-				faceRecognition.setDig2Cam(dispDegrees);
-			}  else{
+			if ( isTextureView ) {
+//				faceRecognition.setDig2Cam(dispDegrees);
+			} else {
 				cameraView.setDig2Cam(getCameraPreveiwDeg());
 			}
 			myLog(TAG , dbMsg);
@@ -380,16 +388,17 @@ public class FdActivity extends Activity {
 //				orientationDeg = 0;
 //				// setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);      //横向きに修正する場合
 //			}
-			if(isTextureView){
+			if ( isTextureView ) {
 				if ( faceRecognition == null ) {
 					faceRecognition = new FaceRecognition(this , getCameraPreveiwDeg());
 					activityMain.addView(faceRecognition);
 				}
-			}  else{
+			} else {
 				if ( cameraView == null ) {
 					cameraView = new CameraView(this , getCameraPreveiwDeg());
 					activityMain.addView(cameraView);
-				}			}
+				}
+			}
 //			}
 			isCrated = true;
 			myLog(TAG , dbMsg);
@@ -402,11 +411,11 @@ public class FdActivity extends Activity {
 		final String TAG = "callQuit[MA]";
 		String dbMsg = "";
 		try {
-			if(isTextureView){
+			if ( isTextureView ) {
 				if ( faceRecognition == null ) {
 					faceRecognition.surfaceDestroy();
 				}
-			}  else{
+			} else {
 				if ( cameraView == null ) {
 					cameraView.surfaceDestroy();
 				}

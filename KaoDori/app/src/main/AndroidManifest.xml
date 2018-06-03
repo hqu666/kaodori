@@ -5,15 +5,19 @@
 	<uses-permission android:name="android.permission.CAMERA"/>
 	<uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
 	<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-	<uses-feature android:name="android.hardware.camera" />
+
 	<uses-feature android:name="android.hardware.camera.autofocus" />
+	<uses-feature android:name="android.hardware.camera" />
+	<uses-feature android:name="android.hardware.camera2.full" />    <!-- 機種依存有り？-->
 
 	<application
 		android:icon="@mipmap/ic_launcher"
 		android:label="@string/app_name"
 		android:roundIcon="@mipmap/ic_launcher_round"
-		android:resizeableActivity="true"
 		android:theme="@android:style/Theme.NoTitleBar">
+
+		<!--android:screenOrientation="portrait"		縦表示に固定	/横		landscape	-->
+		<!--android:resizeableActivity="true"-->
 		<!--TextureView使用時；android:hardwareAccelerated="false"では使えない-->
 		<!--android:theme="@style/AppTheme">-->
 		<!--android:resizeableActivity="true" MultiWindowを有効にする		-->

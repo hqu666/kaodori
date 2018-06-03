@@ -183,7 +183,8 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback, C
 	}
 
 	/**
-	 * SurfaceHolder.Callback
+	 *プレビュー更新時のフレーム情報
+	 *  Camera.PreviewCallback.
 	 */
 	@Override
 	public void onPreviewFrame(byte[] data , Camera camera) {
@@ -215,6 +216,7 @@ public class CameraView extends SurfaceView implements SurfaceHolder.Callback, C
 				float bottom = top + ( float ) (1.0 * rect.height / height);
 				faces.add(new RectF(left , top , right , bottom));
 			}
+			dbMsg += ",faces=" + faces.size();
 			invalidate();
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
