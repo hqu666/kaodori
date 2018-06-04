@@ -6,19 +6,15 @@ import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
-import android.graphics.ImageFormat;
 import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
-import android.hardware.camera2.params.StreamConfigurationMap;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.util.Size;
 import android.view.KeyEvent;
 import android.view.Surface;
-import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
@@ -29,9 +25,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 public class FdActivity extends Activity {
 
@@ -39,13 +32,11 @@ public class FdActivity extends Activity {
 		System.loadLibrary("opencv_java3");    // opencv\_java3.so をロード	;	\jniLibsmの中のプロセッサー分、検索
 	}
 
-	public boolean isTextureView = true;
+	public ViewGroup activityMain;     		//プレビュー読込み場所
 
-
-	public ViewGroup activityMain;
-
-	public CameraView cameraView;
-	public FaceRecognition faceRecognition;
+	public boolean isTextureView = false;   			//プレビューにTextureViewを使用する
+	public MySurfaceView mySurfaceView;				//Surfaceのプレビュークラス
+	public MyTextureView myTextureView;			//TextureViewのプレビュークラス
 	public int sensorOrientation;    //カメラの向き
 	public int displayRotation;            //端末の位置番号（上端；上＝、右=1 , 左＝,下= ）
 	public String cameraId = "0";
@@ -110,8 +101,10 @@ public class FdActivity extends Activity {
 			readPref();
 			getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 			requestWindowFeature(Window.FEATURE_NO_TITLE);
-			setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);        //縦画面で止めておく	横	ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+			if ( isTextureView ) {
+				setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);        //縦画面で止めておく	横	ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
 //方向固定するとonConfigurationChangedも一切発生しなくなる
+			}
 			setContentView(R.layout.face_detect_surface_view);
 			activityMain = ( ViewGroup ) findViewById(R.id.fd_activity_surface_view);
 
@@ -120,7 +113,6 @@ public class FdActivity extends Activity {
 			} catch (IOException er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 			}
-//			laterCreate();
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -158,7 +150,7 @@ public class FdActivity extends Activity {
 		final String TAG = "onPause[MA]";
 		String dbMsg = "";
 		try {
-			if(faceRecognition != null){
+			if( myTextureView != null){
 //				camera2Dispose();
 //				faceRecognition.frCameraManager.stopBackgroundThread();
 			}
@@ -219,30 +211,22 @@ public class FdActivity extends Activity {
 		final String TAG = "onConfigurationChanged[MA]";
 		String dbMsg = "";
 		try {
-			displayRotation = getWindowManager().getDefaultDisplay().getRotation();
-			dbMsg += ",端末の向き=" + displayRotation;    //上端； 上=0,右=1,左=3,下=0
-			int dispDegrees = 0;
-			switch ( displayRotation ) {
-				case Surface.ROTATION_0:
-					dispDegrees = 0;
-					break;
-				case Surface.ROTATION_90:
-					dispDegrees = 90;
-					break;
-				case Surface.ROTATION_180:
-					dispDegrees = 180;
-					break;
-				case Surface.ROTATION_270:
-					dispDegrees = 270;
-					break;
-			}
-			dbMsg += "=" + dispDegrees + "dig";
+
+			int dispDegrees = getDisplayOrientation();
+			dbMsg += ",Disp=" + dispDegrees + "dig";
+			int camerapDegrees = getCameraPreveiwDeg();
+			dbMsg += ",camera=" + camerapDegrees + "dig";
+			/**
+			 * 上；,Disp=0dig,camera=90dig,screenLayout=268435794,orientation=1
+			 * 右；Disp=90dig,camera=0dig,screenLayout=268435794,orientation=2
+			 * 左；Disp=270dig,camera=180dig,screenLayout=268435794,orientation=2
+			 * */
 			dbMsg += ",screenLayout=" + newConfig.screenLayout;
 			dbMsg += ",orientation=" + newConfig.orientation;
 			if ( isTextureView ) {
 //				faceRecognition.setDig2Cam(dispDegrees);
 			} else {
-				cameraView.setDig2Cam(getCameraPreveiwDeg());
+				mySurfaceView.setDig2Cam(camerapDegrees);   //
 			}
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
@@ -314,42 +298,26 @@ public class FdActivity extends Activity {
 		String dbMsg = "";
 		int orientationDeg = 90;
 		try {
-			int rotation = getWindowManager().getDefaultDisplay().getRotation();
-			dbMsg += ",画面；rotation=" + rotation;
-			int dispDegrees = 0;
-			switch ( rotation ) {
-				case Surface.ROTATION_0:
-					dispDegrees = 0;
-					break;
-				case Surface.ROTATION_90:
-					dispDegrees = 90;
-					break;
-				case Surface.ROTATION_180:
-					dispDegrees = 180;
-					break;
-				case Surface.ROTATION_270:
-					dispDegrees = 270;
-					break;
-			}
-			dbMsg += "=" + dispDegrees + "dig";
+			int dispDegrees = getDisplayOrientation();
+ 			dbMsg += ",画面；rotation=" + dispDegrees + "dig";
 			Integer lensFacing;
 			int lensFacingFront;
 			Integer comOrientation;
-			if ( Build.VERSION.SDK_INT >= 21 ) {
-				CameraManager cameraManager = ( CameraManager ) getSystemService(CAMERA_SERVICE);
-				CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
-				comOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);       // 0, 90, 180, 270などの角度になっている
-				dbMsg += ",カメラ2；=" + comOrientation + "dig";
-				lensFacing = characteristics.get(CameraCharacteristics.LENS_FACING);
-				lensFacingFront = CameraCharacteristics.LENS_FACING_FRONT;
-			} else {
+//			if ( Build.VERSION.SDK_INT >= 21 ) {
+//				CameraManager cameraManager = ( CameraManager ) getSystemService(CAMERA_SERVICE);
+//				CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
+//				comOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);       // 0, 90, 180, 270などの角度になっている
+//				dbMsg += ",カメラ2；=" + comOrientation + "dig";
+//				lensFacing = characteristics.get(CameraCharacteristics.LENS_FACING);
+//				lensFacingFront = CameraCharacteristics.LENS_FACING_FRONT;
+//			} else {
 				android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
 				android.hardware.Camera.getCameraInfo(0 , info);
 				comOrientation = info.orientation;                // 0, 90, 180, 270などの角度になっている
 				dbMsg += ",カメラ1；=" + comOrientation + "dig";
 				lensFacing = info.facing;
 				lensFacingFront = Camera.CameraInfo.CAMERA_FACING_FRONT;
-			}
+//			}
 			dbMsg += ",内外=" + lensFacing;
 			dbMsg += ",CAMERA_FACING_FRONT=" + lensFacingFront;
 			if ( lensFacing == lensFacingFront ) {
@@ -366,6 +334,24 @@ public class FdActivity extends Activity {
 		return orientationDeg;
 	}
 
+	public int getDisplayOrientation() {
+		final String TAG = "getDisplayOrientation[MA]";
+		String dbMsg = "";
+		int degrees=0;
+		try {
+			int rotation = getWindowManager().getDefaultDisplay().getRotation();   //helperからは((Activity)getContext()).
+			switch (rotation) {
+				case Surface.ROTATION_0: degrees = 0; break;
+				case Surface.ROTATION_90: degrees = 90; break;
+				case Surface.ROTATION_180: degrees = 180; break;
+				case Surface.ROTATION_270: degrees = 270; break;
+			}
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+		return degrees;
+	}
 	/**
 	 * onCreateに有ったイベントなどの処理パート
 	 * onCreateは終了処理後のonDestroyの後でも再度、呼び出されるので実データの割り付けなどを分離する
@@ -388,15 +374,25 @@ public class FdActivity extends Activity {
 //				orientationDeg = 0;
 //				// setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);      //横向きに修正する場合
 //			}
+			int dispDegrees = getDisplayOrientation();
+			dbMsg += ",Disp=" + dispDegrees + "dig";
+			int camerapDegrees = getCameraPreveiwDeg();
+			dbMsg += ",camera=" + camerapDegrees + "dig";
+			/**
+			 * 上；Disp=0dig,	camera=90dig
+			 * 右；Disp=90dig,	camera=0dig
+			 * 左；Disp=270dig,	camera=180dig
+			 * */
 			if ( isTextureView ) {
-				if ( faceRecognition == null ) {
-					faceRecognition = new FaceRecognition(this , getCameraPreveiwDeg());
-					activityMain.addView(faceRecognition);
+				if ( myTextureView == null ) {
+					myTextureView = new MyTextureView(this ,getDisplayOrientation());
+					activityMain.addView(myTextureView);
 				}
 			} else {
-				if ( cameraView == null ) {
-					cameraView = new CameraView(this , getCameraPreveiwDeg());
-					activityMain.addView(cameraView);
+				if ( mySurfaceView == null ) {
+					mySurfaceView = new MySurfaceView(this ,camerapDegrees);
+					//orgは90°固定
+					activityMain.addView(mySurfaceView);
 				}
 			}
 //			}
@@ -412,12 +408,12 @@ public class FdActivity extends Activity {
 		String dbMsg = "";
 		try {
 			if ( isTextureView ) {
-				if ( faceRecognition == null ) {
-					faceRecognition.surfaceDestroy();
+				if ( myTextureView == null ) {
+					myTextureView.surfaceDestroy();
 				}
 			} else {
-				if ( cameraView == null ) {
-					cameraView.surfaceDestroy();
+				if ( mySurfaceView == null ) {
+					mySurfaceView.surfaceDestroy();
 				}
 			}
 			this.finish();
@@ -440,7 +436,7 @@ public class FdActivity extends Activity {
 		String dbMsg = "";
 		try {
 			dbMsg = "dir=" + dir;
-			dbMsg = ",認証ファイル最終更新日=" + haarcascadesLastModified;
+			dbMsg += ",認証ファイル最終更新日=" + haarcascadesLastModified;
 			byte[] buf = new byte[8192];
 			int size;
 			boolean isCopy = false;    //初回使用時なと、強制的にコピーする
@@ -453,7 +449,11 @@ public class FdActivity extends Activity {
 				dbMsg += ">>作成";
 				isCopy = true;
 			}
-
+			int readedCount = dst.list().length;
+			dbMsg += ",読込み済み=" + readedCount +"件";
+			if(readedCount < 10){
+				isCopy = true;
+			}
 			for ( String filename : getAssets().list(dir) ) {
 				File file = new File(dst , filename);
 				Long lastModified = file.lastModified();

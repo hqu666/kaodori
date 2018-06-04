@@ -17,6 +17,7 @@ import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.ImageReader;
 import android.util.Size;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.TextureView;
 import android.view.View;
@@ -36,7 +37,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class FaceRecognition extends TextureView implements TextureView.SurfaceTextureListener {      //TextureView
+public class MyTextureView extends TextureView implements TextureView.SurfaceTextureListener {      //TextureView
 
 	//SurfaceHolder.Callback,
 //	private static final String TAG = "CameraView";
@@ -53,32 +54,26 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 	public CameraManager frCameraManager;
 	public CameraCharacteristics frCharacteristics;
 	public CaptureRequest.Builder frPreviewBuilder;
-	public CanvaceView canvaceView;
+	public FaceRecognitionView faceRecognitionView =null;
 
 	private int degrees;
-//	private int[] rgb;
-//	private Bitmap bitmap;
-//	private Mat image;
-//	private CascadeClassifier detector;
-//	private List< RectF > faces = new ArrayList< RectF >();
 
 	public SurfaceHolder holder;
 	//	public String cameraId = "0";
 	public int myPreviewWidth = 640;   //オリジナルは640 , 480	固定だった
 	public int myPreviewHeight = 480;
 
-	public FaceRecognition(Context context , int degrees) {
+	public MyTextureView(Context context  , int displayOrientationDegrees) {
 		super(context);
-		final String TAG = "FaceRecognition[FR]";
+		final String TAG = "MyTextureView[textuer]";
 		String dbMsg = "";
 		try {
-			dbMsg += "degrees=" + degrees;
-			this.degrees = degrees;
 			this.context = context;
+			dbMsg += "degrees=" + degrees;
+			this.degrees = displayOrientationDegrees;
 
-			canvaceView = new CanvaceView(context );
 			//mTextureView.isAvailable(); だとして
-			frCamera = new CS_Camera2(context , this);            // プレビュー（このクラス自身）を渡しておく
+//			frCamera = new CS_Camera2(context , this);            // プレビュー（このクラス自身）を渡しておく
 			setSurfaceTextureListener(this);                    //   Listenerを設定して、availableになるのを待ちます
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
@@ -88,7 +83,7 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 
 // http://yonayona.biz/yonayona/blog/archives/camera_35.html　の残り
 //	private void startPreview() {
-//		final String TAG = "startPreview[FR]";
+//		final String TAG = "startPreview[textuer]";
 //		String dbMsg = "";
 //		try {
 //			mCamera = Camera.open(this.cameraId);
@@ -112,7 +107,7 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 //	}
 //
 //	private void stopPreview(){
-//		final String TAG = "stopPreview[FR]";
+//		final String TAG = "stopPreview[textuer]";
 //		String dbMsg = "";
 //		try {
 //			if (mCamera != null) {
@@ -125,7 +120,7 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 //	}
 //
 //	public void onPause(){
-//		final String TAG = "onPause[FR]";
+//		final String TAG = "onPause[textuer]";
 //		String dbMsg = "";
 //		try {
 //			if(mCamera != null) {
@@ -138,34 +133,7 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 //		}
 //	}
 //
-//	public int getCameraDisplayOrientation() {
-//		final String TAG = "getCameraDisplayOrientation[FR]";
-//		String dbMsg = "";
-//		int result=0;
-//		try {
-//			Camera.CameraInfo info = new Camera.CameraInfo();
-//			Camera.getCameraInfo(cameraId, info);
-//			int rotation = ((Activity)getContext()).getWindowManager().getDefaultDisplay().getRotation();
-//			int degrees = 0;
-//			switch (rotation) {
-//				case Surface.ROTATION_0: degrees = 0; break;
-//				case Surface.ROTATION_90: degrees = 90; break;
-//				case Surface.ROTATION_180: degrees = 180; break;
-//				case Surface.ROTATION_270: degrees = 270; break;
-//			}
-//
-//			if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-//				result = (info.orientation + degrees) % 360;
-//				result = (360 - result) % 360;
-//			} else {
-//				result = (info.orientation - degrees + 360) % 360;
-//			}
-//			myLog(TAG , dbMsg);
-//		} catch (Exception er) {
-//			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-//		}
-//		return result;
-//	}
+
 
 	////LifeCicle///////////////////////////////////////////////////////////////////////////////////////////
 	//Life Cycle:変更終息は　onSurfaceTextureSizeChanged　のみ/////////////////////////////////////
@@ -178,7 +146,7 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 	 */
 	@Override
 	public void onSurfaceTextureAvailable(SurfaceTexture surface , int width , int height) {
-		final String TAG = "onSurfaceTextureAvailable[FR]";
+		final String TAG = "onSurfaceTextureAvailable[textuer]";
 		String dbMsg = "";
 		try {
 			this.surface = surface;
@@ -186,7 +154,8 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 			this.surfacHight = height;                    //holder.getSurfaceFrame().height();
 			dbMsg += "[" + surfaceWidth + "×" + surfacHight + "]";            //右が上端[1776×1080]        /
 //			setMycameraParameters();
-			if ( frCamera != null ) {
+			if ( frCamera == null ) {
+				frCamera = new CS_Camera2(context , this);            // プレビュー（このクラス自身）を渡しておく
 				frCamera.open();
 			}
 
@@ -197,6 +166,7 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 //			} catch (IOException er) {
 //				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 //			}
+			faceRecognitionView = new FaceRecognitionView(context  , degrees );
 
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
@@ -211,7 +181,7 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 	 */
 	@Override
 	public void onSurfaceTextureSizeChanged(SurfaceTexture surface , int width , int height) {
-		final String TAG = "onSurfaceTextureSizeChanged[FR]";
+		final String TAG = "onSurfaceTextureSizeChanged[textuer]";
 		String dbMsg = "";
 		try {
 			dbMsg = "[" + width + "×" + height + "]";
@@ -219,10 +189,10 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 				dbMsg = "縦";
 			}
 			this.surface = surface;
-			if ( canvaceView != null ) {
-				canvaceView.canvasRecycle();
-				canvaceView=null;
-				canvaceView = new CanvaceView(context );
+			if ( faceRecognitionView != null ) {
+				faceRecognitionView.canvasRecycle();
+				faceRecognitionView=null;
+				faceRecognitionView = new FaceRecognitionView(context , degrees  );
 			}
 			if ( frCamera != null ) {
 				dbMsg += "、プレビュー更新";
@@ -239,7 +209,7 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 	 stopPreview();
 	 * */
 	public void surfaceDestroy() {
-		final String TAG = "surfaceDestroy[FR]";
+		final String TAG = "surfaceDestroy[textuer]";
 		String dbMsg = "";
 		try {
 			if ( frCamera != null ) {
@@ -248,9 +218,9 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 				frCamera = null;
 				dbMsg += "camera破棄";
 			}
-			if ( canvaceView != null ) {
-				canvaceView.canvasRecycle();
-				dbMsg += "image破棄";
+			if ( faceRecognitionView != null ) {
+				faceRecognitionView.canvasRecycle();
+				dbMsg += "認証クラス破棄";
 			}
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
@@ -263,7 +233,7 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 	 */
 	@Override
 	public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-		final String TAG = "onSurfaceTextureDestroyed[FR]";
+		final String TAG = "onSurfaceTextureDestroyed[textuer]";
 		String dbMsg = "";
 		try {
 			surfaceDestroy();
@@ -280,7 +250,7 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 	 */
 	@Override
 	public void onSurfaceTextureUpdated(final SurfaceTexture surface) {
-		final String TAG = "onSurfaceTextureUpdated[FR]";
+		final String TAG = "onSurfaceTextureUpdated[textuer]";
 		String dbMsg = "";
 		try {
 			dbMsg = "onSurfaceTextureUpdated: ";
@@ -303,16 +273,20 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 //							myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 //						}
 				}
-
-				Bitmap bitmap = this.getBitmap();
-				dbMsg += "、bitmap=" + bitmap.getByteCount() + "バイト";
-				ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-				bitmap.compress(Bitmap.CompressFormat.PNG , 100 , byteArrayOutputStream);
-				//	Bitmap.CompressFormat.PNG	;	PNG, クオリティー100としてbyte配列にデータを格納
-				byte[] data = byteArrayOutputStream.toByteArray();
-				dbMsg += "、data=" + data.length + "バイト";
-				canvaceView.readFrame(data , degrees );
-				byteArrayOutputStream.close();
+				if(faceRecognitionView != null){
+					Bitmap bitmap = this.getBitmap();
+					dbMsg += "、bitmap=" + bitmap.getByteCount() + "バイト";
+					ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+					bitmap.compress(Bitmap.CompressFormat.PNG , 100 , byteArrayOutputStream);
+					//	Bitmap.CompressFormat.PNG	;	PNG, クオリティー100としてbyte配列にデータを格納
+					byte[] data = byteArrayOutputStream.toByteArray();
+					dbMsg += "、data=" + data.length + "バイト";
+					int width = 640;        //	this.getWidth();        //camera.getParameters().getPreviewSize().width;
+					int height = 480;        //this.getHeight();        //camera.getParameters().getPreviewSize().height;
+					dbMsg += "{" + width + "×" + height + "]";
+					faceRecognitionView.readFrame(data,width,height);
+					byteArrayOutputStream.close();
+				}
 			}
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
@@ -326,7 +300,7 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 	private int ratioHeight = 0;
 //	public AutoFitTextureView(Context context) {
 //		this(context, null);
-//		final String TAG = "AutoFitTextureView[FR]";
+//		final String TAG = "AutoFitTextureView[textuer]";
 //		String dbMsg = "";
 //		try {
 //			inConstructor( context);
@@ -338,7 +312,7 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 //
 //	public AutoFitTextureView(Context context, AttributeSet attrs) {
 //		this(context, attrs, 0);
-//		final String TAG = "AutoFitTextureView[FR]";
+//		final String TAG = "AutoFitTextureView[textuer]";
 //		String dbMsg = "";
 //		try {
 //			inConstructor( context);
@@ -350,7 +324,7 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 //
 //	public AutoFitTextureView(Context context, AttributeSet attrs, int defStyle) {
 //		super(context, attrs, defStyle);
-//		final String TAG = "AutoFitTextureView[FR]";
+//		final String TAG = "AutoFitTextureView[textuer]";
 //		String dbMsg = "";
 //		try {
 //			dbMsg = "defStyle="+defStyle;
@@ -362,7 +336,7 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 //	}
 
 	public void setAspectRatio(int width , int height) {
-		final String TAG = "setAspectRatio[FR]";
+		final String TAG = "setAspectRatio[textuer]";
 		String dbMsg = "";
 		try {
 			dbMsg = "[" + width + "×" + height + "]";
@@ -386,7 +360,7 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 	@Override
 	protected void onMeasure(int widthMeasureSpec , int heightMeasureSpec) {
 		super.onMeasure(widthMeasureSpec , heightMeasureSpec);
-		final String TAG = "onMeasure[FR]";
+		final String TAG = "onMeasure[textuer]";
 		String dbMsg = "";
 		try {
 			dbMsg += "[" + widthMeasureSpec + "×" + heightMeasureSpec + "]";                // [1073743600×-2147482568]
@@ -424,7 +398,7 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 	 * 参照	https://qiita.com/cattaka/items/330321cb8c258c535e07
 	 */
 //	public void setTextureVeiwRotation() {
-//		final String TAG = "setTextureVeiwRotation[FR]";
+//		final String TAG = "setTextureVeiwRotation[textuer]";
 //		String dbMsg = "";
 //		try {
 //			if ( context != null ) {
@@ -445,209 +419,11 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 //			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 //		}
 //	}
-
-//////////////////////////////////////////////////////////////////////////////////////////////////
-	public  class CanvaceView extends View {
-		public int[] rgb;
-		public Bitmap bitmap;
-		public Mat image;
-		private MatOfRect objects;
-		private CascadeClassifier detector;
-		private List< RectF > faces = new ArrayList< RectF >();
-
-		public CanvaceView(Context context) {
-			super(context);
-			String filename = context.getFilesDir().getAbsolutePath() + "/haarcascades/haarcascade_frontalface_alt.xml";
-			detector = new CascadeClassifier(filename);
-			objects = new MatOfRect();
-
-		}
-
-		/**
-		 * Camera.PreviewCallback.onPreviewFrame で渡されたデータを Bitmap に変換します。
-		 * @param data
-		 * @param width
-		 * @param height
-		 * @param degrees
-		 * @return
-		 */
-		private Bitmap decode(byte[] data , int width , int height , int degrees) {
-			final String TAG = "decode[FR]";
-			String dbMsg = "";
-			try {
-				dbMsg += "data=" + data.length;
-				dbMsg += "[" + width + "×" + height + "]" + degrees + "dig";
-				if ( rgb == null ) {
-					rgb = new int[width * height];
-				}
-
-				final int frameSize = width * height;
-				for ( int j = 0, yp = 0 ; j < height ; j++ ) {
-//				dbMsg += "," + j + ")";
-					int uvp = frameSize + (j >> 1) * width, u = 0, v = 0;
-//				dbMsg += uvp;
-					for ( int i = 0 ; i < width ; i++ , yp++ ) {
-						int y = (0xff & (( int ) data[yp])) - 16;
-						if ( y < 0 )
-							y = 0;
-						if ( (i & 1) == 0 ) {
-							v = (0xff & data[uvp++]) - 128;
-							u = (0xff & data[uvp++]) - 128;
-						}
-
-						int y1192 = 1192 * y;
-						int r = (y1192 + 1634 * v);
-						int g = (y1192 - 833 * v - 400 * u);
-						int b = (y1192 + 2066 * u);
-
-						if ( r < 0 )
-							r = 0;
-						else if ( r > 262143 )
-							r = 262143;
-						if ( g < 0 )
-							g = 0;
-						else if ( g > 262143 )
-							g = 262143;
-						if ( b < 0 )
-							b = 0;
-						else if ( b > 262143 )
-							b = 262143;
-
-						rgb[yp] = 0xff000000 | ((r << 6) & 0xff0000) | ((g >> 2) & 0xff00) | ((b >> 10) & 0xff);
-					}
-				}
-
-				if ( degrees == 90 ) {
-					int[] rotatedData = new int[rgb.length];
-					for ( int y = 0 ; y < height ; y++ ) {
-						for ( int x = 0 ; x < width ; x++ ) {
-							rotatedData[x * height + height - y - 1] = rgb[x + y * width];
-						}
-					}
-					int tmp = width;
-					width = height;
-					height = tmp;
-					rgb = rotatedData;
-				}
-
-				if ( bitmap == null ) {
-					bitmap = Bitmap.createBitmap(width , height , Bitmap.Config.ARGB_8888);
-				}
-
-				bitmap.setPixels(rgb , 0 , width , 0 , 0 , width , height);
-				dbMsg += ",bitmap=" + data.length;
-
-				myLog(TAG , dbMsg);
-			} catch (Exception er) {
-				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-			}
-			return bitmap;
-		}
-
-		/**
-		 * 元は onPreviewFrame
-		 */
-		public void readFrame(byte[] data , int degrees ) {        //, Camera camera      /
-			final String TAG = "readFrame[FR]";
-			String dbMsg = "";
-			try {
-				int width = 640;        //	this.getWidth();        //camera.getParameters().getPreviewSize().width;
-				int height = 480;        //this.getHeight();        //camera.getParameters().getPreviewSize().height;
-				dbMsg += "width=" + width + ", height=" + height;
-				Bitmap bitmap = decode(data , width , height , degrees);
-				if ( bitmap != null ) {
-					dbMsg += ",bitmap=" + bitmap.getByteCount();
-					if ( degrees == 90 ) {
-						int tmp = width;
-						width = height;
-						height = tmp;
-					}
-					if ( image == null ) {
-						image = new Mat(height , width , CvType.CV_8U , new Scalar(4));
-					}
-					Utils.bitmapToMat(bitmap , image);                                                //openCV
-					detector.detectMultiScale(image , objects);
-					faces.clear();
-					for ( org.opencv.core.Rect rect : objects.toArray() ) {
-						float left = ( float ) (1.0 * rect.x / width);
-						float top = ( float ) (1.0 * rect.y / height);
-						float right = left + ( float ) (1.0 * rect.width / width);
-						float bottom = top + ( float ) (1.0 * rect.height / height);
-						faces.add(new RectF(left , top , right , bottom));
-					}
-					dbMsg += ",faces=" + faces.size();
-					invalidate();                    //onDrawへ
-				}
-				myLog(TAG , dbMsg);
-			} catch (Exception er) {
-				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-			}
-		}
-
-		/**
-		 * View      protected
-		 * onFinishInflate(),
-		 * onAttachedToWindow(),onLayout(),onDraw(),onMeasure()
-		 */
-		@Override
-		protected void onDraw(Canvas canvas) {
-			super.onDraw(canvas);
-			final String TAG = "onDraw[FR]";
-			String dbMsg = "";
-			try {
-				Paint paint = new Paint();
-				paint.setColor(Color.GREEN);
-				paint.setStyle(Paint.Style.STROKE);
-				paint.setStrokeWidth(4);
-
-				int width = getWidth();
-				int height = getHeight();
-
-				for ( RectF face : faces ) {
-					RectF r = new RectF(width * face.left , height * face.top , width * face.right , height * face.bottom);
-					canvas.drawRect(r , paint);
-				}
-				myLog(TAG , dbMsg);
-			} catch (Exception er) {
-				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-			}
-		}
-
-		public void canvasRecycle( ) {
-			final String TAG = "setDig2Cam[FR]";
-			String dbMsg = "" ;
-			try {
-				if ( image != null ) {
-					image.release();
-					image = null;
-					dbMsg += "image破棄";
-				}
-				if ( bitmap != null ) {
-					if ( !bitmap.isRecycled() ) {
-						bitmap.recycle();
-					}
-					bitmap = null;
-					dbMsg += "bitmap破棄";
-				}
-				if ( rgb != null ) {
-					rgb = null;
-					dbMsg += "rgb破棄";
-				}
-				faces.clear();
-				myLog(TAG , dbMsg);
-			} catch (Exception er) {
-				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-			}
-		}
-
-
-	}
-
 	/**
 	 * プレビューサイズなど適切なパラメータを設定する
 	 **/
 	public void setMycameraParameters() {
-		final String TAG = "setMycameraParameters[FR]";
+		final String TAG = "setMycameraParameters[textuer]";
 		String dbMsg = "";
 		try {
 			dbMsg += "[" + surfaceWidth + "×" + surfacHight + "]degrees=" + degrees;
@@ -722,9 +498,9 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 					this.setLayoutParams(lp);
 
 					/**
-					 * setMycameraParameters[FR]: [1776×1080]degrees=0>Camera2>4608x3456,=1.3333333333333333、
+					 * setMycameraParameters[textuer]: [1776×1080]degrees=0>Camera2>4608x3456,=1.3333333333333333、
 					 * preview size: ,1440x1080,=1.3333333333333333>>[1440x1080]1.0倍>>[1440x1080]
-					 I/surfaceCreated[FR]:  holder=android.view.SurfaceView$3@eb38390[1776×1080]
+					 I/surfaceCreated[textuer]:  holder=android.view.SurfaceView$3@eb38390[1776×1080]
 
 
 					 * */
@@ -745,7 +521,7 @@ public class FaceRecognition extends TextureView implements TextureView.SurfaceT
 	 * カメラに方向を与える
 	 */
 	public void setDig2Cam(int _degrees) {
-		final String TAG = "setDig2Cam[FR]";
+		final String TAG = "setDig2Cam[textuer]";
 		String dbMsg = "_degrees=" + _degrees;
 		try {
 			this.degrees = _degrees;

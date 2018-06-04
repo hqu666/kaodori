@@ -34,7 +34,7 @@ import java.util.Collections;
 public class CS_Camera2 {
 	public Context context;
 	public CameraDevice mCamera;
-	public CameraManager mCameraManager;
+	public CameraManager mCameraManager = null;
 	public CameraCharacteristics mCharacteristics;
 	private TextureView mTextureView;
 	private Size mCameraSize;
