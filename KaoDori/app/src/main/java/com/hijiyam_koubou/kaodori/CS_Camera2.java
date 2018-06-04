@@ -30,10 +30,13 @@ import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.Collections;
 
+import static android.content.Context.CAMERA_SERVICE;
+
 
 public class CS_Camera2 {
 	public Context context;
 	public CameraDevice mCamera;
+	public String cameraId = "0";
 	public CameraManager mCameraManager = null;
 	public CameraCharacteristics mCharacteristics;
 	private TextureView mTextureView;
@@ -157,7 +160,7 @@ public class CS_Camera2 {
 		String dbMsg = "";
 		try {
 			if ( mCameraManager == null ) {
-				mCameraManager = ( CameraManager ) context.getSystemService(Context.CAMERA_SERVICE);      //逐次取り直さないとダメ？
+				mCameraManager = ( CameraManager ) context.getSystemService(CAMERA_SERVICE);      //逐次取り直さないとダメ？
 			}
 
 			dbMsg += "、getCameraIdList=" + mCameraManager.getCameraIdList().length + "件";
@@ -424,6 +427,44 @@ public class CS_Camera2 {
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
+	}
+
+
+
+	/**
+	 * 端末のどこが上端になっているかを検出し、カメラにプレビュー角度を与える
+	 */
+	public int getCameraPreveiwDeg(int dispDegrees) {
+		final String TAG = "getCameraPreveiwDeg[MA]";
+		String dbMsg = "";
+		int orientationDeg = 90;
+		try {
+			dbMsg += ",画面；rotation=" + dispDegrees + "dig";
+			Integer lensFacing;
+			int lensFacingFront;
+			Integer comOrientation;
+
+				CameraManager cameraManager = ( CameraManager ) context.getSystemService(CAMERA_SERVICE);
+				CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
+				comOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);       // 0, 90, 180, 270などの角度になっている
+				dbMsg += ",カメラ2；=" + comOrientation + "dig";
+				lensFacing = characteristics.get(CameraCharacteristics.LENS_FACING);
+				lensFacingFront = CameraCharacteristics.LENS_FACING_FRONT;
+
+			dbMsg += ",内外=" + lensFacing;
+			dbMsg += ",CAMERA_FACING_FRONT=" + lensFacingFront;
+			if ( lensFacing == lensFacingFront ) {
+				orientationDeg = (comOrientation + dispDegrees) % 360;
+				orientationDeg = (360 - orientationDeg) % 360;  // compensate the mirror
+			} else {  // back-facing
+				orientationDeg = (comOrientation - dispDegrees + 360) % 360;
+			}
+			dbMsg += ".orientationDeg=" + orientationDeg;
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+		return orientationDeg;
 	}
 
 

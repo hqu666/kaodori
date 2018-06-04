@@ -10,6 +10,7 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
+import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraManager;
@@ -17,12 +18,16 @@ import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.ImageReader;
 import android.util.Size;
+import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowInsets;
 import android.view.WindowManager;
+
+import static android.content.Context.CAMERA_SERVICE;
 
 import org.opencv.android.Utils;
 import org.opencv.core.CvType;
@@ -37,7 +42,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class MyTextureView extends TextureView implements TextureView.SurfaceTextureListener {      //TextureView
+public class MyTextureView extends TextureView implements TextureView.SurfaceTextureListener, Camera.PreviewCallback {      //TextureView
 
 	//SurfaceHolder.Callback,
 //	private static final String TAG = "CameraView";
@@ -54,7 +59,7 @@ public class MyTextureView extends TextureView implements TextureView.SurfaceTex
 	public CameraManager frCameraManager;
 	public CameraCharacteristics frCharacteristics;
 	public CaptureRequest.Builder frPreviewBuilder;
-	public FaceRecognitionView faceRecognitionView =null;
+	public FaceRecognitionView faceRecognitionView = null;
 
 	private int degrees;
 
@@ -63,7 +68,7 @@ public class MyTextureView extends TextureView implements TextureView.SurfaceTex
 	public int myPreviewWidth = 640;   //オリジナルは640 , 480	固定だった
 	public int myPreviewHeight = 480;
 
-	public MyTextureView(Context context  , int displayOrientationDegrees) {
+	public MyTextureView(Context context , int displayOrientationDegrees) {
 		super(context);
 		final String TAG = "MyTextureView[textuer]";
 		String dbMsg = "";
@@ -159,6 +164,7 @@ public class MyTextureView extends TextureView implements TextureView.SurfaceTex
 				frCamera.open();
 			}
 
+
 // camera.setDisplayOrientation(degrees);		回転処理して
 //camera.setPreviewCallback(this);     		コールバックセット
 //			try {
@@ -166,7 +172,11 @@ public class MyTextureView extends TextureView implements TextureView.SurfaceTex
 //			} catch (IOException er) {
 //				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 //			}
-			faceRecognitionView = new FaceRecognitionView(context  , degrees );
+
+//			faceRecognitionView = new FaceRecognitionView(context , degrees);
+			String filename = context.getFilesDir().getAbsolutePath() + "/haarcascades/haarcascade_frontalface_alt.xml";
+			detector = new CascadeClassifier(filename);
+			objects = new MatOfRect();
 
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
@@ -189,10 +199,11 @@ public class MyTextureView extends TextureView implements TextureView.SurfaceTex
 				dbMsg = "縦";
 			}
 			this.surface = surface;
+			canvasRecycle();
 			if ( faceRecognitionView != null ) {
 				faceRecognitionView.canvasRecycle();
-				faceRecognitionView=null;
-				faceRecognitionView = new FaceRecognitionView(context , degrees  );
+				faceRecognitionView = null;
+				faceRecognitionView = new FaceRecognitionView(context , degrees);
 			}
 			if ( frCamera != null ) {
 				dbMsg += "、プレビュー更新";
@@ -222,6 +233,7 @@ public class MyTextureView extends TextureView implements TextureView.SurfaceTex
 				faceRecognitionView.canvasRecycle();
 				dbMsg += "認証クラス破棄";
 			}
+			canvasRecycle();
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -273,7 +285,7 @@ public class MyTextureView extends TextureView implements TextureView.SurfaceTex
 //							myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 //						}
 				}
-				if(faceRecognitionView != null){
+				if ( faceRecognitionView != null ) {
 					Bitmap bitmap = this.getBitmap();
 					dbMsg += "、bitmap=" + bitmap.getByteCount() + "バイト";
 					ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -284,7 +296,7 @@ public class MyTextureView extends TextureView implements TextureView.SurfaceTex
 					int width = 640;        //	this.getWidth();        //camera.getParameters().getPreviewSize().width;
 					int height = 480;        //this.getHeight();        //camera.getParameters().getPreviewSize().height;
 					dbMsg += "{" + width + "×" + height + "]";
-					faceRecognitionView.readFrame(data,width,height);
+					faceRecognitionView.readFrame(data , width , height);
 					byteArrayOutputStream.close();
 				}
 			}
@@ -395,30 +407,219 @@ public class MyTextureView extends TextureView implements TextureView.SurfaceTex
 	}
 
 	/**
-	 * 参照	https://qiita.com/cattaka/items/330321cb8c258c535e07
+	 * プレビューが更新されるたびに発生
+	 * Camera.PreviewCallback
 	 */
-//	public void setTextureVeiwRotation() {
-//		final String TAG = "setTextureVeiwRotation[textuer]";
+	@Override
+	public void onPreviewFrame(byte[] data , Camera camera) {
+		final String TAG = "onPreviewFrame[textuer]";
+		String dbMsg = "";
+		try {
+			int width = camera.getParameters().getPreviewSize().width;        //	this.getWidth();        //    /
+			int height = camera.getParameters().getPreviewSize().height;     //this.getHeight();        //
+			dbMsg += "、camera;Preview[" + ratioWidth + "×" + ratioHeight + "]";
+			readFrame(data , width , height);            //	faceRecognitionView.readFrame(data , width , height);
+
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+	private int[] rgb;
+	private Bitmap bitmap;
+	private Mat image;
+	private CascadeClassifier detector;
+	private MatOfRect objects;
+	private List< RectF > faces = new ArrayList< RectF >();
+
+	/**
+	 * Camera.PreviewCallback.onPreviewFrame で渡されたデータを Bitmap に変換します。
+	 * @param data
+	 * @param width
+	 * @param height
+	 * @param degrees
+	 * @return
+	 */
+	private Bitmap decode(byte[] data , int width , int height , int degrees) {
+		final String TAG = "decode[textuer]";
+		String dbMsg = "";
+		try {
+			dbMsg += "data=" + data.length;
+			dbMsg += "[" + width + "×" + height + "]" + degrees + "dig";
+			//.ArrayIndexOutOfBoundsException: length=786432; index=786432
+			// y + height must be <= bitmap.height()
+			//	width--;
+			if ( rgb == null ) {
+				rgb = new int[width * height];
+			}
+
+			final int frameSize = width * height;
+			for ( int j = 0, yp = 0 ; j < height ; j++ ) {
+//				dbMsg += "," + j + ")";
+				int uvp = frameSize + (j >> 1) * width, u = 0, v = 0;
+//				dbMsg += uvp;
+				for ( int i = 0 ; i < width ; i++ , yp++ ) {
+					int y = (0xff & (( int ) data[yp])) - 16;
+					if ( y < 0 )
+						y = 0;
+					if ( (i & 1) == 0 ) {
+						v = (0xff & data[uvp++]) - 128;
+						u = (0xff & data[uvp++]) - 128;
+					}
+
+					int y1192 = 1192 * y;
+					int r = (y1192 + 1634 * v);
+					int g = (y1192 - 833 * v - 400 * u);
+					int b = (y1192 + 2066 * u);
+
+					if ( r < 0 )
+						r = 0;
+					else if ( r > 262143 )
+						r = 262143;
+					if ( g < 0 )
+						g = 0;
+					else if ( g > 262143 )
+						g = 262143;
+					if ( b < 0 )
+						b = 0;
+					else if ( b > 262143 )
+						b = 262143;
+
+					rgb[yp] = 0xff000000 | ((r << 6) & 0xff0000) | ((g >> 2) & 0xff00) | ((b >> 10) & 0xff);
+				}
+			}
+
+			if ( degrees == 90 ) {
+				int[] rotatedData = new int[rgb.length];
+				for ( int y = 0 ; y < height ; y++ ) {
+					for ( int x = 0 ; x < width ; x++ ) {
+						rotatedData[x * height + height - y - 1] = rgb[x + y * width];
+					}
+				}
+				int tmp = width;
+				width = height;
+				height = tmp;
+				rgb = rotatedData;
+			}
+
+			if ( bitmap == null ) {
+				bitmap = Bitmap.createBitmap(width , height , Bitmap.Config.ARGB_8888);   //  APIL1
+			}
+
+			bitmap.setPixels(rgb , 0 , width , 0 , 0 , width , height);            //APIL1
+			dbMsg += ",bitmap=" + bitmap.getByteCount();
+
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+		return bitmap;
+	}
+
+	/**
+	 * viewのデータを受け取り認証処理を開始する
+	 * 元は onPreviewFrame
+	 */
+	public void readFrame(byte[] data , int previewWidth , int previewHeight) {        //, Camera camera      /
+		final String TAG = "readFrame[textuer]";
+		String dbMsg = "";
+		try {
+			dbMsg += "[" + previewWidth + "×" + previewHeight + "]" + degrees + "dig";
+			Bitmap bitmap = decode(data , previewWidth , previewHeight , degrees);
+			if ( bitmap != null ) {
+				dbMsg += ",bitmap=" + bitmap.getByteCount();
+				if ( degrees == 90 ) {
+					int tmp = previewWidth;
+					previewWidth = previewHeight;
+					previewHeight = tmp;
+				}
+				if ( image == null ) {
+					image = new Mat(previewHeight , previewWidth , CvType.CV_8U , new Scalar(4));
+				}
+				Utils.bitmapToMat(bitmap , image);                                    //openCV
+				dbMsg += ",image=" + image.size();
+				detector.detectMultiScale(image , objects);
+				;                        //openCV
+				dbMsg += ",objects=" + objects.size();
+				faces.clear();
+				for ( org.opencv.core.Rect rect : objects.toArray() ) {
+					float left = ( float ) (1.0 * rect.x / previewWidth);
+					float top = ( float ) (1.0 * rect.y / previewHeight);
+					float right = left + ( float ) (1.0 * rect.width / previewWidth);
+					float bottom = top + ( float ) (1.0 * rect.height / previewHeight);
+					faces.add(new RectF(left , top , right , bottom));
+				}
+				dbMsg += ",faces=" + faces.size();
+				invalidate();                                                //onDrawへ
+			}
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+	/**
+	 * 　認証枠の書き込み
+	 * onDraw
+	 * 初回割り当て時やrequestLayout(), foreceLayout()で発生し、onLayout()の後に実行
+	 *もしくはinvalidate()でも発生するイベント
+	 */
+//	@Override
+//	protected void onDraw(Canvas canvas) {
+//		super.onDraw(canvas);
+//		final String TAG = "onDraw[textuer]";
 //		String dbMsg = "";
 //		try {
-//			if ( context != null ) {
-//				if ( windowManager != null ) {
-//					windowManager = (( Activity ) getContext()).getWindowManager();
-//				}
-//				int rotation = windowManager.getDefaultDisplay().getRotation();
-//				dbMsg += ",rotation=" + rotation;
-//				int viewWidth = this.getWidth();
-//				int viewHeight = this.getHeight();
-//				dbMsg += "[" + viewWidth + "×" + viewHeight + "]";
-//				Matrix matrix = new Matrix();
-//				matrix.postRotate(-rotation , viewWidth * 0.5f , viewHeight * 0.5f);
-//				this.setTransform(matrix);
+//			Paint paint = new Paint();
+//			paint.setColor(Color.GREEN);
+//			paint.setStyle(Paint.Style.STROKE);
+//			paint.setStrokeWidth(4);
+//
+//			int width = getWidth();
+//			int height = getHeight();
+//			dbMsg += "[" + width + "×" + height + "]faces=" + faces.size();
+//
+//			for ( RectF face : faces ) {
+//				RectF r = new RectF(width * face.left , height * face.top , width * face.right , height * face.bottom);
+//				canvas.drawRect(r , paint);
 //			}
 //			myLog(TAG , dbMsg);
 //		} catch (Exception er) {
 //			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 //		}
 //	}
+
+	/**
+	 * このクラスで作成したリソースの破棄
+	 */
+	public void canvasRecycle() {
+		final String TAG = "setDig2Cam[textuer]";
+		String dbMsg = "";
+		try {
+			if ( image != null ) {
+				image.release();
+				image = null;
+				dbMsg += "image破棄";
+			}
+			if ( bitmap != null ) {
+				if ( !bitmap.isRecycled() ) {
+					bitmap.recycle();
+				}
+				bitmap = null;
+				dbMsg += "bitmap破棄";
+			}
+			if ( rgb != null ) {
+				rgb = null;
+				dbMsg += "rgb破棄";
+			}
+			faces.clear();
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
 	/**
 	 * プレビューサイズなど適切なパラメータを設定する
 	 **/
@@ -553,6 +754,12 @@ public class MyTextureView extends TextureView implements TextureView.SurfaceTex
 /**
  * 2017-02-10		AndroidでOpenCV 3.2を使って顔検出をする			https://blogs.osdn.jp/2017/02/10/opencv.html
  * 2018年1月12日	今更だけどandroid.hardware.Cameraを使う			  http://yonayona.biz/yonayona/blog/archives/camera_1.html
+ * 2017年01月02日		Androidデバイスのカメラの向き	https://qiita.com/cattaka/items/330321cb8c258c535e07
+
+
+
+
+ *TextureViewは onDraw　が使えない？
  * <p>
  * quit後のイベント	認証のトラッキングは？
  * <p>

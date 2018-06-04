@@ -1,15 +1,12 @@
 package com.hijiyam_koubou.kaodori;
 
 import android.Manifest;
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
-import android.hardware.Camera;
-import android.hardware.camera2.CameraAccessException;
-import android.hardware.camera2.CameraCharacteristics;
-import android.hardware.camera2.CameraManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -24,7 +21,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
 
 public class FdActivity extends Activity {
 
@@ -39,7 +35,6 @@ public class FdActivity extends Activity {
 	public MyTextureView myTextureView;			//TextureViewのプレビュークラス
 	public int sensorOrientation;    //カメラの向き
 	public int displayRotation;            //端末の位置番号（上端；上＝、右=1 , 左＝,下= ）
-	public String cameraId = "0";
 	public boolean isCrated = false;
 
 	public static SharedPreferences sharedPref;
@@ -103,7 +98,7 @@ public class FdActivity extends Activity {
 			requestWindowFeature(Window.FEATURE_NO_TITLE);
 			if ( isTextureView ) {
 				setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);        //縦画面で止めておく	横	ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-//方向固定するとonConfigurationChangedも一切発生しなくなる
+				//方向固定するとonConfigurationChangedも一切発生しなくなる
 			}
 			setContentView(R.layout.face_detect_surface_view);
 			activityMain = ( ViewGroup ) findViewById(R.id.fd_activity_surface_view);
@@ -191,17 +186,27 @@ public class FdActivity extends Activity {
 		final String TAG = "onWindowFocusChanged[MA]";
 		String dbMsg = "hasFocus=" + hasFocus;
 		try {
-//			laterCreate();
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}
 
+	/**
+	 * Android7以降のマルチウインドウ
+	 * */
+	@TargetApi ( Build.VERSION_CODES.N )
 //	@Override
-//	public void onMultiWindowChanged(boolean isInMultiWindowMode) {
-//		super.onMultiWindowModeChanged(isInMultiWindowMode);
-//	}
+	public void onMultiWindowChanged(boolean isInMultiWindowMode) {
+		super.onMultiWindowModeChanged(isInMultiWindowMode);
+		final String TAG = "onMultiWindowChanged[MA]";
+		String dbMsg = "isInMultiWindowMode=" + isInMultiWindowMode;
+		try {
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
 
 	/**
 	 * 画面回転を検出
@@ -214,8 +219,6 @@ public class FdActivity extends Activity {
 
 			int dispDegrees = getDisplayOrientation();
 			dbMsg += ",Disp=" + dispDegrees + "dig";
-			int camerapDegrees = getCameraPreveiwDeg();
-			dbMsg += ",camera=" + camerapDegrees + "dig";
 			/**
 			 * 上；,Disp=0dig,camera=90dig,screenLayout=268435794,orientation=1
 			 * 右；Disp=90dig,camera=0dig,screenLayout=268435794,orientation=2
@@ -226,7 +229,7 @@ public class FdActivity extends Activity {
 			if ( isTextureView ) {
 //				faceRecognition.setDig2Cam(dispDegrees);
 			} else {
-				mySurfaceView.setDig2Cam(camerapDegrees);   //
+				mySurfaceView.setDig2Cam(dispDegrees);   //
 			}
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
@@ -290,50 +293,6 @@ public class FdActivity extends Activity {
 	}
 
 
-	/**
-	 * 端末のどこが上端になっているかを検出し、カメラにプレビュー角度を与える
-	 */
-	public int getCameraPreveiwDeg() {
-		final String TAG = "getCameraPreveiwDeg[MA]";
-		String dbMsg = "";
-		int orientationDeg = 90;
-		try {
-			int dispDegrees = getDisplayOrientation();
- 			dbMsg += ",画面；rotation=" + dispDegrees + "dig";
-			Integer lensFacing;
-			int lensFacingFront;
-			Integer comOrientation;
-//			if ( Build.VERSION.SDK_INT >= 21 ) {
-//				CameraManager cameraManager = ( CameraManager ) getSystemService(CAMERA_SERVICE);
-//				CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
-//				comOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);       // 0, 90, 180, 270などの角度になっている
-//				dbMsg += ",カメラ2；=" + comOrientation + "dig";
-//				lensFacing = characteristics.get(CameraCharacteristics.LENS_FACING);
-//				lensFacingFront = CameraCharacteristics.LENS_FACING_FRONT;
-//			} else {
-				android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
-				android.hardware.Camera.getCameraInfo(0 , info);
-				comOrientation = info.orientation;                // 0, 90, 180, 270などの角度になっている
-				dbMsg += ",カメラ1；=" + comOrientation + "dig";
-				lensFacing = info.facing;
-				lensFacingFront = Camera.CameraInfo.CAMERA_FACING_FRONT;
-//			}
-			dbMsg += ",内外=" + lensFacing;
-			dbMsg += ",CAMERA_FACING_FRONT=" + lensFacingFront;
-			if ( lensFacing == lensFacingFront ) {
-				orientationDeg = (comOrientation + dispDegrees) % 360;
-				orientationDeg = (360 - orientationDeg) % 360;  // compensate the mirror
-			} else {  // back-facing
-				orientationDeg = (comOrientation - dispDegrees + 360) % 360;
-			}
-			dbMsg += ".orientationDeg=" + orientationDeg;
-			myLog(TAG , dbMsg);
-		} catch (Exception er) {
-			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-		}
-		return orientationDeg;
-	}
-
 	public int getDisplayOrientation() {
 		final String TAG = "getDisplayOrientation[MA]";
 		String dbMsg = "";
@@ -360,24 +319,8 @@ public class FdActivity extends Activity {
 		final String TAG = "laterCreate[MA]";
 		String dbMsg = "";
 		try {
-//			if(! isCrated) {
-//			getMyDiviceInfo();
-//			displayRotation = getWindowManager().getDefaultDisplay().getRotation();
-//			dbMsg += ",端末の向き=" + displayRotation;    //上端； 上=0,右=1,左=3,下=0
-//			int orientation = getResources().getConfiguration().orientation;
-//			dbMsg += ",orientation=" + orientation;
-//			int orientationDeg = 90;
-//			if ( orientation == Configuration.ORIENTATION_LANDSCAPE ) {            //2:端末の向き=1
-//				dbMsg += "=横向き";
-//			} else if ( orientation == Configuration.ORIENTATION_PORTRAIT ) {            //1
-//				dbMsg += "=縦向き";
-//				orientationDeg = 0;
-//				// setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);      //横向きに修正する場合
-//			}
 			int dispDegrees = getDisplayOrientation();
 			dbMsg += ",Disp=" + dispDegrees + "dig";
-			int camerapDegrees = getCameraPreveiwDeg();
-			dbMsg += ",camera=" + camerapDegrees + "dig";
 			/**
 			 * 上；Disp=0dig,	camera=90dig
 			 * 右；Disp=90dig,	camera=0dig
@@ -390,13 +333,10 @@ public class FdActivity extends Activity {
 				}
 			} else {
 				if ( mySurfaceView == null ) {
-					mySurfaceView = new MySurfaceView(this ,camerapDegrees);
-					//orgは90°固定
+					mySurfaceView = new MySurfaceView(this ,dispDegrees);		//orgは90°固定だった
 					activityMain.addView(mySurfaceView);
 				}
 			}
-//			}
-			isCrated = true;
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -480,77 +420,6 @@ public class FdActivity extends Activity {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}
-
-	public void getMyDiviceInfo() {
-		final String TAG = "getMyDiviceInfo[MA]";
-		String dbMsg = "";
-		try {
-			displayRotation = getWindowManager().getDefaultDisplay().getRotation();
-			dbMsg += ",端末の向き=" + displayRotation;
-			CameraManager cameraManager = ( CameraManager ) getSystemService(CAMERA_SERVICE);
-
-			if ( Build.VERSION.SDK_INT >= 21 ) {
-
-				ArrayList backIds = new ArrayList<>();
-				try {
-					String[] idList = cameraManager.getCameraIdList();
-					for ( String id : idList ) {
-						CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(id);
-						Integer lensFacing = characteristics.get(CameraCharacteristics.LENS_FACING);
-						if ( lensFacing != null && lensFacing == CameraCharacteristics.LENS_FACING_BACK ) {
-							dbMsg += ",id=" + id;
-							backIds.add(id);
-						}
-					}
-				} catch (CameraAccessException er) {
-					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-				}
-
-				dbMsg += ",backIds=" + backIds.size() + "件" + backIds.get(0);
-				try {
-					CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(backIds.get(0).toString());
-					Integer tempSO = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
-					sensorOrientation = tempSO == null ? 0 : tempSO;
-				} catch (CameraAccessException er) {
-					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-					sensorOrientation = 0;
-				}
-			} else {
-				//      http://acro-engineer.hatenablog.com/entry/20110824/1314200703
-//				int numberOfCameras = Camera.getNumberOfCameras();
-//  				for (int i = 0; i < numberOfCameras; i++) {      // 各カメラの情報を取得
-//					CameraInfo caminfo = new CameraInfo();
-//					Camera.getCameraInfo(i, caminfo);
-//					int facing = caminfo.facing;         					// カメラの向きを取得
-//					if (facing == CameraInfo.CAMERA_FACING_BACK) {         						// 後部についているカメラの場合
-//						dbMsg += ",cameraId=" + Integer.toString(i) + ", this is a back-facing camera";
-//					} else if (facing == CameraInfo.CAMERA_FACING_FRONT) {            					// フロントカメラの場合
-//						dbMsg += ",cameraId=" + Integer.toString(i)+ ", this is a front-facing camera";
-//					} else {
-//						dbMsg += ",cameraId=" + Integer.toString(i)+ ", unknown camera?";
-//					}
-//					int orient = caminfo.orientation;   					// カメラのOrientation(角度) を取得
-//					dbMsg += ",cameraId=" + Integer.toString(i)+ ", orientation=" + Integer.toString(orient);
-//				}
-			}
-			/**
-			 * 上端；
-			 * 上；端末の向き=0,id=0,backIds=1件0,カメラの向き=90
-			 * 右；端末の向き=1,id=0,backIds=1件0,カメラの向き=90
-			 * 左；端末の向き=3,id=0,backIds=1件0,カメラの向き=90
-			 * 下：端末の向き=0,id=0,backIds=1件0,カメラの向き=90
-			 *
-			 *
-			 * */
-			dbMsg += ",カメラの向き=" + sensorOrientation;
-
-			myLog(TAG , dbMsg);
-		} catch (Exception er) {
-			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-		}
-	}
-
-
 	/**
 	 * A native method that is implemented by the 'native-lib' native library,
 	 * which is packaged with this application.
@@ -578,11 +447,14 @@ public class FdActivity extends Activity {
  * 2017-02-10		AndroidでOpenCV 3.2を使って顔検出をする			https://blogs.osdn.jp/2017/02/10/opencv.html
  * 2017年01月02日	Androidデバイスのカメラの向き					 https://qiita.com/cattaka/items/330321cb8c258c535e07
  * 2012-02-15			Androidで縦向き（Portrait）でカメラを使う方法　（主にAndroid2.x向け）		 http://dai1741.hatenablog.com/entry/2012/02/15/011114
+ * 	OpenCV 3.0.0 による顔検出処理		https://yamsat.wordpress.com/2015/09/13/opencv-3-0-0-%E3%81%AB%E3%82%88%E3%82%8B%E9%A1%94%E6%A4%9C%E5%87%BA%E5%87%A6%E7%90%86/
+ FaceDetectorで Bitmap から顔を検出する  	 https://dev.classmethod.jp/smartphone/android-tips-15-facedetector/
+ カメラプレビューで顔を検出する		https://dev.classmethod.jp/smartphone/android-tips-16-facedetectionlistener/
+
  * <p>
- * 横向きでアスペクト比崩れ
- * 下向きに追従せず
+ * * 下向きに追従せず
  * 廃止前メソッドの置換え
- * 終了時クラッシュ
+ * 終了時クラッシュ     	Camera is being used after Camera.release() was called
  * java.lang.RuntimeException: Camera is being used after Camera.release() was called
  * <p>
  * E/mm-camera: <STATS_AF ><ERROR> 4436: af_port_handle_pdaf_stats: Fail to init buf divert ack ctrl
@@ -591,4 +463,7 @@ public class FdActivity extends Activity {
  * <p>
  * 残留問題
  * toolbarは組み込めない
+ *
+ *
+ * org.opencv.android.JavaCameraView
  */

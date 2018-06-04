@@ -4,24 +4,11 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.ImageFormat;
-import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.Rect;
 import android.graphics.RectF;
 import android.hardware.Camera;
-import android.hardware.camera2.CameraAccessException;
-import android.hardware.camera2.CameraCharacteristics;
-import android.hardware.camera2.CameraManager;
-import android.hardware.camera2.params.StreamConfigurationMap;
-import android.os.Build;
-import android.util.Log;
-import android.util.Size;
-import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.view.ViewGroup;
-import android.view.WindowManager;
 
 import org.opencv.android.Utils;
 import org.opencv.core.CvType;
@@ -30,15 +17,10 @@ import org.opencv.core.MatOfRect;
 import org.opencv.core.Scalar;
 import org.opencv.objdetect.CascadeClassifier;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
-import static android.content.Context.CAMERA_SERVICE;
 
 public class MySurfaceView extends SurfaceView implements SurfaceHolder.Callback, Camera.PreviewCallback {
 	private static final String TAG = "CameraView";
@@ -46,8 +28,6 @@ public class MySurfaceView extends SurfaceView implements SurfaceHolder.Callback
 	public FaceRecognitionView faceRecognitionView = null;
 
 	private int degrees;
-	private int CameraDegrees;
-
 	private Camera camera;
 	private int[] rgb;
 	private Bitmap bitmap;
@@ -58,8 +38,6 @@ public class MySurfaceView extends SurfaceView implements SurfaceHolder.Callback
 	public int surfaceWidth;
 	public int surfacHight;
 	public SurfaceHolder holder;
-	public String cameraId = "0";
-
 
 	public MySurfaceView(Context context , int displayOrientationDegrees) {
 		super(context);
@@ -68,7 +46,7 @@ public class MySurfaceView extends SurfaceView implements SurfaceHolder.Callback
 		try {
 			this.context = context;
 			dbMsg = "displayOrientationDegrees=" + displayOrientationDegrees;
-			degrees = displayOrientationDegrees;
+			this.degrees = getCameraPreveiwDeg(displayOrientationDegrees);  //			degrees = displayOrientationDegrees;
 			setWillNotDraw(false);
 			getHolder().addCallback(this);
 
@@ -142,6 +120,7 @@ public class MySurfaceView extends SurfaceView implements SurfaceHolder.Callback
 		String dbMsg = "";
 		try {
 			if ( camera != null ) {
+				camera.stopFaceDetection();
 				camera.stopPreview();
 				camera.release();
 				camera = null;
@@ -541,7 +520,7 @@ public class MySurfaceView extends SurfaceView implements SurfaceHolder.Callback
 		final String TAG = "setDig2Cam[Surface]";
 		String dbMsg = "_degrees=" + _degrees;
 		try {
-			this.degrees = _degrees;
+			this.degrees = getCameraPreveiwDeg(_degrees);
 			camera.stopPreview(); 									//APIL1
 			camera.setDisplayOrientation(degrees);    				//APIL8
 //			setMycameraParameters();
@@ -550,6 +529,49 @@ public class MySurfaceView extends SurfaceView implements SurfaceHolder.Callback
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
+	}
+
+	/**
+	 * 端末のどこが上端になっているかを検出し、カメラにプレビュー角度を与える
+	 */
+	public int getCameraPreveiwDeg(int dispDegrees) {
+		final String TAG = "getCameraPreveiwDeg[MA]";
+		String dbMsg = "";
+		int orientationDeg = 90;
+		try {
+			dbMsg += ",画面；rotation=" + dispDegrees + "dig";
+			Integer lensFacing;
+			int lensFacingFront;
+			Integer comOrientation;
+//			if ( Build.VERSION.SDK_INT >= 21 ) {
+//				CameraManager cameraManager = ( CameraManager ) getSystemService(CAMERA_SERVICE);
+//				CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
+//				comOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);       // 0, 90, 180, 270などの角度になっている
+//				dbMsg += ",カメラ2；=" + comOrientation + "dig";
+//				lensFacing = characteristics.get(CameraCharacteristics.LENS_FACING);
+//				lensFacingFront = CameraCharacteristics.LENS_FACING_FRONT;
+//			} else {
+			android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
+			android.hardware.Camera.getCameraInfo(0 , info);
+			comOrientation = info.orientation;                // 0, 90, 180, 270などの角度になっている
+			dbMsg += ",カメラ1；=" + comOrientation + "dig";
+			lensFacing = info.facing;
+			lensFacingFront = Camera.CameraInfo.CAMERA_FACING_FRONT;
+//			}
+			dbMsg += ",内外=" + lensFacing;
+			dbMsg += ",CAMERA_FACING_FRONT=" + lensFacingFront;
+			if ( lensFacing == lensFacingFront ) {
+				orientationDeg = (comOrientation + dispDegrees) % 360;
+				orientationDeg = (360 - orientationDeg) % 360;  // compensate the mirror
+			} else {  // back-facing
+				orientationDeg = (comOrientation - dispDegrees + 360) % 360;
+			}
+			dbMsg += ".orientationDeg=" + orientationDeg;
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+		return orientationDeg;
 	}
 
 
