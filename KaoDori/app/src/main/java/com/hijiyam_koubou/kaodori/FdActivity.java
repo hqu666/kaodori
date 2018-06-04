@@ -7,6 +7,7 @@ import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.hardware.camera2.CameraAccessException;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -28,11 +29,13 @@ public class FdActivity extends Activity {
 		System.loadLibrary("opencv_java3");    // opencv\_java3.so をロード	;	\jniLibsmの中のプロセッサー分、検索
 	}
 
-	public ViewGroup activityMain;     		//プレビュー読込み場所
+	public ViewGroup activityMain;            //プレビュー読込み場所
 
-	public boolean isTextureView = false;   			//プレビューにTextureViewを使用する
-	public MySurfaceView mySurfaceView;				//Surfaceのプレビュークラス
-	public MyTextureView myTextureView;			//TextureViewのプレビュークラス
+	public boolean isTextureView = false;            //プレビューにTextureViewを使用する
+	public boolean isC2 = true;            //camera2を使用する
+	public MySurfaceView mySurfaceView;                //Surfaceのプレビュークラス
+	public MyTextureView myTextureView;            //TextureViewのプレビュークラス
+	public C2SurfaceView c2SufaceView;                //camera2でSurfaceのプレビュークラス
 	public int sensorOrientation;    //カメラの向き
 	public int displayRotation;            //端末の位置番号（上端；上＝、右=1 , 左＝,下= ）
 	public boolean isCrated = false;
@@ -145,11 +148,24 @@ public class FdActivity extends Activity {
 		final String TAG = "onPause[MA]";
 		String dbMsg = "";
 		try {
-			if( myTextureView != null){
+			if ( myTextureView != null ) {
 //				camera2Dispose();
 //				faceRecognition.frCameraManager.stopBackgroundThread();
 			}
+			if ( c2SufaceView.camera.mPreviewSession != null ) {
+					try {
+						c2SufaceView.camera.mPreviewSession.stopRepeating();
+					} catch (CameraAccessException  er) {
+						myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+					}
+				c2SufaceView.camera.mPreviewSession.close();
 
+
+				// カメラデバイスとの切断
+				if (c2SufaceView.camera.mCamera != null) {
+					c2SufaceView.camera.mCamera.close();
+				}
+			}
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -194,7 +210,7 @@ public class FdActivity extends Activity {
 
 	/**
 	 * Android7以降のマルチウインドウ
-	 * */
+	 */
 	@TargetApi ( Build.VERSION_CODES.N )
 //	@Override
 	public void onMultiWindowChanged(boolean isInMultiWindowMode) {
@@ -229,7 +245,11 @@ public class FdActivity extends Activity {
 			if ( isTextureView ) {
 //				faceRecognition.setDig2Cam(dispDegrees);
 			} else {
-				mySurfaceView.setDig2Cam(dispDegrees);   //
+				if ( isC2 ) {
+					c2SufaceView.setDig2Cam(dispDegrees);
+				} else {
+					mySurfaceView.setDig2Cam(dispDegrees);
+				}
 			}
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
@@ -296,14 +316,22 @@ public class FdActivity extends Activity {
 	public int getDisplayOrientation() {
 		final String TAG = "getDisplayOrientation[MA]";
 		String dbMsg = "";
-		int degrees=0;
+		int degrees = 0;
 		try {
 			int rotation = getWindowManager().getDefaultDisplay().getRotation();   //helperからは((Activity)getContext()).
-			switch (rotation) {
-				case Surface.ROTATION_0: degrees = 0; break;
-				case Surface.ROTATION_90: degrees = 90; break;
-				case Surface.ROTATION_180: degrees = 180; break;
-				case Surface.ROTATION_270: degrees = 270; break;
+			switch ( rotation ) {
+				case Surface.ROTATION_0:
+					degrees = 0;
+					break;
+				case Surface.ROTATION_90:
+					degrees = 90;
+					break;
+				case Surface.ROTATION_180:
+					degrees = 180;
+					break;
+				case Surface.ROTATION_270:
+					degrees = 270;
+					break;
 			}
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
@@ -311,6 +339,7 @@ public class FdActivity extends Activity {
 		}
 		return degrees;
 	}
+
 	/**
 	 * onCreateに有ったイベントなどの処理パート
 	 * onCreateは終了処理後のonDestroyの後でも再度、呼び出されるので実データの割り付けなどを分離する
@@ -328,12 +357,17 @@ public class FdActivity extends Activity {
 			 * */
 			if ( isTextureView ) {
 				if ( myTextureView == null ) {
-					myTextureView = new MyTextureView(this ,getDisplayOrientation());
+					myTextureView = new MyTextureView(this , getDisplayOrientation());
 					activityMain.addView(myTextureView);
+				}
+			} else if ( isC2 ) {
+				if ( c2SufaceView == null ) {
+					c2SufaceView = new C2SurfaceView(this , getDisplayOrientation());            //camera2でSurfaceのプレビュークラス
+					activityMain.addView(c2SufaceView);
 				}
 			} else {
 				if ( mySurfaceView == null ) {
-					mySurfaceView = new MySurfaceView(this ,dispDegrees);		//orgは90°固定だった
+					mySurfaceView = new MySurfaceView(this , dispDegrees);        //orgは90°固定だった
 					activityMain.addView(mySurfaceView);
 				}
 			}
@@ -350,6 +384,10 @@ public class FdActivity extends Activity {
 			if ( isTextureView ) {
 				if ( myTextureView == null ) {
 					myTextureView.surfaceDestroy();
+				}
+			} else if ( isC2 ) {
+				if ( c2SufaceView == null ) {
+					c2SufaceView.surfaceDestroy();
 				}
 			} else {
 				if ( mySurfaceView == null ) {
@@ -390,8 +428,8 @@ public class FdActivity extends Activity {
 				isCopy = true;
 			}
 			int readedCount = dst.list().length;
-			dbMsg += ",読込み済み=" + readedCount +"件";
-			if(readedCount < 10){
+			dbMsg += ",読込み済み=" + readedCount + "件";
+			if ( readedCount < 10 ) {
 				isCopy = true;
 			}
 			for ( String filename : getAssets().list(dir) ) {
@@ -420,6 +458,7 @@ public class FdActivity extends Activity {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}
+
 	/**
 	 * A native method that is implemented by the 'native-lib' native library,
 	 * which is packaged with this application.
@@ -447,10 +486,10 @@ public class FdActivity extends Activity {
  * 2017-02-10		AndroidでOpenCV 3.2を使って顔検出をする			https://blogs.osdn.jp/2017/02/10/opencv.html
  * 2017年01月02日	Androidデバイスのカメラの向き					 https://qiita.com/cattaka/items/330321cb8c258c535e07
  * 2012-02-15			Androidで縦向き（Portrait）でカメラを使う方法　（主にAndroid2.x向け）		 http://dai1741.hatenablog.com/entry/2012/02/15/011114
- * 	OpenCV 3.0.0 による顔検出処理		https://yamsat.wordpress.com/2015/09/13/opencv-3-0-0-%E3%81%AB%E3%82%88%E3%82%8B%E9%A1%94%E6%A4%9C%E5%87%BA%E5%87%A6%E7%90%86/
- FaceDetectorで Bitmap から顔を検出する  	 https://dev.classmethod.jp/smartphone/android-tips-15-facedetector/
- カメラプレビューで顔を検出する		https://dev.classmethod.jp/smartphone/android-tips-16-facedetectionlistener/
-
+ * OpenCV 3.0.0 による顔検出処理		https://yamsat.wordpress.com/2015/09/13/opencv-3-0-0-%E3%81%AB%E3%82%88%E3%82%8B%E9%A1%94%E6%A4%9C%E5%87%BA%E5%87%A6%E7%90%86/
+ * FaceDetectorで Bitmap から顔を検出する  	 https://dev.classmethod.jp/smartphone/android-tips-15-facedetector/
+ * カメラプレビューで顔を検出する		https://dev.classmethod.jp/smartphone/android-tips-16-facedetectionlistener/
+ * <p>
  * <p>
  * * 下向きに追従せず
  * 廃止前メソッドの置換え
@@ -463,7 +502,7 @@ public class FdActivity extends Activity {
  * <p>
  * 残留問題
  * toolbarは組み込めない
- *
- *
+ * <p>
+ * <p>
  * org.opencv.android.JavaCameraView
  */
