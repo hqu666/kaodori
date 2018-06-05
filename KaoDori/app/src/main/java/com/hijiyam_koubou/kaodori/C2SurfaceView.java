@@ -45,6 +45,7 @@ import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -129,52 +130,52 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 			this.holder = holder;
 //			Canvas canvas = holder.lockCanvas(); // ロックをかける
 //			dbMsg += "canvas[" + canvas.getWidth() + "×" + canvas.getHeight() + "]";
-
-			this.setDrawingCacheEnabled(true);      // View の描画キャッシュキャッシュを取得する設定にする
-			this.destroyDrawingCache();             // 既存のキャッシュをクリアする
-			Bitmap bitmap = this.getDrawingCache();    // キャッシュを作成して取得する  	http://blog.lciel.jp/blog/2013/12/16/android-capture-view-image/
-
-//			Bitmap bitmap = Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888);
-			dbMsg += "bitmap[" + bitmap.getWidth() + "×" + bitmap.getHeight() + "]";
-			dbMsg += "" + bitmap.getByteCount() + "バイト";
-			ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-			bitmap.compress(Bitmap.CompressFormat.PNG , 100 , byteArrayOutputStream);
-			//	Bitmap.CompressFormat.PNG	;	PNG, クオリティー100としてbyte配列にデータを格納
-			byteArrayOutputStream.flush();
-			byte[] data = byteArrayOutputStream.toByteArray();
-			if ( data != null ) {
-				dbMsg += "、data=" + data.length + "バイト";
-				Bitmap bmp = BitmapFactory.decodeByteArray(data , 0 , data.length);
-				dbMsg += "、bmp=" + bmp.getByteCount() + "バイト";
-			}
-			this.degrees = camera.getCameraRotation();
-			dbMsg += "," + degrees + "dig";
-			readFrame(data , width , height);
-			byteArrayOutputStream.close();
+//
+//			this.setDrawingCacheEnabled(true);      // View の描画キャッシュキャッシュを取得する設定にする
+//			this.destroyDrawingCache();             // 既存のキャッシュをクリアする
+//			Bitmap bitmap = this.getDrawingCache();    // キャッシュを作成して取得する  	http://blog.lciel.jp/blog/2013/12/16/android-capture-view-image/
+//
+////			Bitmap bitmap = Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888);
+//			dbMsg += "bitmap[" + bitmap.getWidth() + "×" + bitmap.getHeight() + "]";
+//			dbMsg += "" + bitmap.getByteCount() + "バイト";
+//			ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+//			bitmap.compress(Bitmap.CompressFormat.PNG , 100 , byteArrayOutputStream);
+//			//	Bitmap.CompressFormat.PNG	;	PNG, クオリティー100としてbyte配列にデータを格納
+//			byteArrayOutputStream.flush();
+//			byte[] data = byteArrayOutputStream.toByteArray();
+//			if ( data != null ) {
+//				dbMsg += "、data=" + data.length + "バイト";
+//				Bitmap bmp = BitmapFactory.decodeByteArray(data , 0 , data.length);
+//				dbMsg += "、bmp=" + bmp.getByteCount() + "バイト";
+//			}
+//			this.degrees = camera.getCameraRotation();
+//			dbMsg += "," + degrees + "dig";
+//			readFrame(data , width , height);
+//			byteArrayOutputStream.close();
 
 //			holder.unlockCanvasAndPost(canvas); // ロックを解除
-			if ( camera.jpegImageReader != null ) {
-				ImageReader imageReader = camera.jpegImageReader;
-				dbMsg += ",ImageReader[" + imageReader.getWidth() + "×" + imageReader.getHeight() + "]";
-				ByteBuffer buffer = imageReader.acquireLatestImage().getPlanes()[0].getBuffer();                    // 画像バイナリの取得
-//						dbMsg += "、"+buffer. +"バイト";
-				byte[] bytes = new byte[buffer.capacity()];
-				buffer.get(bytes);
-				dbMsg += "、" + bytes.length + "バイト";
-
-
-				OutputStream output = null;
-				try {
-					output = new FileOutputStream(new File("filename"));                        // 画像の書き込み
-					output.write(bytes);
-				} catch (Exception er) {
-					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-				}
-			}
+//			if ( camera.mImageReader != null ) {
+//				ImageReader imageReader = camera.mImageReader;
+//				dbMsg += ",ImageReader[" + imageReader.getWidth() + "×" + imageReader.getHeight() + "]";
+//				ByteBuffer buffer = imageReader.acquireLatestImage().getPlanes()[0].getBuffer();                    // 画像バイナリの取得
+////						dbMsg += "、"+buffer. +"バイト";
+//				byte[] bytes = new byte[buffer.capacity()];
+//				buffer.get(bytes);
+//				dbMsg += "、" + bytes.length + "バイト";
+//
+//
+//				OutputStream output = null;
+//				try {
+//					output = new FileOutputStream(new File("filename"));                        // 画像の書き込み
+//					output.write(bytes);
+//				} catch (Exception er) {
+//					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+//				}
+//			}
 //			canvasRecycle();
 //			camera.startPreview();     //APIL1
 			// format=4[1776×1080]bitmap[1776×1080]7672320バイト、data=7544バイト、bmp=7672320バイト,0dig
-			
+
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -432,10 +433,11 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 		public SurfaceView mSurfaceView;
 		public Size mCameraSize;
 		public CaptureRequest.Builder mPreviewBuilder;
+		public CaptureRequest mPreviewRequest;
 		public CameraCaptureSession mPreviewSession;
 		public Handler previewHandler;
 		public HandlerThread previewThread;
-		public ImageReader jpegImageReader;
+		public ImageReader mImageReader;
 		public WindowManager mWindowManager;
 		public int baceWidth;
 		public int bacHight;
@@ -451,6 +453,9 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 				mSurfaceView = surfaceView;
 				baceWidth = mSurfaceView.getWidth();
 				bacHight = mSurfaceView.getHeight();
+				mImageReader = ImageReader.newInstance(baceWidth, bacHight , ImageFormat.JPEG , 1);
+				mImageReader.setOnImageAvailableListener(mOnImageAvailableListener , null);
+
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -465,17 +470,32 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 			public void onImageAvailable(ImageReader reader) {
 				final String TAG = "onImageAvailable[C2]";
 				String dbMsg = "";
-				try {				// Imageは各種コーデック(圧縮方法みたいなもの)で圧縮したりする、画像のByteBufferを扱うためのオブジェクト
-				Image image = reader.acquireLatestImage();
-				// 何枚か画像を扱うことができて(?)、それぞれはPlanesに入っている
-				// この辺のコードは https://developer.android.com/things/training/doorbell/camera-input.html のサンプルより
-				ByteBuffer imageBuf = image.getPlanes()[0].getBuffer();
-				final byte[] imageBytes = new byte[imageBuf.remaining()];
-				imageBuf.get(imageBytes);
-				image.close();
+				try {                // Imageは各種コーデック(圧縮方法みたいなもの)で圧縮したりする、画像のByteBufferを扱うためのオブジェクト
+					Image image = reader.acquireLatestImage();
+					// 何枚か画像を扱うことができて(?)、それぞれはPlanesに入っている
+					// この辺のコードは https://developer.android.com/things/training/doorbell/camera-input.html のサンプルより
+					ByteBuffer imageBuf = image.getPlanes()[0].getBuffer();
+					final byte[] imageBytes = new byte[imageBuf.remaining()];
+					imageBuf.get(imageBytes);
+					image.close();
 
-				final Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
-
+					final Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes , 0 , imageBytes.length);
+					dbMsg += "bitmap[" + bitmap.getWidth() + "×" + bitmap.getHeight() + "]";
+					dbMsg += "" + bitmap.getByteCount() + "バイト";
+					ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+					bitmap.compress(Bitmap.CompressFormat.PNG , 100 , byteArrayOutputStream);
+					//	Bitmap.CompressFormat.PNG	;	PNG, クオリティー100としてbyte配列にデータを格納
+					byteArrayOutputStream.flush();
+					byte[] data = byteArrayOutputStream.toByteArray();
+					if ( data != null ) {
+						dbMsg += "、data=" + data.length + "バイト";
+						Bitmap bmp = BitmapFactory.decodeByteArray(data , 0 , data.length);
+						dbMsg += "、bmp=" + bmp.getByteCount() + "バイト";
+					}
+					degrees = camera.getCameraRotation();
+					dbMsg += "," + degrees + "dig";
+					readFrame(data , bitmap.getWidth() , bitmap.getHeight());
+					byteArrayOutputStream.close();
 //				getAc	runOnUiThread(new Runnable() {
 //					@Override
 //					public void run() {
@@ -489,6 +509,27 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 				}
 			}
 		};
+
+		private void copyPreview() {
+			final String TAG = "copyPreview[C2]";
+			String dbMsg = "";
+			CaptureRequest.Builder copyPreviewRequestBuilder = null;			// ImageViewへ静止画を送るためのCaptureRequestを作る. 静止画を送ってもらうためのリクエストのビルダーですよ
+			try {
+				copyPreviewRequestBuilder = mCamera.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+			} catch (CameraAccessException er) {
+				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+			}
+			copyPreviewRequestBuilder.addTarget(mImageReader.getSurface());    			// 送り先はImageReaderにしてね
+			CaptureRequest copyPreviewRequest = copyPreviewRequestBuilder.build();
+
+			try {
+				mPreviewSession.capture(copyPreviewRequest, null, null); 			// (プレビュー時にセッションは開いたままで、)追加で静止画送ってくれリクエストを送る
+			} catch (CameraAccessException er) {
+				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+			}
+			myLog(TAG , dbMsg);
+		}
+
 
 		private CameraCaptureSession.CaptureCallback mCaptureCallback;                    // =new CameraCaptureSession.CaptureCallback(){ 		};
 
@@ -509,9 +550,15 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 					dbMsg += "surfaceList=" + surfaceList.size() + "件";
 //					mPreviewBuilder = mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
 //					mPreviewBuilder.addTarget(mSurfaceView.getHolder().getSurface());                    // プレビューリクエストの設定（SurfaceViewをターゲットに）
-					// キャプチャーセッションの開始(セッション開始後に第2引数のコールバッククラスが呼ばれる)
-//					mSurfaceView.createCaptureSession(surfaceList, new CameraCaptureSessionCallback(), null);
-
+//					mSurfaceView.createCaptureSession(surfaceList, new CameraCaptureSessionCallback(), null); 					// キャプチャーセッションの開始(セッション開始後に第2引数のコールバッククラスが呼ばれる)
+//					if ( mCameraSize != null ) {
+//						dbMsg += ",Camera[" +  mCameraSize.getWidth() + "×" +  mCameraSize.getHeight() + "]";
+//						if ( 0 < mCameraSize.getWidth() && 0 < mCameraSize.getHeight() ) {
+//							mImageReader = ImageReader.newInstance(mCameraSize.getWidth() , mCameraSize.getHeight() , ImageFormat.JPEG , 1);    //640 , 480
+//							mImageReader.setOnImageAvailableListener(mOnImageAvailableListener , null);
+//						}
+//					}
+					// キャプチャ取得用のイメージリーダを作成
 					createMyCaptureSession();            //プレビュー設定
 
 					myLog(TAG , dbMsg);
@@ -567,6 +614,7 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 					mPreviewSession = session;
 					mPreviewBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER , CameraMetadata.CONTROL_AF_TRIGGER_START);                             // オートフォーカスの設定
 					updatePreview();
+					copyPreview();
 					myLog(TAG , dbMsg);
 				} catch (Exception er) {
 					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -693,6 +741,7 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 		/**
 		 * CaptureSessionを生成  ;
 		 * onOpenedから起動時一回
+		 *  https://gist.github.com/woshidan/15f4f80b16e6135e2acc0e903e76c594
 		 */
 		private void createMyCaptureSession() {
 			final String TAG = "createMyCaptureSession[C2]";
@@ -711,37 +760,41 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 				}
 
 				mPreviewBuilder.addTarget(mSurfaceView.getHolder().getSurface());   //CaptureRequest.Builderにプレビュー用のSurfaceを設定
-				try {
+				mPreviewRequest = mPreviewBuilder.build();
+					try {
 					mCamera.createCaptureSession(Collections.singletonList(mSurfaceView.getHolder().getSurface()) , mCameraCaptureSessionCallback , null);        //キャプチャーセッションの開始(セッション開始後に第2引数のコールバッククラスが呼ばれる)
 				} catch (CameraAccessException er) {
 					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 				}
 //				}
-				if ( mCameraSize != null ) {
-					if ( 0 < mCameraSize.getWidth() && 0 < mCameraSize.getHeight() ) {
-						jpegImageReader = ImageReader.newInstance(mCameraSize.getWidth() , mCameraSize.getHeight() , ImageFormat.JPEG , 1);    //640 , 480
-						jpegImageReader.setOnImageAvailableListener(mOnImageAvailableListener, mBackgroundHandler);
-								}
+
+				try {
+					mCamera.createCaptureSession(Arrays.asList(mSurfaceView , mImageReader.getSurface()), new CameraCaptureSession.StateCallback() {
+						@Override
+						public void onConfigured(CameraCaptureSession session) {
+							final String TAG = "onConfigured[C2]";
+							String dbMsg = "";
+							if (null == mCamera) {                  							// カメラがcloseされている場合
+								return;
+							}
+
+							mPreviewSession = session;
+
+							try {
+								session.setRepeatingRequest(mPreviewRequest, null, null);
+							} catch (CameraAccessException er) {
+								myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+							}
+						}
+
+						@Override
+						public void onConfigureFailed(CameraCaptureSession session) {
+
+						}
+					}, null);
+				} catch (CameraAccessException er) {
+					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 				}
-				// キャプチャ取得用のイメージリーダを作成
-				/**
-				 // プレビュー用のSurfaceViewをリストに登録
-				 SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
-				 ArrayList<Surface> surfaceList = new ArrayList();
-				 surfaceList.add(surfaceView.getHolder().getSurface());
-
-				 try {
-				 // プレビューリクエストの設定（SurfaceViewをターゲットに）
-				 mPreviewRequestBuilder = cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-				 mPreviewRequestBuilder.addTarget(surfaceView.getHolder().getSurface());
-
-				 // キャプチャーセッションの開始(セッション開始後に第2引数のコールバッククラスが呼ばれる)
-				 cameraDevice.createCaptureSession(surfaceList, new CameraCaptureSessionCallback(), null);
-
-				 } catch (CameraAccessException e) {
-				 // エラー時の処理を記載
-				 }
-				 * **/
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -849,10 +902,10 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 			String dbMsg = "";
 			try {
 				mPreviewBuilder = mCamera.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);            //撮影用のCaptureRequest.Builderを生成
-				jpegImageReader = ImageReader.newInstance(640 , 480 , ImageFormat.JPEG , 1);        // キャプチャ取得用のイメージリーダを作成
+				mImageReader = ImageReader.newInstance(640 , 480 , ImageFormat.JPEG , 1);        // キャプチャ取得用のイメージリーダを作成
 				//				ImageReader mImageReader = ImageReader.newInstance(1920 , 1080 , ImageFormat.JPEG , 3);        //   ImageReaderを生成
-//				jpegImageReader.setOnImageAvailableListener(mTakePictureAvailableListener, null);
-				mPreviewBuilder.addTarget(jpegImageReader.getSurface());                                                                //CaptureRequest.Builderに撮影用のSurfaceを設定
+//				mImageReader.setOnImageAvailableListener(mTakePictureAvailableListener, null);
+				mPreviewBuilder.addTarget(mImageReader.getSurface());                                                                //CaptureRequest.Builderに撮影用のSurfaceを設定
 				mPreviewBuilder.set(CaptureRequest.CONTROL_AF_MODE , CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);                // 必要なパラメータを設定します。(サンプル)
 //				mPreviewBuilder.set(CaptureRequest.JPEG_ORIENTATION, orientation);
 				mPreviewBuilder.set(CaptureRequest.CONTROL_AE_MODE , CaptureRequest.CONTROL_AE_MODE_ON);
@@ -863,8 +916,8 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 					public void onCaptureCompleted(CameraCaptureSession session , CaptureRequest request , TotalCaptureResult result) {
 						final String TAG = "onCaptureCompleted[C2]";
 						String dbMsg = "";
-						jpegImageReader = null;
-						ByteBuffer buffer = jpegImageReader.acquireLatestImage().getPlanes()[0].getBuffer();                    // 画像バイナリの取得
+						mImageReader = null;
+						ByteBuffer buffer = mImageReader.acquireLatestImage().getPlanes()[0].getBuffer();                    // 画像バイナリの取得
 						byte[] bytes = new byte[buffer.capacity()];
 						buffer.get(bytes);
 
@@ -876,7 +929,7 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 						} catch (Exception er) {
 							myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 						}
-						jpegImageReader.close();                    // ImageReaderのクローズ
+						mImageReader.close();                    // ImageReaderのクローズ
 					}
 				};
 				myLog(TAG , dbMsg);
@@ -909,9 +962,9 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 					mCamera.close();
 					mCamera = null;
 				}
-				if ( null != jpegImageReader ) {
-					jpegImageReader.close();
-					jpegImageReader = null;
+				if ( null != mImageReader ) {
+					mImageReader.close();
+					mImageReader = null;
 				}
 //			} catch (InterruptedException e) {
 //				throw new RuntimeException("Interrupted while trying to lock camera closing.", e);
