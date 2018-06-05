@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class MySurfaceView extends SurfaceView implements SurfaceHolder.Callback, Camera.PreviewCallback {
+public class C1SurfaceView extends SurfaceView implements SurfaceHolder.Callback, Camera.PreviewCallback {
 	private static final String TAG = "CameraView";
 	private Context context;
 	public FaceRecognitionView faceRecognitionView = null;
@@ -39,7 +39,7 @@ public class MySurfaceView extends SurfaceView implements SurfaceHolder.Callback
 	public int surfacHight;
 	public SurfaceHolder holder;
 
-	public MySurfaceView(Context context , int displayOrientationDegrees) {
+	public C1SurfaceView(Context context , int displayOrientationDegrees) {
 		super(context);
 		final String TAG = "MySurfaceView[Surface]";
 		String dbMsg = "";
@@ -266,6 +266,7 @@ public class MySurfaceView extends SurfaceView implements SurfaceHolder.Callback
 		final String TAG = "readFrame[FR]";
 		String dbMsg = "";
 		try {
+			dbMsg += "data=" + data.length ;
 			dbMsg += "[" + previewWidth + "×" + previewHeight +"]" + degrees +"dig";
 			Bitmap bitmap = decode(data , previewWidth , previewHeight , degrees);
 			if ( bitmap != null ) {
@@ -291,6 +292,10 @@ public class MySurfaceView extends SurfaceView implements SurfaceHolder.Callback
 					faces.add(new RectF(left , top , right , bottom));
 				}
 				dbMsg += ",faces=" + faces.size();
+				 //ata=3110400[1920×1080]0dig,bitmap=8294400,image=1920x1080,objects=1x0,faces=0
+				//I/onPreviewFrame[Surface]: data=3110400{1920×1080]
+				//data=3110400[1920×1080]0dig,bitmap=8294400,image=1920x1080,objects=1x11,faces=11
+
 				invalidate();												//onDrawへ
 			}
 			myLog(TAG , dbMsg);

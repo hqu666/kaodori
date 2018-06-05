@@ -4,13 +4,13 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ImageFormat;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
-import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -20,6 +20,7 @@ import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
+import android.media.Image;
 import android.media.ImageReader;
 import android.os.Handler;
 import android.os.HandlerThread;
@@ -28,8 +29,8 @@ import android.util.SparseIntArray;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.view.TextureView;
 import android.view.WindowManager;
+import android.widget.ImageView;
 
 import org.opencv.android.Utils;
 import org.opencv.core.CvType;
@@ -38,9 +39,9 @@ import org.opencv.core.MatOfRect;
 import org.opencv.core.Scalar;
 import org.opencv.objdetect.CascadeClassifier;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -56,8 +57,12 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 	public FaceRecognitionView faceRecognitionView = null;
 
 	private int degrees;
+
 	public MyC2 camera;
-	public String cameraId = "0";
+	public boolean isMainCamsera = true;
+//	public String cameraId = "0";        //メインカメラID
+//	public String cameraId_sub = "1";  //サブカメラID
+
 	private int[] rgb;
 	private Bitmap bitmap;
 	private Mat image;
@@ -75,8 +80,7 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 		try {
 			this.context = context;
 			dbMsg = "displayOrientationDegrees=" + displayOrientationDegrees;
-			this.degrees = getCameraPreveiwDeg(displayOrientationDegrees);  //			degrees = displayOrientationDegrees;
-			setWillNotDraw(false);
+//			setWillNotDraw(false);
 			getHolder().addCallback(this);
 
 			String filename = context.getFilesDir().getAbsolutePath() + "/haarcascades/haarcascade_frontalface_alt.xml";
@@ -107,38 +111,70 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 				camera = new MyC2(context , this);                //Camera.open(0);              //APIL9
 				camera.open();
 			}
+			this.degrees = camera.getCameraRotation();
 			dbMsg += "," + degrees + "dig";
-//			camera.setDisplayOrientation(degrees);
-//			camera.setPreviewCallback(this);
-//			try {
-//				camera.setPreviewDisplay(holder);					//APIL1
-//			} catch (IOException er) {
-//				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-//			}
-//			setMycameraParameters();
-
-//			faceRecognitionView = new FaceRecognitionView(context , degrees);
-
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}
 
+
 	@Override
 	public void surfaceChanged(SurfaceHolder holder , int format , int width , int height) {
 		final String TAG = "surfaceChanged[C2S]";
 		String dbMsg = "";
 		try {
-			dbMsg = "holder=" + holder + ", format=" + format + ", width=" + width + ", height=" + height;
+			dbMsg = ", format=" + format + "[" + width + "×" + height + "]";
 			this.holder = holder;
-			if ( faceRecognitionView != null ) {
-				faceRecognitionView.canvasRecycle();
-				dbMsg += "認証クラス破棄";
-			}
-			canvasRecycle();
+//			Canvas canvas = holder.lockCanvas(); // ロックをかける
+//			dbMsg += "canvas[" + canvas.getWidth() + "×" + canvas.getHeight() + "]";
 
+			this.setDrawingCacheEnabled(true);      // View の描画キャッシュキャッシュを取得する設定にする
+			this.destroyDrawingCache();             // 既存のキャッシュをクリアする
+			Bitmap bitmap = this.getDrawingCache();    // キャッシュを作成して取得する  	http://blog.lciel.jp/blog/2013/12/16/android-capture-view-image/
+
+//			Bitmap bitmap = Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888);
+			dbMsg += "bitmap[" + bitmap.getWidth() + "×" + bitmap.getHeight() + "]";
+			dbMsg += "" + bitmap.getByteCount() + "バイト";
+			ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+			bitmap.compress(Bitmap.CompressFormat.PNG , 100 , byteArrayOutputStream);
+			//	Bitmap.CompressFormat.PNG	;	PNG, クオリティー100としてbyte配列にデータを格納
+			byteArrayOutputStream.flush();
+			byte[] data = byteArrayOutputStream.toByteArray();
+			if ( data != null ) {
+				dbMsg += "、data=" + data.length + "バイト";
+				Bitmap bmp = BitmapFactory.decodeByteArray(data , 0 , data.length);
+				dbMsg += "、bmp=" + bmp.getByteCount() + "バイト";
+			}
+			this.degrees = camera.getCameraRotation();
+			dbMsg += "," + degrees + "dig";
+			readFrame(data , width , height);
+			byteArrayOutputStream.close();
+
+//			holder.unlockCanvasAndPost(canvas); // ロックを解除
+			if ( camera.jpegImageReader != null ) {
+				ImageReader imageReader = camera.jpegImageReader;
+				dbMsg += ",ImageReader[" + imageReader.getWidth() + "×" + imageReader.getHeight() + "]";
+				ByteBuffer buffer = imageReader.acquireLatestImage().getPlanes()[0].getBuffer();                    // 画像バイナリの取得
+//						dbMsg += "、"+buffer. +"バイト";
+				byte[] bytes = new byte[buffer.capacity()];
+				buffer.get(bytes);
+				dbMsg += "、" + bytes.length + "バイト";
+
+
+				OutputStream output = null;
+				try {
+					output = new FileOutputStream(new File("filename"));                        // 画像の書き込み
+					output.write(bytes);
+				} catch (Exception er) {
+					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+				}
+			}
+//			canvasRecycle();
 //			camera.startPreview();     //APIL1
+			// format=4[1776×1080]bitmap[1776×1080]7672320バイト、data=7544バイト、bmp=7672320バイト,0dig
+			
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -192,32 +228,10 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 		}
 	}
 
-	/**
-	 * プレビュー更新時のフレーム情報
-	 * Camera.PreviewCallback.
-	 */
-//	@Override
-//	public void onPreviewFrame(byte[] data , Camera camera) {
-//		final String TAG = "onPreviewFrame[C2S]";
-//		String dbMsg = "";
-//		try {
-//			dbMsg = "data=" + data.length;
-//			int width = 640;        //	this.getWidth();        //camera.getParameters().getPreviewSize().width;
-//			int height = 480;        //this.getHeight();        //camera.getParameters().getPreviewSize().height;
-//			if ( camera != null ) {
-//				width = camera.getParameters().getPreviewSize().width;
-//				height = camera.getParameters().getPreviewSize().height;
-//			}
-//			dbMsg += "{" + width + "×" + height + "]";
-//			readFrame(data , width , height);       //faceRecognitionView
-//			myLog(TAG , dbMsg);
-//		} catch (Exception er) {
-//			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-//		}
-//	}
+	///顔検出//////////////////////////////////////////////////////////////////////////////
 
 	/**
-	 * Camera.PreviewCallback.onPreviewFrame で渡されたデータを Bitmap に変換します。
+	 * 渡されたデータを Bitmap に変換します。
 	 * @param data
 	 * @param width
 	 * @param height
@@ -227,22 +241,22 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 	private Bitmap decode(byte[] data , int width , int height , int degrees) {
 		final String TAG = "decode[FR]";
 		String dbMsg = "";
+		String dbMsg2 = "";
 		try {
 			dbMsg += "data=" + data.length;
 			dbMsg += "[" + width + "×" + height + "]" + degrees + "dig";
-			//.ArrayIndexOutOfBoundsException: length=786432; index=786432
-			// y + height must be <= bitmap.height()
-			//	width--;
+			//java.lang.ArrayIndexOutOfBoundsException: length=7545; index=1918080
 			if ( rgb == null ) {
 				rgb = new int[width * height];
 			}
-
+			dbMsg += ",rgb=" + rgb.length;
 			final int frameSize = width * height;
 			for ( int j = 0, yp = 0 ; j < height ; j++ ) {
-//				dbMsg += "," + j + ")";
+				dbMsg2 = ", " + j;
 				int uvp = frameSize + (j >> 1) * width, u = 0, v = 0;
-//				dbMsg += uvp;
+//				dbMsg2 += uvp;
 				for ( int i = 0 ; i < width ; i++ , yp++ ) {
+					dbMsg2 += "×" + i + ")" + yp;
 					int y = (0xff & (( int ) data[yp])) - 16;
 					if ( y < 0 )
 						y = 0;
@@ -295,7 +309,7 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
-			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+			myErrorLog(TAG , dbMsg + dbMsg2 + ";でエラー発生；" + er);
 		}
 		return bitmap;
 	}
@@ -308,6 +322,7 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 		final String TAG = "readFrame[FR]";
 		String dbMsg = "";
 		try {
+			dbMsg += "data=" + data.length;
 			dbMsg += "[" + previewWidth + "×" + previewHeight + "]" + degrees + "dig";
 			Bitmap bitmap = decode(data , previewWidth , previewHeight , degrees);
 			if ( bitmap != null ) {
@@ -336,6 +351,10 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 				dbMsg += ",faces=" + faces.size();
 				invalidate();                                                //onDrawへ
 			}
+
+			//	 data=3110400[1920×1080]0dig,bitmap=8294400,image=1920x1080,objects=1x0,faces=0
+			//I/onPreviewFrame[Surface]: data=3110400{1920×1080]
+
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -369,12 +388,13 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}
+	//////////////////////////////////////////////////////////////////////////////顔検出///
 
 	/**
 	 * このクラスで作成したリソースの破棄
 	 */
 	public void canvasRecycle() {
-		final String TAG = "setDig2Cam[FR]";
+		final String TAG = "canvasRecycle[FR]";
 		String dbMsg = "";
 		try {
 			if ( image != null ) {
@@ -400,242 +420,13 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 		}
 	}
 
-	/**
-	 * プレビューサイズなど適切なパラメータを設定する
-	 **/
-//	public void setMycameraParameters() {
-//		final String TAG = "setMycameraParameters[C2S]";
-//		String dbMsg = "";
-//		try {
-//			dbMsg += "[" + surfaceWidth + "×" + surfacHight + "]degrees=" + degrees;
-//			int nowWidth = this.getWidth();    //surfaceWidth;
-//			int nowHeight = this.getHeight();    //surfacHight;
-//			dbMsg += ",now[" + nowWidth + "×" + nowHeight + "]";
-//			if ( degrees == 90 || degrees == 270 ) {
-//				dbMsg += "；縦に入れ替え";
-//				int temp = nowWidth;
-//				nowWidth = nowHeight;
-//				nowHeight = temp;
-//				dbMsg += ">>[" + nowWidth + "×" + nowHeight + "]";
-//			}
-//			int maxPictureWidth = 0;
-//			int maxPictureHeight = 0;
-//			int maxPreviewWidth = 640;   //オリジナルは640 , 480	固定だった
-//			int maxPreviewHeight = 480;
-////			if ( Build.VERSION.SDK_INT >= 21 ) {
-////				CameraManager cameraManager = ( CameraManager ) context.getSystemService(CAMERA_SERVICE);
-////				try {
-////					CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
-////					StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-////					if ( map != null ) {
-////						List< Size > previewSizes = new ArrayList<>();
-////						previewSizes = Arrays.asList(map.getOutputSizes(ImageFormat.YUV_420_888));
-////						for ( Size size : previewSizes ) {
-////							//		dbMsg += size.width + "x" + size.height + ",";
-////							if ( maxPictureWidth < size.getWidth() ) {
-////								maxPictureWidth = size.getWidth();
-////								maxPictureHeight = size.getHeight();
-////							}
-////						}
-////
-////						dbMsg += ">Camera2>" + maxPictureWidth + "x" + maxPictureHeight + ",";
-////						double cameraAspect = ( double ) maxPictureWidth / maxPictureHeight;
-////						dbMsg += "=" + cameraAspect;
-////						dbMsg += "、preview size: ";
-////
-////						List< Size > pictureSizes = new ArrayList<>();
-////						pictureSizes = Arrays.asList(map.getOutputSizes(ImageFormat.JPEG));
-////						for ( Size size : pictureSizes ) {            //params.getSupportedPreviewSizes()
-////							if ( maxPreviewWidth < size.getWidth() ) {
-////								if ( size.getWidth() <= nowWidth && size.getHeight() <= nowHeight ) {
-////									dbMsg += "," + size.getWidth() + "x" + size.getHeight() + ",";
-////									double previewAspect = ( double ) size.getWidth() / size.getHeight();
-////									dbMsg += "=" + previewAspect;
-////									if ( cameraAspect == previewAspect ) {
-////										maxPreviewWidth = size.getWidth();
-////										maxPreviewHeight = size.getHeight();
-////									}
-////								}
-////							}
-////						}
-////						dbMsg += ">>[" + maxPreviewWidth + "x" + maxPreviewHeight + "]";
-////						double fitScale = ( double ) surfacHight / maxPreviewHeight;           //☆結果がfloatでint除算すると整数部分のみになり小数点が切捨てられる
-////////						double fitScaleH = ( double ) surfacHight / maxPreviewHeight;
-//////////						if ( fitScale > fitScaleH ) {
-//////////							fitScale = fitScaleH;
-//////////						}
-////						if ( degrees == 90 || degrees == 270 ) {
-////							dbMsg += "；縦";
-////							fitScale = ( double ) surfacHight / maxPreviewWidth;
-////						}
-////						dbMsg += fitScale + "倍";
-////						maxPreviewWidth = ( int ) (maxPreviewWidth * fitScale);
-////						maxPreviewHeight = ( int ) (maxPreviewHeight * fitScale);
-////						dbMsg += ">>[" + maxPreviewWidth + "x" + maxPreviewHeight + "]";
-////						ViewGroup.LayoutParams lp = ( ViewGroup.LayoutParams ) this.getLayoutParams();
-////						lp.width = maxPreviewWidth; //横幅
-////						lp.height = maxPreviewHeight; //縦幅
-////						this.setLayoutParams(lp);
-////
-////						/**
-////						 * setMycameraParameters[C2S]: [1776×1080]degrees=0>Camera2>4608x3456,=1.3333333333333333、
-////						 * preview size: ,1440x1080,=1.3333333333333333>>[1440x1080]1.0倍>>[1440x1080]
-////						 I/surfaceCreated[C2S]:  holder=android.view.SurfaceView$3@eb38390[1776×1080]
-////
-////
-////						 * */
-////					}
-////
-////				} catch (CameraAccessException er) {
-////					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-////				}
-////			} else {
-//			Camera.Parameters params = camera.getParameters();
-//			dbMsg += "、picture size: ";
-//			List< Camera.Size > pictureSizes = params.getSupportedPictureSizes();
-//			dbMsg += ",camera;" + pictureSizes.size() + "種中";
-//			for ( Camera.Size size : pictureSizes ) {
-//				//		dbMsg += size.width + "x" + size.height + ",";
-//				if ( maxPictureWidth < size.width ) {
-//					maxPictureWidth = size.width;
-//					maxPictureHeight = size.height;
-//				}
-//			}
-//			dbMsg += ",camera[" + maxPictureWidth + "x" + maxPictureHeight + "]";
-//			double cameraAspect = ( double ) maxPictureWidth / maxPictureHeight;
-//			dbMsg += "=" + cameraAspect;
-//			dbMsg += "、preview size: " + params.getSupportedPreviewSizes().size() + "種中";
-//			for ( Camera.Size size : params.getSupportedPreviewSizes() ) {            //params.getSupportedPreviewSizes()
-//				if ( maxPreviewWidth < size.width ) {
-//					if ( size.width <= nowWidth && size.height <= nowHeight ) {
-////							dbMsg += "," + size.width + "x" + size.height + ",";
-//						double previewAspect = ( double ) size.width / size.height;
-////							dbMsg += ";" + previewAspect;
-//						if ( cameraAspect == previewAspect ) {
-//							maxPreviewWidth = size.width;
-//							maxPreviewHeight = size.height;
-////								if ( degrees == 90 || degrees == 270 ) {
-////									maxPreviewHeight= ( int ) (maxPreviewHeight/cameraAspect);
-////								} else{
-////									maxPreviewWidth= ( int ) (maxPreviewWidth/cameraAspect);
-////								}
-//						}
-////						holder.setFixedSize(maxPreviewWidth , maxPreviewHeight);      //viewのサイズを変えても扁平する
-//					}
-//				}
-//			}
-//			dbMsg += ">>" + maxPreviewWidth + "x" + maxPreviewHeight + ",";
-//			params.setPreviewSize(maxPreviewWidth , maxPreviewHeight);
-//			camera.setParameters(params);
-////			}
-//			myLog(TAG , dbMsg);
-//		} catch (Exception er) {
-//			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-//		}
-//	}
 
-	/**
-	 * https://qiita.com/cattaka/items/330321cb8c258c535e07
-	 * */
-//	public void setMyTextureVeiw() {
-//		final String TAG = "setMyTextureVeiw[C2S]";
-//		String dbMsg = "";
-//		try {
-//			dbMsg += "[" + surfaceWidth + "×" + surfacHight + "]degrees=" + degrees;
-//			WindowManager windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
-//			int rotation = windowManager.getDefaultDisplay().getRotation();
-//			int viewWidth = surfaceWidth;	//textureView.getWidth();
-//			int viewHeight = surfacHight;	//textureView.getHeight();
-//			Matrix matrix = new Matrix();
-//			matrix.postRotate(- rotation, viewWidth * 0.5f, viewHeight * 0.5f);
-//			holder.setFixedSize(matrix);
-//	//			textureView.setTransform(matrix);
-//			myLog(TAG , dbMsg);
-//		} catch (Exception er) {
-//			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-//		}
-//	}
-
-
-	/**
-	 * カメラに方向を与える
-	 */
-	public void setDig2Cam(int _degrees) {
-		final String TAG = "setDig2Cam[C2S]";
-		String dbMsg = "_degrees=" + _degrees;
-		try {
-			this.degrees = getCameraPreveiwDeg(_degrees);
-			if ( camera != null ) {
-				if ( camera.mPreviewSession != null ) {
-					try {
-						camera.mPreviewSession.stopRepeating();
-					} catch (CameraAccessException er) {
-						myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-					}
-					camera.mPreviewSession.close();
-				}
-
-				if ( camera.mCamera != null ) {
-					camera.mCamera.close();                    // カメラデバイスとの切断
-				}
-				dbMsg = "camera破棄";
-			}
-//			setMycameraParameters();
-			camera.open();				 //APIL1	camera.startPreview();
-			myLog(TAG , dbMsg);
-		} catch (Exception er) {
-			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-		}
-	}
-
-	/**
-	 * 端末のどこが上端になっているかを検出し、カメラにプレビュー角度を与える
-	 */
-	public int getCameraPreveiwDeg(int dispDegrees) {
-		final String TAG = "getCameraPreveiwDeg[MA]";
-		String dbMsg = "";
-		int orientationDeg = 90;
-		try {
-			dbMsg += ",画面；rotation=" + dispDegrees + "dig";
-			Integer lensFacing;
-			int lensFacingFront;
-			Integer comOrientation;
-//			if ( Build.VERSION.SDK_INT >= 21 ) {
-			CameraManager cameraManager = ( CameraManager ) context.getSystemService(CAMERA_SERVICE);
-			CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraId);
-			comOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);       // 0, 90, 180, 270などの角度になっている
-			dbMsg += ",カメラ2；=" + comOrientation + "dig";
-			lensFacing = characteristics.get(CameraCharacteristics.LENS_FACING);
-			lensFacingFront = CameraCharacteristics.LENS_FACING_FRONT;
-//			} else {
-//			Camera.CameraInfo info = new Camera.CameraInfo();
-//			Camera.getCameraInfo(0 , info);
-//			comOrientation = info.orientation;                // 0, 90, 180, 270などの角度になっている
-//			dbMsg += ",カメラ1；=" + comOrientation + "dig";
-//			lensFacing = info.facing;
-//			lensFacingFront = Camera.CameraInfo.CAMERA_FACING_FRONT;
-//			}
-			dbMsg += ",内外=" + lensFacing;
-			dbMsg += ",CAMERA_FACING_FRONT=" + lensFacingFront;
-			if ( lensFacing == lensFacingFront ) {
-				orientationDeg = (comOrientation + dispDegrees) % 360;
-				orientationDeg = (360 - orientationDeg) % 360;  // compensate the mirror
-			} else {  // back-facing
-				orientationDeg = (comOrientation - dispDegrees + 360) % 360;
-			}
-			dbMsg += ".orientationDeg=" + orientationDeg;
-			myLog(TAG , dbMsg);
-		} catch (Exception er) {
-			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-		}
-		return orientationDeg;
-	}
-
-
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	public class MyC2 {
 		public Context context;
 		public CameraDevice mCamera;
-		public String cameraId = "0";
+		public String cameraId = "0";        //メインカメラID
+		public String cameraId_sub = "1";  //サブカメラID
 		public CameraManager mCameraManager = null;
 		public CameraCharacteristics mCharacteristics;
 		public SurfaceView mSurfaceView;
@@ -646,6 +437,8 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 		public HandlerThread previewThread;
 		public ImageReader jpegImageReader;
 		public WindowManager mWindowManager;
+		public int baceWidth;
+		public int bacHight;
 
 		/**
 		 * コンストラクタでプレビューを受け取る
@@ -656,12 +449,46 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 			try {
 				this.context = context;
 				mSurfaceView = surfaceView;
+				baceWidth = mSurfaceView.getWidth();
+				bacHight = mSurfaceView.getHeight();
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 			}
 		}
 
+
+		// http://woshidan.hatenadiary.jp/entry/2017/09/10/022510
+		private ImageReader.OnImageAvailableListener mOnImageAvailableListener = new ImageReader.OnImageAvailableListener() {
+			// Surfaceから画像が利用できるようになった時に呼び出される
+			@Override
+			public void onImageAvailable(ImageReader reader) {
+				final String TAG = "onImageAvailable[C2]";
+				String dbMsg = "";
+				try {				// Imageは各種コーデック(圧縮方法みたいなもの)で圧縮したりする、画像のByteBufferを扱うためのオブジェクト
+				Image image = reader.acquireLatestImage();
+				// 何枚か画像を扱うことができて(?)、それぞれはPlanesに入っている
+				// この辺のコードは https://developer.android.com/things/training/doorbell/camera-input.html のサンプルより
+				ByteBuffer imageBuf = image.getPlanes()[0].getBuffer();
+				final byte[] imageBytes = new byte[imageBuf.remaining()];
+				imageBuf.get(imageBytes);
+				image.close();
+
+				final Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+
+//				getAc	runOnUiThread(new Runnable() {
+//					@Override
+//					public void run() {
+////						ImageView imageView = (ImageView) findViewById(R.id.picture);
+////						imageView.setImageBitmap(bitmap);
+//					}
+//				});
+					myLog(TAG , dbMsg);
+				} catch (Exception er) {
+					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+				}
+			}
+		};
 
 		private CameraCaptureSession.CaptureCallback mCaptureCallback;                    // =new CameraCaptureSession.CaptureCallback(){ 		};
 
@@ -679,16 +506,17 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 
 					ArrayList< Surface > surfaceList = new ArrayList();
 					surfaceList.add(mSurfaceView.getHolder().getSurface());                        // プレビュー用のSurfaceViewをリストに登録
-					mPreviewBuilder = mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-					mPreviewBuilder.addTarget(mSurfaceView.getHolder().getSurface());                    // プレビューリクエストの設定（SurfaceViewをターゲットに）
+					dbMsg += "surfaceList=" + surfaceList.size() + "件";
+//					mPreviewBuilder = mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+//					mPreviewBuilder.addTarget(mSurfaceView.getHolder().getSurface());                    // プレビューリクエストの設定（SurfaceViewをターゲットに）
 					// キャプチャーセッションの開始(セッション開始後に第2引数のコールバッククラスが呼ばれる)
 //					mSurfaceView.createCaptureSession(surfaceList, new CameraCaptureSessionCallback(), null);
 
-					createCaptureSession();            //プレビュー設定
+					createMyCaptureSession();            //プレビュー設定
 
 					myLog(TAG , dbMsg);
-				} catch (CameraAccessException er) {
-					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+//				} catch (CameraAccessException er) {
+//					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 				} catch (Exception er) {
 					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 				}
@@ -739,7 +567,6 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 					mPreviewSession = session;
 					mPreviewBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER , CameraMetadata.CONTROL_AF_TRIGGER_START);                             // オートフォーカスの設定
 					updatePreview();
-					mPreviewSession.setRepeatingRequest(mPreviewBuilder.build() , mCaptureCallback , null);                //ここでプレビューの更新イベント
 					myLog(TAG , dbMsg);
 				} catch (Exception er) {
 					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -773,17 +600,18 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 				}
 
 				dbMsg += "、getCameraIdList=" + mCameraManager.getCameraIdList().length + "件";
-				for ( String cameraId : mCameraManager.getCameraIdList() ) {
-					dbMsg += "cameraId=" + cameraId;
-					if ( mCharacteristics == null ) {
-						mCharacteristics = mCameraManager.getCameraCharacteristics(cameraId);
-					}
-
+				for ( String cId : mCameraManager.getCameraIdList() ) {
+					dbMsg += "cameraId=" + cId;
+//					if ( mCharacteristics == null ) {
+					mCharacteristics = mCameraManager.getCameraCharacteristics(cId);
+//					}
+					StreamConfigurationMap map;
 					if ( mCharacteristics.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_BACK ) {    //1;メインカメラ
 						dbMsg += ";LENS_FACING_BACK";
-						StreamConfigurationMap map = mCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+						this.cameraId = cId;
+						map = mCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
 						mCameraSize = map.getOutputSizes(SurfaceTexture.class)[0];                                                    //APIL21
-						dbMsg += ">mCameraSize>[" + mCameraSize.getWidth() + "x" + mCameraSize.getHeight() + "]";
+						dbMsg += "、mCameraSize>[" + mCameraSize.getWidth() + "x" + mCameraSize.getHeight() + "]";
 						/**
 						 ImageReader mImageReader = ImageReader.newInstance(1920, 1080, ImageFormat.JPEG, 3);       //    ImageReaderを生成
 						 mImageReader.setOnImageAvailableListener(mTakePictureAvailableListener, null);
@@ -794,11 +622,26 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 						 image.close();					// Imageを解放します。これを忘れるとバースト撮影などで失敗します。
 						 };
 						 * */
-						mCameraManager.openCamera(cameraId , mCameraDeviceCallback , null);             //CameraManagerにオープン要求を出します。
-						break;                    //	return;
+//						mCameraManager.openCamera(cameraId , mCameraDeviceCallback , null);             //CameraManagerにオープン要求を出します。
+						//		break;                    //	return;
 					} else if ( mCharacteristics.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_FRONT ) {        //2;サブカメラ
-
+						dbMsg += "、サブ=" + cId;
+						cameraId_sub = cId;
+						map = mCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+						Size mCameraSize_sub = map.getOutputSizes(SurfaceTexture.class)[0];                                                    //APIL21
+						dbMsg += "、mCameraSize>[" + mCameraSize_sub.getWidth() + "x" + mCameraSize_sub.getHeight() + "]";
 					}
+				}
+				dbMsg += "；isMainCamsera=" + isMainCamsera;
+
+				if ( isMainCamsera ) {
+					dbMsg += "、メイン=" + cameraId + "で起動";
+					mCharacteristics = mCameraManager.getCameraCharacteristics(cameraId);
+					mCameraManager.openCamera(cameraId , mCameraDeviceCallback , null);             //CameraManagerにオープン要求を出します。
+				} else {
+					dbMsg += "、サブ=" + cameraId_sub + "で起動";
+					mCharacteristics = mCameraManager.getCameraCharacteristics(cameraId_sub);
+					mCameraManager.openCamera(cameraId_sub , mCameraDeviceCallback , null);
 				}
 				myLog(TAG , dbMsg);
 			} catch (CameraAccessException er) {
@@ -809,35 +652,78 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 		}
 
 		/**
-		 * CaptureSessionを生成  ;起動時一回
+		 * プレビューサイズ設定
+		 * 課題；縦方向が反映されないので調整保留
 		 */
-		private void createCaptureSession() {
-			final String TAG = "createCaptureSession[C2]";
+		public void setPreviewSize() {
+			final String TAG = "setPreviewSize[C2]";
 			String dbMsg = "";
 			try {
-				// SurfaceViewにプレビューサイズを設定する(サンプルなので適当な値です)
-				mSurfaceView.getHolder().setFixedSize(1280 , 640);
+				Double widht = mCameraSize.getWidth() * 1.0;
+				Double hight = mCameraSize.getHeight() * 1.0;
+				Double camAspect = widht / hight;
+				dbMsg += ",camAspect=" + camAspect;
+				dbMsg += "[" + baceWidth + "×" + bacHight + "]";
+				int setWidth = ( int ) (baceWidth / camAspect);
+				int setHight = bacHight;
+				dbMsg += "[" + setWidth + "×" + setHight + "]";
+				///Viewサイズを入力のアスペクト比に合わせる///////////////////////////////////////////////////////////////
+//				ViewGroup.LayoutParams lp = (ViewGroup.LayoutParams) mSurfaceView.getLayoutParams();
+//				lp.width = setWidth; //横幅
+//				lp.height = setHight; //縦幅
+//				mSurfaceView.setLayoutParams(lp);
+////////////////////////////////////////////////////////////////Viewサイズを入力のアスペクト比に合わせる//
 
+				int camDig = getCameraRotation();
+				dbMsg += ",camDig=" + camDig;
+				if ( camDig == 90 || camDig == 270 ) {
+					dbMsg += "縦";
+					int temp = setWidth;
+					setWidth = setHight;
+					setHight = temp;
+				}
+				dbMsg += ">[" + setWidth + "×" + setHight + "]";
+//				mSurfaceView.getHolder().setFixedSize(setWidth , setHight);                    // SurfaceViewにプレビューサイズを設定する(サンプルなので適当な値です)
+				myLog(TAG , dbMsg);
+			} catch (Exception er) {
+				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+			}
+		}
 
+		/**
+		 * CaptureSessionを生成  ;
+		 * onOpenedから起動時一回
+		 */
+		private void createMyCaptureSession() {
+			final String TAG = "createMyCaptureSession[C2]";
+			String dbMsg = "";
+			try {
+				setPreviewSize();
 //				dbMsg = "isAvailable=" + mSurfaceView.isAvailable();
 //				if ( mSurfaceView.isAvailable() ) {
 //					SurfaceTexture texture = mSurfaceView.getSurfaceTexture();
 //					texture.setDefaultBufferSize(mCameraSize.getWidth() , mCameraSize.getHeight());                     //プレビュー用のSurfaceを生成します。
 //					Surface surface = new Surface(texture);
-//					try {
-//						mPreviewBuilder = mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);   // プレビュー用のCaptureRequest.Builderを生成
-//					} catch (CameraAccessException er) {
-//						myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-//					}
-//
-//					mPreviewBuilder.addTarget(surface);   //CaptureRequest.Builderにプレビュー用のSurfaceを設定
-//					try {
-//						mCamera.createCaptureSession(Collections.singletonList(surface) , mCameraCaptureSessionCallback , null);        //キャプチャーセッションの開始(セッション開始後に第2引数のコールバッククラスが呼ばれる)
-//					} catch (CameraAccessException er) {
-//						myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-//					}
-//				}
+				try {
+					mPreviewBuilder = mCamera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);   // プレビュー用のCaptureRequest.Builderを生成
+				} catch (CameraAccessException er) {
+					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+				}
 
+				mPreviewBuilder.addTarget(mSurfaceView.getHolder().getSurface());   //CaptureRequest.Builderにプレビュー用のSurfaceを設定
+				try {
+					mCamera.createCaptureSession(Collections.singletonList(mSurfaceView.getHolder().getSurface()) , mCameraCaptureSessionCallback , null);        //キャプチャーセッションの開始(セッション開始後に第2引数のコールバッククラスが呼ばれる)
+				} catch (CameraAccessException er) {
+					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+				}
+//				}
+				if ( mCameraSize != null ) {
+					if ( 0 < mCameraSize.getWidth() && 0 < mCameraSize.getHeight() ) {
+						jpegImageReader = ImageReader.newInstance(mCameraSize.getWidth() , mCameraSize.getHeight() , ImageFormat.JPEG , 1);    //640 , 480
+						jpegImageReader.setOnImageAvailableListener(mOnImageAvailableListener, mBackgroundHandler);
+								}
+				}
+				// キャプチャ取得用のイメージリーダを作成
 				/**
 				 // プレビュー用のSurfaceViewをリストに登録
 				 SurfaceView surfaceView = (SurfaceView) findViewById(R.id.surfaceView);
@@ -864,18 +750,14 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 
 		/**
 		 * プレビューを開始
+		 * onConfiguredから呼ばれる
 		 */
 		public void updatePreview() {
 			final String TAG = "updatePreview[C2]";
 			String dbMsg = "";
 			try {
-				if ( mCameraSize != null ) {
-					if ( 0 < mCameraSize.getWidth() && 0 < mCameraSize.getHeight() ) {
-						jpegImageReader = ImageReader.newInstance(mCameraSize.getWidth() , mCameraSize.getHeight() , ImageFormat.JPEG , 1);    //640 , 480
-					}
-				}
-				// キャプチャ取得用のイメージリーダを作成
-				mPreviewBuilder.set(CaptureRequest.JPEG_ORIENTATION , setCameraRotation());
+
+				mPreviewBuilder.set(CaptureRequest.JPEG_ORIENTATION , getCameraRotation());
 				mPreviewBuilder.set(CaptureRequest.CONTROL_AF_MODE , CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
 				previewThread = new HandlerThread("CameraPreview");
 				previewThread.start();
@@ -898,8 +780,8 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 		 * 回転補正
 		 * 参照		https://moewe-net.com/android/2016/camera2-jpeg-orientation
 		 * */
-		public int setCameraRotation() {
-			final String TAG = "setCameraRotation[C2]";
+		public int getCameraRotation() {
+			final String TAG = "getCameraRotation[C2]";
 			String dbMsg = "";
 			int comDegrees = 0;
 			try {

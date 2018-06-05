@@ -14,7 +14,6 @@ import android.preference.PreferenceManager;
 import android.view.KeyEvent;
 import android.view.Surface;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.view.WindowManager;
 
 import java.io.File;
@@ -33,7 +32,7 @@ public class FdActivity extends Activity {
 
 	public boolean isTextureView = false;            //プレビューにTextureViewを使用する
 	public boolean isC2 = true;            //camera2を使用する
-	public MySurfaceView mySurfaceView;                //Surfaceのプレビュークラス
+	public C1SurfaceView mySurfaceView;                //Surfaceのプレビュークラス
 	public MyTextureView myTextureView;            //TextureViewのプレビュークラス
 	public C2SurfaceView c2SufaceView;                //camera2でSurfaceのプレビュークラス
 	public int sensorOrientation;    //カメラの向き
@@ -98,7 +97,7 @@ public class FdActivity extends Activity {
 			isCrated = false;
 			readPref();
 			getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-			requestWindowFeature(Window.FEATURE_NO_TITLE);
+//			requestWindowFeature(Window.FEATURE_NO_TITLE);
 			if ( isTextureView ) {
 				setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);        //縦画面で止めておく	横	ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
 				//方向固定するとonConfigurationChangedも一切発生しなくなる
@@ -246,7 +245,10 @@ public class FdActivity extends Activity {
 //				faceRecognition.setDig2Cam(dispDegrees);
 			} else {
 				if ( isC2 ) {
-					c2SufaceView.setDig2Cam(dispDegrees);
+					if(c2SufaceView.camera != null){
+						c2SufaceView.camera.setPreviewSize();
+					}
+//					c2SufaceView.setDig2Cam(dispDegrees);
 				} else {
 					mySurfaceView.setDig2Cam(dispDegrees);
 				}
@@ -367,7 +369,7 @@ public class FdActivity extends Activity {
 				}
 			} else {
 				if ( mySurfaceView == null ) {
-					mySurfaceView = new MySurfaceView(this , dispDegrees);        //orgは90°固定だった
+					mySurfaceView = new C1SurfaceView(this , dispDegrees);        //orgは90°固定だった
 					activityMain.addView(mySurfaceView);
 				}
 			}

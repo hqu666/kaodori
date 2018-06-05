@@ -757,6 +757,7 @@ public class MyTextureView extends TextureView implements TextureView.SurfaceTex
  * 2017年01月02日		Androidデバイスのカメラの向き	https://qiita.com/cattaka/items/330321cb8c258c535e07
 
 
+ 2012年09月28日		顔検出の結果をオーバーレイで表示する		https://dev.classmethod.jp/smartphone/android-tips-16-facedetectionlistener/
 
 
  *TextureViewは onDraw　が使えない？
