@@ -3,6 +3,7 @@ package com.hijiyam_koubou.kaodori;
 import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
@@ -13,8 +14,11 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.view.KeyEvent;
 import android.view.Surface;
+import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.view.WindowManager;
+import android.widget.ImageButton;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -29,6 +33,8 @@ public class FdActivity extends Activity {
 	}
 
 	public ViewGroup activityMain;            //プレビュー読込み場所
+	public ImageButton fda_capture_bt;      //キャプチャーボタン
+	public ImageButton fda_setting_bt ;      //設定ボタン
 
 	public boolean isTextureView = false;            //プレビューにTextureViewを使用する
 	public boolean isC2 = true;            //camera2を使用する
@@ -75,8 +81,12 @@ public class FdActivity extends Activity {
 			prefs.readPref(this);
 			writeFolder = prefs.write_folder;
 			dbMsg += "," + getResources().getString(R.string.write_folder) + "=" + writeFolder;
-			upScale = Float.parseFloat(prefs.up_scale);
-			dbMsg += "," + getResources().getString(R.string.up_scale) + "=" + upScale;
+			if(prefs.up_scale != null ) {
+				dbMsg += ",up_scale=" + prefs.up_scale;
+				upScale = Float.parseFloat(prefs.up_scale);
+
+				dbMsg += "," + getResources().getString(R.string.up_scale) + "=" + upScale;
+			}
 			haarcascadesLastModified = Long.parseLong(prefs.haarcascades_last_modified);
 			dbMsg += "," + getResources().getString(R.string.haarcascades_last_modified) + "=" + haarcascadesLastModified;
 
@@ -97,13 +107,15 @@ public class FdActivity extends Activity {
 			isCrated = false;
 			readPref();
 			getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
-//			requestWindowFeature(Window.FEATURE_NO_TITLE);
+			requestWindowFeature(Window.FEATURE_NO_TITLE);
 			if ( isTextureView ) {
 				setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);        //縦画面で止めておく	横	ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
 				//方向固定するとonConfigurationChangedも一切発生しなくなる
 			}
 			setContentView(R.layout.face_detect_surface_view);
 			activityMain = ( ViewGroup ) findViewById(R.id.fd_activity_surface_view);
+			 fda_capture_bt = ( ImageButton ) findViewById(R.id.fda_capture_bt);      //キャプチャーボタン
+			 fda_setting_bt = ( ImageButton ) findViewById(R.id.fda_setting_bt);      //設定ボタン
 
 			try {
 				copyAssets("haarcascades");                    // assetsの内容を /data/data/*/files/ にコピーします。
@@ -350,6 +362,35 @@ public class FdActivity extends Activity {
 		final String TAG = "laterCreate[MA]";
 		String dbMsg = "";
 		try {
+			fda_capture_bt.setOnClickListener(new View.OnClickListener() {         //キャプチャーボタン
+				@Override
+				public void onClick(View v) {
+					final String TAG = "fda_capture_bt[MA]";
+					String dbMsg = "";
+					if ( isTextureView ) {
+						if ( myTextureView != null ) {
+						}
+					} else if ( isC2 ) {
+						if ( c2SufaceView.camera != null ) {
+							c2SufaceView.camera.copyPreview();
+//							c2SufaceView.captureStart();
+						}
+					} else {
+						if ( mySurfaceView != null ) {
+						}
+					}
+					myLog(TAG , dbMsg);
+				}
+			});
+			
+			fda_setting_bt.setOnClickListener(new View.OnClickListener() {       //設定ボタン
+				@Override
+				public void onClick(View v) {
+					Intent settingsIntent = new Intent(FdActivity.this , MyPreferencesActivty.class);
+					startActivityForResult(settingsIntent , REQUEST_PREF);					//    startActivity( settingsIntent );
+				}
+			});
+
 			int dispDegrees = getDisplayOrientation();
 			dbMsg += ",Disp=" + dispDegrees + "dig";
 			/**
@@ -364,7 +405,7 @@ public class FdActivity extends Activity {
 				}
 			} else if ( isC2 ) {
 				if ( c2SufaceView == null ) {
-					c2SufaceView = new C2SurfaceView(this , getDisplayOrientation());            //camera2でSurfaceのプレビュークラス
+					c2SufaceView = new C2SurfaceView(this , getDisplayOrientation(),writeFolder);            //camera2でSurfaceのプレビュークラス
 					activityMain.addView(c2SufaceView);
 				}
 			} else {

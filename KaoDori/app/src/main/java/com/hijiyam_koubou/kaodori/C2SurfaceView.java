@@ -11,6 +11,7 @@ import android.graphics.ImageFormat;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
+import android.graphics.YuvImage;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -74,12 +75,16 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 	public int surfacHight;
 	public SurfaceHolder holder;
 
-	public C2SurfaceView(Context context , int displayOrientationDegrees) {
+	public String writeFolder = "";
+
+
+	public C2SurfaceView(Context context , int displayOrientationDegrees , String writeFolder) {
 		super(context);
 		final String TAG = "MySurfaceView[C2S]";
 		String dbMsg = "";
 		try {
 			this.context = context;
+			this.writeFolder = writeFolder;
 			dbMsg = "displayOrientationDegrees=" + displayOrientationDegrees;
 //			setWillNotDraw(false);
 			getHolder().addCallback(this);
@@ -120,7 +125,9 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 		}
 	}
 
-
+	/**
+	 * 回転による向きの変更時のみ
+	 * */
 	@Override
 	public void surfaceChanged(SurfaceHolder holder , int format , int width , int height) {
 		final String TAG = "surfaceChanged[C2S]";
@@ -187,21 +194,7 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 		String dbMsg = "";
 		try {
 			if ( camera != null ) {
-				if ( camera.mPreviewSession != null ) {
-					try {
-						camera.mPreviewSession.stopRepeating();
-					} catch (CameraAccessException er) {
-						myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-					}
-					camera.mPreviewSession.close();
-				}
-
-				if ( camera.mCamera != null ) {
-					camera.mCamera.close();                    // カメラデバイスとの切断
-				}
-//				camera.stopFaceDetection();
-//				camera.stopPreview();
-//				camera.release();
+				camera.camera2Dispose();
 				camera = null;
 				dbMsg = "camera破棄";
 			}
@@ -230,111 +223,160 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 	}
 
 	///顔検出//////////////////////////////////////////////////////////////////////////////
-
-	/**
-	 * 渡されたデータを Bitmap に変換します。
-	 * @param data
-	 * @param width
-	 * @param height
-	 * @param degrees
-	 * @return
-	 */
-	private Bitmap decode(byte[] data , int width , int height , int degrees) {
-		final String TAG = "decode[FR]";
+//
+//	/**
+//	 * YUVで渡されたデータを Bitmap に変換します。
+//	 * @param data
+//	 * @param width
+//	 * @param height
+//	 * @param degrees
+//	 * @return
+//	 */
+//	private Bitmap decode(byte[] data , int width , int height , int degrees) {
+//		final String TAG = "decode[FR]";
+//		String dbMsg = "";
+//		String dbMsg2 = "";
+//		try {
+//			dbMsg += "data=" + data.length;
+//			dbMsg += "[" + width + "×" + height + "]" + degrees + "dig";
+//			//java.lang.ArrayIndexOutOfBoundsException: length=7545; index=1918080
+//			if ( rgb == null ) {
+//				rgb = new int[width * height];
+//			}
+//			dbMsg += ",rgb=" + rgb.length;
+//			final int frameSize = width * height;
+//			for ( int j = 0, yp = 0 ; j < height ; j++ ) {
+//				dbMsg2 = ", " + j;
+//				int uvp = frameSize + (j >> 1) * width, u = 0, v = 0;
+////				dbMsg2 += uvp;
+//				for ( int i = 0 ; i < width ; i++ , yp++ ) {
+//					dbMsg2 += "×" + i + ")" + yp;
+//					int y = (0xff & (( int ) data[yp])) - 16;
+//					if ( y < 0 )
+//						y = 0;
+//					if ( (i & 1) == 0 ) {
+//						v = (0xff & data[uvp++]) - 128;
+//						u = (0xff & data[uvp++]) - 128;
+//					}
+//
+//					int y1192 = 1192 * y;
+//					int r = (y1192 + 1634 * v);
+//					int g = (y1192 - 833 * v - 400 * u);
+//					int b = (y1192 + 2066 * u);
+//
+//					if ( r < 0 )
+//						r = 0;
+//					else if ( r > 262143 )
+//						r = 262143;
+//					if ( g < 0 )
+//						g = 0;
+//					else if ( g > 262143 )
+//						g = 262143;
+//					if ( b < 0 )
+//						b = 0;
+//					else if ( b > 262143 )
+//						b = 262143;
+//
+//					rgb[yp] = 0xff000000 | ((r << 6) & 0xff0000) | ((g >> 2) & 0xff00) | ((b >> 10) & 0xff);
+//				}
+//			}
+//
+//			if ( degrees == 90 ) {
+//				int[] rotatedData = new int[rgb.length];
+//				for ( int y = 0 ; y < height ; y++ ) {
+//					for ( int x = 0 ; x < width ; x++ ) {
+//						rotatedData[x * height + height - y - 1] = rgb[x + y * width];
+//					}
+//				}
+//				int tmp = width;
+//				width = height;
+//				height = tmp;
+//				rgb = rotatedData;
+//			}
+//
+//			if ( bitmap == null ) {
+//				bitmap = Bitmap.createBitmap(width , height , Bitmap.Config.ARGB_8888);   //  APIL1
+//			}
+//
+//			bitmap.setPixels(rgb , 0 , width , 0 , 0 , width , height);            //APIL1
+//			dbMsg += ",bitmap=" + bitmap.getByteCount();
+//
+//			myLog(TAG , dbMsg);
+//		} catch (Exception er) {
+//			myErrorLog(TAG , dbMsg + dbMsg2 + ";でエラー発生；" + er);
+//		}
+//		return bitmap;
+//	}
+//
+//	/**
+//	 * viewのデータを受け取り認証処理を開始する
+//	 * 元は onPreviewFrame
+//	 */
+//	public void readFrame(byte[] data , int previewWidth , int previewHeight) {        //, Camera camera      /
+//		final String TAG = "readFrame[FR]";
+//		String dbMsg = "";
+//		try {
+//			dbMsg += "data=" + data.length;
+//			dbMsg += "[" + previewWidth + "×" + previewHeight + "]" + degrees + "dig";
+//			Bitmap bitmap = decode(data , previewWidth , previewHeight , degrees);
+//			if ( bitmap != null ) {
+//				dbMsg += ",bitmap=" + bitmap.getByteCount();
+//				if ( degrees == 90 ) {
+//					int tmp = previewWidth;
+//					previewWidth = previewHeight;
+//					previewHeight = tmp;
+//				}
+//				if ( image == null ) {
+//					image = new Mat(previewHeight , previewWidth , CvType.CV_8U , new Scalar(4));
+//				}
+//				Utils.bitmapToMat(bitmap , image);                                    //openCV
+//				dbMsg += ",image=" + image.size();
+//				detector.detectMultiScale(image , objects);
+//				;                        //openCV
+//				dbMsg += ",objects=" + objects.size();
+//				faces.clear();
+//				for ( org.opencv.core.Rect rect : objects.toArray() ) {
+//					float left = ( float ) (1.0 * rect.x / previewWidth);
+//					float top = ( float ) (1.0 * rect.y / previewHeight);
+//					float right = left + ( float ) (1.0 * rect.width / previewWidth);
+//					float bottom = top + ( float ) (1.0 * rect.height / previewHeight);
+//					faces.add(new RectF(left , top , right , bottom));
+//				}
+//				dbMsg += ",faces=" + faces.size();
+//				invalidate();                                                //onDrawへ
+//			}
+//
+//			//	 data=3110400[1920×1080]0dig,bitmap=8294400,image=1920x1080,objects=1x0,faces=0
+//			//I/onPreviewFrame[Surface]: data=3110400{1920×1080]
+//
+//			myLog(TAG , dbMsg);
+//		} catch (Exception er) {
+//			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+//		}
+//	}
+  /**
+   *   Bitmapデータを受け取り認証処理を開始する
+   * */
+	public void readFrameRGB(Bitmap bitmap) {        //, Camera camera      /   , int previewWidth , int previewHeight
+		final String TAG = "readFrameRGB[FR]";
 		String dbMsg = "";
-		String dbMsg2 = "";
 		try {
-			dbMsg += "data=" + data.length;
-			dbMsg += "[" + width + "×" + height + "]" + degrees + "dig";
-			//java.lang.ArrayIndexOutOfBoundsException: length=7545; index=1918080
-			if ( rgb == null ) {
-				rgb = new int[width * height];
-			}
-			dbMsg += ",rgb=" + rgb.length;
-			final int frameSize = width * height;
-			for ( int j = 0, yp = 0 ; j < height ; j++ ) {
-				dbMsg2 = ", " + j;
-				int uvp = frameSize + (j >> 1) * width, u = 0, v = 0;
-//				dbMsg2 += uvp;
-				for ( int i = 0 ; i < width ; i++ , yp++ ) {
-					dbMsg2 += "×" + i + ")" + yp;
-					int y = (0xff & (( int ) data[yp])) - 16;
-					if ( y < 0 )
-						y = 0;
-					if ( (i & 1) == 0 ) {
-						v = (0xff & data[uvp++]) - 128;
-						u = (0xff & data[uvp++]) - 128;
-					}
-
-					int y1192 = 1192 * y;
-					int r = (y1192 + 1634 * v);
-					int g = (y1192 - 833 * v - 400 * u);
-					int b = (y1192 + 2066 * u);
-
-					if ( r < 0 )
-						r = 0;
-					else if ( r > 262143 )
-						r = 262143;
-					if ( g < 0 )
-						g = 0;
-					else if ( g > 262143 )
-						g = 262143;
-					if ( b < 0 )
-						b = 0;
-					else if ( b > 262143 )
-						b = 262143;
-
-					rgb[yp] = 0xff000000 | ((r << 6) & 0xff0000) | ((g >> 2) & 0xff00) | ((b >> 10) & 0xff);
-				}
-			}
-
-			if ( degrees == 90 ) {
-				int[] rotatedData = new int[rgb.length];
-				for ( int y = 0 ; y < height ; y++ ) {
-					for ( int x = 0 ; x < width ; x++ ) {
-						rotatedData[x * height + height - y - 1] = rgb[x + y * width];
-					}
-				}
-				int tmp = width;
-				width = height;
-				height = tmp;
-				rgb = rotatedData;
-			}
-
-			if ( bitmap == null ) {
-				bitmap = Bitmap.createBitmap(width , height , Bitmap.Config.ARGB_8888);   //  APIL1
-			}
-
-			bitmap.setPixels(rgb , 0 , width , 0 , 0 , width , height);            //APIL1
-			dbMsg += ",bitmap=" + bitmap.getByteCount();
-
-			myLog(TAG , dbMsg);
-		} catch (Exception er) {
-			myErrorLog(TAG , dbMsg + dbMsg2 + ";でエラー発生；" + er);
-		}
-		return bitmap;
-	}
-
-	/**
-	 * viewのデータを受け取り認証処理を開始する
-	 * 元は onPreviewFrame
-	 */
-	public void readFrame(byte[] data , int previewWidth , int previewHeight) {        //, Camera camera      /
-		final String TAG = "readFrame[FR]";
-		String dbMsg = "";
-		try {
-			dbMsg += "data=" + data.length;
-			dbMsg += "[" + previewWidth + "×" + previewHeight + "]" + degrees + "dig";
-			Bitmap bitmap = decode(data , previewWidth , previewHeight , degrees);
-			if ( bitmap != null ) {
+			int dWidth =  bitmap.getWidth();
+			int dHight =  bitmap.getHeight();
+			dbMsg += ",bitmap[" + dWidth+ "×" +dHight + "]";
+			int byteCount = bitmap.getByteCount();
+			dbMsg += "" + byteCount + "バイト";
+			dbMsg += "[" + dWidth + "×" + dHight + "]" + degrees + "dig";
+//			Bitmap bitmap = decode(data , previewWidth , previewHeight , degrees);
+//			if ( bitmap != null ) {
 				dbMsg += ",bitmap=" + bitmap.getByteCount();
 				if ( degrees == 90 ) {
-					int tmp = previewWidth;
-					previewWidth = previewHeight;
-					previewHeight = tmp;
+					int tmp = dWidth;
+					dWidth = dHight;
+					dHight = tmp;
 				}
 				if ( image == null ) {
-					image = new Mat(previewHeight , previewWidth , CvType.CV_8U , new Scalar(4));
+					image = new Mat(dHight , dWidth , CvType.CV_8U , new Scalar(4));
 				}
 				Utils.bitmapToMat(bitmap , image);                                    //openCV
 				dbMsg += ",image=" + image.size();
@@ -343,15 +385,15 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 				dbMsg += ",objects=" + objects.size();
 				faces.clear();
 				for ( org.opencv.core.Rect rect : objects.toArray() ) {
-					float left = ( float ) (1.0 * rect.x / previewWidth);
-					float top = ( float ) (1.0 * rect.y / previewHeight);
-					float right = left + ( float ) (1.0 * rect.width / previewWidth);
-					float bottom = top + ( float ) (1.0 * rect.height / previewHeight);
+					float left = ( float ) (1.0 * rect.x / dWidth);
+					float top = ( float ) (1.0 * rect.y / dHight);
+					float right = left + ( float ) (1.0 * rect.width / dWidth);
+					float bottom = top + ( float ) (1.0 * rect.height / dHight);
 					faces.add(new RectF(left , top , right , bottom));
 				}
 				dbMsg += ",faces=" + faces.size();
 				invalidate();                                                //onDrawへ
-			}
+//			}
 
 			//	 data=3110400[1920×1080]0dig,bitmap=8294400,image=1920x1080,objects=1x0,faces=0
 			//I/onPreviewFrame[Surface]: data=3110400{1920×1080]
@@ -390,6 +432,47 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 		}
 	}
 	//////////////////////////////////////////////////////////////////////////////顔検出///
+
+	public void captureStart() {
+		final String TAG = "captureStart[FR]";
+		String dbMsg = "";
+		try {
+			if( camera.mImageReader != null) {
+				Image image = camera.mImageReader.acquireLatestImage();
+				if(image != null) {
+					int width = image.getWidth();
+					int height = image.getHeight();
+					long timestamp = image.getTimestamp();
+					dbMsg += ",image[" + width + "×" + height + "]Format=" + image.getFormat();
+					dbMsg += ",=" + timestamp + "," + image.getPlanes().length + "枚";
+					ByteBuffer imageBuf = image.getPlanes()[0].getBuffer();
+					final byte[] imageBytes = new byte[imageBuf.remaining()];        //直接渡すと.ArrayIndexOutOfBoundsException: length=250,095; index=15,925,248
+					dbMsg += ",imageBytes=" + imageBytes.length;
+					imageBuf.get(imageBytes);
+
+					final Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes , 0 , imageBytes.length);
+					ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+					bitmap.compress(Bitmap.CompressFormat.JPEG , 100 , byteArrayOutputStream);
+					dbMsg += ",bitmap[" + bitmap.getWidth() + "×" + bitmap.getHeight() + "]";
+					int byteCount = bitmap.getByteCount();
+					dbMsg += "" + byteCount + "バイト";
+
+					degrees = camera.getCameraRotation();
+					dbMsg += "," + degrees + "dig";
+					readFrameRGB(bitmap);
+					byteArrayOutputStream.close();
+				}
+				image.close();
+				if ( bitmap != null ) {
+					bitmap.recycle();
+				}
+			}
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
 
 	/**
 	 * このクラスで作成したリソースの破棄
@@ -437,7 +520,13 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 		public CameraCaptureSession mPreviewSession;
 		public Handler previewHandler;
 		public HandlerThread previewThread;
+
 		public ImageReader mImageReader;
+		public int irFoimat = ImageFormat.JPEG;  //ImageFormat.JPEG ;
+		public int maxImages = 1;
+		public Handler irHandre = null;
+
+
 		public WindowManager mWindowManager;
 		public int baceWidth;
 		public int bacHight;
@@ -453,8 +542,6 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 				mSurfaceView = surfaceView;
 				baceWidth = mSurfaceView.getWidth();
 				bacHight = mSurfaceView.getHeight();
-				mImageReader = ImageReader.newInstance(baceWidth, bacHight , ImageFormat.JPEG , 1);
-				mImageReader.setOnImageAvailableListener(mOnImageAvailableListener , null);
 
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
@@ -474,56 +561,86 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 					Image image = reader.acquireLatestImage();
 					// 何枚か画像を扱うことができて(?)、それぞれはPlanesに入っている
 					// この辺のコードは https://developer.android.com/things/training/doorbell/camera-input.html のサンプルより
+					int width = image.getWidth();
+					int height = image.getHeight();
+					long timestamp = image.getTimestamp();
+					dbMsg += ",image[" + width + "×" + height + "]Format=" + image.getFormat();
+					dbMsg += ",=" + timestamp + "," + image.getPlanes().length + "枚";
 					ByteBuffer imageBuf = image.getPlanes()[0].getBuffer();
-					final byte[] imageBytes = new byte[imageBuf.remaining()];
+					final byte[] imageBytes = new byte[imageBuf.remaining()];        //直接渡すと.ArrayIndexOutOfBoundsException: length=250,095; index=15,925,248
+					dbMsg += ",imageBytes=" + imageBytes.length;
 					imageBuf.get(imageBytes);
-					image.close();
+					//image[4608×3456]Format=256,=308170292635709,1枚,imageBytes=250095,
+//					image.close();
 
+//					Bitmap bitmap = Bitmap.createBitmap(width , height , Bitmap.Config.ARGB_8888);
+//					int offset = 0;
+//					int pixelStride = image.getPlanes()[0].getPixelStride();
+//					int rowStride = image.getPlanes()[0].getRowStride();
+//					int rowPadding = rowStride - pixelStride * width;
+//					dbMsg += ",pixelStride=" + pixelStride + ",rowStride=" + rowStride + ",rowPadding=" + rowPadding;
+//					if ( 0 < pixelStride && 0 < pixelStride ) {
+//						bitmap = Bitmap.createBitmap(width + rowPadding / pixelStride , height , Bitmap.Config.ARGB_8888);
+//					}
+//					bitmap.copyPixelsFromBuffer(imageBuf);  //java.lang.RuntimeException: Buffer not large enough for pixels
+//					FileOutputStream fos = new FileOutputStream(writeFolder +File.pathSeparator+timestamp+ ".jpg");
+//					bitmap.compress(Bitmap.CompressFormat.JPEG , 100 , fos);
+//
 					final Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes , 0 , imageBytes.length);
-					dbMsg += "bitmap[" + bitmap.getWidth() + "×" + bitmap.getHeight() + "]";
-					dbMsg += "" + bitmap.getByteCount() + "バイト";
 					ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-					bitmap.compress(Bitmap.CompressFormat.PNG , 100 , byteArrayOutputStream);
-					//	Bitmap.CompressFormat.PNG	;	PNG, クオリティー100としてbyte配列にデータを格納
-					byteArrayOutputStream.flush();
-					byte[] data = byteArrayOutputStream.toByteArray();
-					if ( data != null ) {
-						dbMsg += "、data=" + data.length + "バイト";
-						Bitmap bmp = BitmapFactory.decodeByteArray(data , 0 , data.length);
-						dbMsg += "、bmp=" + bmp.getByteCount() + "バイト";
-					}
+					bitmap.compress(Bitmap.CompressFormat.JPEG , 100 , byteArrayOutputStream);
+					dbMsg += ",bitmap[" + bitmap.getWidth() + "×" + bitmap.getHeight() + "]";
+					int byteCount = bitmap.getByteCount();
+					dbMsg += "" + byteCount + "バイト";
+//					byte[] data =  new byte[byteCount];
+//					for (int i=0;i<byteCount;i++){
+//						fos.write(data[i]);//1byteずつ、書き込み
+//					}
+//					//	Bitmap.CompressFormat.PNG	;	PNG, クオリティー100としてbyte配列にデータを格納
+////					byteArrayOutputStream.flush();
+//					byte[] data = byteArrayOutputStream.toByteArray();
+//					if ( data != null ) {
+//						dbMsg += "、data=" + data.length + "バイト";
+//						Bitmap bmp = BitmapFactory.decodeByteArray(data , 0 , data.length);
+//						dbMsg += "、bmp=" + bmp.getByteCount() + "バイト";
+//						bmp.recycle();
+//					}
+
+
 					degrees = camera.getCameraRotation();
 					dbMsg += "," + degrees + "dig";
-					readFrame(data , bitmap.getWidth() , bitmap.getHeight());
+					readFrameRGB( bitmap);
+//					readFrame(YuvData , width , height);
+					image.close();
+					if ( bitmap != null ) {
+						bitmap.recycle();
+					}
 					byteArrayOutputStream.close();
-//				getAc	runOnUiThread(new Runnable() {
-//					@Override
-//					public void run() {
-////						ImageView imageView = (ImageView) findViewById(R.id.picture);
-////						imageView.setImageBitmap(bitmap);
-//					}
-//				});
+
 					myLog(TAG , dbMsg);
 				} catch (Exception er) {
 					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 				}
 			}
+
 		};
 
-		private void copyPreview() {
+
+
+		public void copyPreview() {
 			final String TAG = "copyPreview[C2]";
 			String dbMsg = "";
-			CaptureRequest.Builder copyPreviewRequestBuilder = null;			// ImageViewへ静止画を送るためのCaptureRequestを作る. 静止画を送ってもらうためのリクエストのビルダーですよ
+			CaptureRequest.Builder copyPreviewRequestBuilder = null;            // ImageViewへ静止画を送るためのCaptureRequestを作る. 静止画を送ってもらうためのリクエストのビルダーですよ
 			try {
 				copyPreviewRequestBuilder = mCamera.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
 			} catch (CameraAccessException er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 			}
-			copyPreviewRequestBuilder.addTarget(mImageReader.getSurface());    			// 送り先はImageReaderにしてね
+			copyPreviewRequestBuilder.addTarget(mImageReader.getSurface());                // 送り先はImageReaderにしてね
 			CaptureRequest copyPreviewRequest = copyPreviewRequestBuilder.build();
 
 			try {
-				mPreviewSession.capture(copyPreviewRequest, null, null); 			// (プレビュー時にセッションは開いたままで、)追加で静止画送ってくれリクエストを送る
+				mPreviewSession.capture(copyPreviewRequest , null , null);            // (プレビュー時にセッションは開いたままで、)追加で静止画送ってくれリクエストを送る
 			} catch (CameraAccessException er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 			}
@@ -643,6 +760,7 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 			final String TAG = "open[C2]";
 			String dbMsg = "";
 			try {
+				Size mCameraSize_sub = null;
 				if ( mCameraManager == null ) {
 					mCameraManager = ( CameraManager ) context.getSystemService(CAMERA_SERVICE);      //逐次取り直さないとダメ？
 				}
@@ -676,7 +794,7 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 						dbMsg += "、サブ=" + cId;
 						cameraId_sub = cId;
 						map = mCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-						Size mCameraSize_sub = map.getOutputSizes(SurfaceTexture.class)[0];                                                    //APIL21
+						mCameraSize_sub = map.getOutputSizes(SurfaceTexture.class)[0];                                                    //APIL21
 						dbMsg += "、mCameraSize>[" + mCameraSize_sub.getWidth() + "x" + mCameraSize_sub.getHeight() + "]";
 					}
 				}
@@ -690,7 +808,13 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 					dbMsg += "、サブ=" + cameraId_sub + "で起動";
 					mCharacteristics = mCameraManager.getCameraCharacteristics(cameraId_sub);
 					mCameraManager.openCamera(cameraId_sub , mCameraDeviceCallback , null);
+					mCameraSize = mCameraSize_sub;
 				}
+
+				mImageReader = ImageReader.newInstance(mCameraSize.getWidth() , mCameraSize.getHeight() , irFoimat , maxImages);
+				mImageReader.setOnImageAvailableListener(mOnImageAvailableListener , irHandre);
+
+
 				myLog(TAG , dbMsg);
 			} catch (CameraAccessException er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -741,7 +865,7 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 		/**
 		 * CaptureSessionを生成  ;
 		 * onOpenedから起動時一回
-		 *  https://gist.github.com/woshidan/15f4f80b16e6135e2acc0e903e76c594
+		 * https://gist.github.com/woshidan/15f4f80b16e6135e2acc0e903e76c594
 		 */
 		private void createMyCaptureSession() {
 			final String TAG = "createMyCaptureSession[C2]";
@@ -761,40 +885,41 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 
 				mPreviewBuilder.addTarget(mSurfaceView.getHolder().getSurface());   //CaptureRequest.Builderにプレビュー用のSurfaceを設定
 				mPreviewRequest = mPreviewBuilder.build();
-					try {
-					mCamera.createCaptureSession(Collections.singletonList(mSurfaceView.getHolder().getSurface()) , mCameraCaptureSessionCallback , null);        //キャプチャーセッションの開始(セッション開始後に第2引数のコールバッククラスが呼ばれる)
+				try {
+					mCamera.createCaptureSession(Arrays.asList(mSurfaceView.getHolder().getSurface() , mImageReader.getSurface()) , mCameraCaptureSessionCallback , null);
+					//キャプチャーセッションの開始(セッション開始後に第2引数のコールバッククラスが呼ばれる)
 				} catch (CameraAccessException er) {
 					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 				}
 //				}
 
-				try {
-					mCamera.createCaptureSession(Arrays.asList(mSurfaceView , mImageReader.getSurface()), new CameraCaptureSession.StateCallback() {
-						@Override
-						public void onConfigured(CameraCaptureSession session) {
-							final String TAG = "onConfigured[C2]";
-							String dbMsg = "";
-							if (null == mCamera) {                  							// カメラがcloseされている場合
-								return;
-							}
-
-							mPreviewSession = session;
-
-							try {
-								session.setRepeatingRequest(mPreviewRequest, null, null);
-							} catch (CameraAccessException er) {
-								myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-							}
-						}
-
-						@Override
-						public void onConfigureFailed(CameraCaptureSession session) {
-
-						}
-					}, null);
-				} catch (CameraAccessException er) {
-					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-				}
+//				try {
+//					mCamera.createCaptureSession(Arrays.asList(mSurfaceView , mImageReader.getSurface()) , new CameraCaptureSession.StateCallback() {
+//						@Override
+//						public void onConfigured(CameraCaptureSession session) {
+//							final String TAG = "onConfigured[C2]";
+//							String dbMsg = "";
+//							if ( null == mCamera ) {                                            // カメラがcloseされている場合
+//								return;
+//							}
+//
+//							mPreviewSession = session;
+//
+//							try {
+//								session.setRepeatingRequest(mPreviewRequest , null , null);
+//							} catch (CameraAccessException er) {
+//								myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+//							}
+//						}
+//
+//						@Override
+//						public void onConfigureFailed(CameraCaptureSession session) {
+//
+//						}
+//					} , null);
+//				} catch (CameraAccessException er) {
+//					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+//				}
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -815,12 +940,14 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 				previewThread = new HandlerThread("CameraPreview");
 				previewThread.start();
 				previewHandler = new Handler(previewThread.getLooper());
+				dbMsg += ">previewHandler=" + previewHandler.toString();
 
 				try {
 					mPreviewSession.setRepeatingRequest(mPreviewBuilder.build() , null , previewHandler); //プレビューを開始
 				} catch (CameraAccessException er) {
 					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 				}
+
 				Integer sensorOrientation = mCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
 				dbMsg += ">sensor=" + sensorOrientation + "dig";
 				myLog(TAG , dbMsg);
@@ -945,26 +1072,36 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 			final String TAG = "camera2Dispose[C2]";
 			String dbMsg = "";
 			try {
+
+
 //				mCameraOpenCloseLock.acquire();
-				if ( null != mPreviewSession ) {
-					mPreviewSession.close();            //CameraCaptureSessionをクローズ
-					mPreviewSession = null;
-				}
-				mCamera.close();                      //CameraDeviceをクローズ
-//		mTextureView.close();                   // ImageReaderをクローズ
-				//		mCameraDeviceCallback                 //破棄は不要？
-				if ( previewHandler != null ) {
-					previewThread.quitSafely();        //APIL18
-					previewHandler = null;
+				if ( mPreviewSession != null ) {
+					dbMsg += "mPreviewSession";
+//					try {
+//						mPreviewSession.stopRepeating();
+//					} catch (CameraAccessException er) {
+//						myErrorLog(TAG , dbMsg + ";stopRepeatingでエラー発生；" + er);
+//					}
+					mPreviewSession.close();
+					dbMsg += "破棄";
 				}
 
-				if ( null != mCamera ) {
-					mCamera.close();
-					mCamera = null;
+				if ( previewThread != null ) {
+					previewThread.quitSafely();        //APIL18
+					previewThread = null;
+					dbMsg += "previewThread破棄";
 				}
+
+				if ( mCamera != null ) {
+					mCamera.close();                    // カメラデバイスとの切断
+					dbMsg += "mCamera破棄";
+				}
+
+
 				if ( null != mImageReader ) {
-					mImageReader.close();
+					mImageReader.close();                  // ImageReaderをクローズ
 					mImageReader = null;
+					dbMsg += "mImageReader破棄";
 				}
 //			} catch (InterruptedException e) {
 //				throw new RuntimeException("Interrupted while trying to lock camera closing.", e);

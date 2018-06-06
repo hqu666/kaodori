@@ -153,6 +153,8 @@ public class C1SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 	/**
 	 * プレビュー更新時のフレーム情報
 	 * Camera.PreviewCallback.
+	 *
+	 * onPreviewFrameに渡されるdataは RGBではなくYUB形式
 	 */
 	@Override
 	public void onPreviewFrame(byte[] data , Camera camera) {
@@ -168,21 +170,21 @@ public class C1SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 			}
 			dbMsg += "{" + width + "×" + height + "]";
 			readFrame(data , width , height);       //faceRecognitionView
-			myLog(TAG , dbMsg);
+			myLog(TAG , dbMsg);     //data=3,110,400{1920×1080=2,073,600]
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}
 
 	/**
-	 * Camera.PreviewCallback.onPreviewFrame で渡されたデータを Bitmap に変換します。
+	 * Camera.PreviewCallback.onPreviewFrame で渡されたYUBデータを Bitmap に変換します。
 	 * @param data
 	 * @param width
 	 * @param height
 	 * @param degrees
 	 * @return
 	 */
-	private Bitmap decode(byte[] data , int width , int height , int degrees) {
+	private Bitmap decode2RGB(byte[] data , int width , int height , int degrees) {
 		final String TAG = "decode[FR]";
 		String dbMsg = "";
 		try {
@@ -268,7 +270,7 @@ public class C1SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 		try {
 			dbMsg += "data=" + data.length ;
 			dbMsg += "[" + previewWidth + "×" + previewHeight +"]" + degrees +"dig";
-			Bitmap bitmap = decode(data , previewWidth , previewHeight , degrees);
+			Bitmap bitmap = decode2RGB(data , previewWidth , previewHeight , degrees);
 			if ( bitmap != null ) {
 				dbMsg += ",bitmap=" + bitmap.getByteCount();
 				if ( degrees == 90 ) {
