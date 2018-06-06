@@ -367,19 +367,19 @@ public class FdActivity extends Activity {
 				public void onClick(View v) {
 					final String TAG = "fda_capture_bt[MA]";
 					String dbMsg = "";
+					myLog(TAG , dbMsg);
 					if ( isTextureView ) {
 						if ( myTextureView != null ) {
 						}
 					} else if ( isC2 ) {
 						if ( c2SufaceView.camera != null ) {
-							c2SufaceView.camera.copyPreview();
-//							c2SufaceView.captureStart();
+//							c2SufaceView.camera.copyPreview();
+							c2SufaceView.captureStart();
 						}
 					} else {
 						if ( mySurfaceView != null ) {
 						}
 					}
-					myLog(TAG , dbMsg);
 				}
 			});
 			

@@ -405,7 +405,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 					write_folder = sharedPref.getString(key , write_folder);
 					dbMsg +=  ",書込みルートフォルダ=" + write_folder;
 				} else if ( key.equals("up_scale_key") ) {
-					up_scale = sharedPref.getString(key , "1.2");
+					up_scale = sharedPref.getString(key , up_scale);
 					dbMsg += ",顔から何割増しの枠で保存するか=" + up_scale;
 				} else if ( key.equals("haarcascades_last_modified_key") ) {
 					haarcascades_last_modified = sharedPref.getString(key , "1.2");

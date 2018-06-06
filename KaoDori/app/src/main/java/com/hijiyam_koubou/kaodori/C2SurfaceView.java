@@ -30,6 +30,7 @@ import android.util.SparseIntArray;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.View;
 import android.view.WindowManager;
 import android.widget.ImageView;
 
@@ -223,6 +224,7 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 	}
 
 	///顔検出//////////////////////////////////////////////////////////////////////////////
+	///顔検出//////////////////////////////////////////////////////////////////////////////
 //
 //	/**
 //	 * YUVで渡されたデータを Bitmap に変換します。
@@ -354,6 +356,46 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 //			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 //		}
 //	}
+
+	public void imageFromImageReader(ImageReader reader) {
+		final String TAG = "imageFromImageReader[FR]";
+		String dbMsg = "";
+		try {
+//			if( camera.mImageReader != null) {
+				Image image = reader.acquireLatestImage();
+//				if(image != null) {
+					int width = image.getWidth();
+					int height = image.getHeight();
+					long timestamp = image.getTimestamp();
+					dbMsg += ",image[" + width + "×" + height + "]Format=" + image.getFormat();
+					dbMsg += ",=" + timestamp + "," + image.getPlanes().length + "枚";
+					ByteBuffer imageBuf = image.getPlanes()[0].getBuffer();
+					final byte[] imageBytes = new byte[imageBuf.remaining()];        //直接渡すと.ArrayIndexOutOfBoundsException: length=250,095; index=15,925,248
+					dbMsg += ",imageBytes=" + imageBytes.length;
+					imageBuf.get(imageBytes);
+
+					final Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes , 0 , imageBytes.length);
+					ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+					bitmap.compress(Bitmap.CompressFormat.JPEG , 100 , byteArrayOutputStream);
+					dbMsg += ",bitmap[" + bitmap.getWidth() + "×" + bitmap.getHeight() + "]";
+					int byteCount = bitmap.getByteCount();
+					dbMsg += "" + byteCount + "バイト";
+
+					degrees = camera.getCameraRotation();
+					dbMsg += "," + degrees + "dig";
+					readFrameRGB(bitmap);
+					byteArrayOutputStream.close();
+//				}
+				image.close();
+				if ( bitmap != null ) {
+					bitmap.recycle();
+				}
+//			}
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
   /**
    *   Bitmapデータを受け取り認証処理を開始する
    * */
@@ -438,34 +480,23 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 		String dbMsg = "";
 		try {
 			if( camera.mImageReader != null) {
-				Image image = camera.mImageReader.acquireLatestImage();
-				if(image != null) {
-					int width = image.getWidth();
-					int height = image.getHeight();
-					long timestamp = image.getTimestamp();
-					dbMsg += ",image[" + width + "×" + height + "]Format=" + image.getFormat();
-					dbMsg += ",=" + timestamp + "," + image.getPlanes().length + "枚";
-					ByteBuffer imageBuf = image.getPlanes()[0].getBuffer();
-					final byte[] imageBytes = new byte[imageBuf.remaining()];        //直接渡すと.ArrayIndexOutOfBoundsException: length=250,095; index=15,925,248
-					dbMsg += ",imageBytes=" + imageBytes.length;
-					imageBuf.get(imageBytes);
-
-					final Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes , 0 , imageBytes.length);
-					ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-					bitmap.compress(Bitmap.CompressFormat.JPEG , 100 , byteArrayOutputStream);
-					dbMsg += ",bitmap[" + bitmap.getWidth() + "×" + bitmap.getHeight() + "]";
-					int byteCount = bitmap.getByteCount();
-					dbMsg += "" + byteCount + "バイト";
-
-					degrees = camera.getCameraRotation();
-					dbMsg += "," + degrees + "dig";
-					readFrameRGB(bitmap);
-					byteArrayOutputStream.close();
-				}
-				image.close();
-				if ( bitmap != null ) {
-					bitmap.recycle();
-				}
+				camera.takePicture(new ImageReader.OnImageAvailableListener() {
+					@Override
+					public void onImageAvailable(ImageReader reader) {
+						imageFromImageReader(reader);
+//						// 撮れた画像をImageViewに貼り付けて表示。
+//						final Image image = reader.acquireLatestImage();
+//						ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+//						byte[] bytes = new byte[buffer.remaining()];
+//						buffer.get(bytes);
+//						Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+//						image.close();
+//
+//						mImageView.setImageBitmap(bitmap);
+//						mImageView.setVisibility(View.VISIBLE);
+//						mTextureView.setVisibility(View.INVISIBLE);
+					}
+				});
 			}
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
@@ -515,6 +546,7 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 		public CameraCharacteristics mCharacteristics;
 		public SurfaceView mSurfaceView;
 		public Size mCameraSize;
+		public Size mPreviewSize;
 		public CaptureRequest.Builder mPreviewBuilder;
 		public CaptureRequest mPreviewRequest;
 		public CameraCaptureSession mPreviewSession;
@@ -525,7 +557,7 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 		public int irFoimat = ImageFormat.JPEG;  //ImageFormat.JPEG ;
 		public int maxImages = 1;
 		public Handler irHandre = null;
-
+		private ImageReader.OnImageAvailableListener mTakePictureListener;
 
 		public WindowManager mWindowManager;
 		public int baceWidth;
@@ -558,65 +590,7 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 				final String TAG = "onImageAvailable[C2]";
 				String dbMsg = "";
 				try {                // Imageは各種コーデック(圧縮方法みたいなもの)で圧縮したりする、画像のByteBufferを扱うためのオブジェクト
-					Image image = reader.acquireLatestImage();
-					// 何枚か画像を扱うことができて(?)、それぞれはPlanesに入っている
-					// この辺のコードは https://developer.android.com/things/training/doorbell/camera-input.html のサンプルより
-					int width = image.getWidth();
-					int height = image.getHeight();
-					long timestamp = image.getTimestamp();
-					dbMsg += ",image[" + width + "×" + height + "]Format=" + image.getFormat();
-					dbMsg += ",=" + timestamp + "," + image.getPlanes().length + "枚";
-					ByteBuffer imageBuf = image.getPlanes()[0].getBuffer();
-					final byte[] imageBytes = new byte[imageBuf.remaining()];        //直接渡すと.ArrayIndexOutOfBoundsException: length=250,095; index=15,925,248
-					dbMsg += ",imageBytes=" + imageBytes.length;
-					imageBuf.get(imageBytes);
-					//image[4608×3456]Format=256,=308170292635709,1枚,imageBytes=250095,
-//					image.close();
-
-//					Bitmap bitmap = Bitmap.createBitmap(width , height , Bitmap.Config.ARGB_8888);
-//					int offset = 0;
-//					int pixelStride = image.getPlanes()[0].getPixelStride();
-//					int rowStride = image.getPlanes()[0].getRowStride();
-//					int rowPadding = rowStride - pixelStride * width;
-//					dbMsg += ",pixelStride=" + pixelStride + ",rowStride=" + rowStride + ",rowPadding=" + rowPadding;
-//					if ( 0 < pixelStride && 0 < pixelStride ) {
-//						bitmap = Bitmap.createBitmap(width + rowPadding / pixelStride , height , Bitmap.Config.ARGB_8888);
-//					}
-//					bitmap.copyPixelsFromBuffer(imageBuf);  //java.lang.RuntimeException: Buffer not large enough for pixels
-//					FileOutputStream fos = new FileOutputStream(writeFolder +File.pathSeparator+timestamp+ ".jpg");
-//					bitmap.compress(Bitmap.CompressFormat.JPEG , 100 , fos);
-//
-					final Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes , 0 , imageBytes.length);
-					ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-					bitmap.compress(Bitmap.CompressFormat.JPEG , 100 , byteArrayOutputStream);
-					dbMsg += ",bitmap[" + bitmap.getWidth() + "×" + bitmap.getHeight() + "]";
-					int byteCount = bitmap.getByteCount();
-					dbMsg += "" + byteCount + "バイト";
-//					byte[] data =  new byte[byteCount];
-//					for (int i=0;i<byteCount;i++){
-//						fos.write(data[i]);//1byteずつ、書き込み
-//					}
-//					//	Bitmap.CompressFormat.PNG	;	PNG, クオリティー100としてbyte配列にデータを格納
-////					byteArrayOutputStream.flush();
-//					byte[] data = byteArrayOutputStream.toByteArray();
-//					if ( data != null ) {
-//						dbMsg += "、data=" + data.length + "バイト";
-//						Bitmap bmp = BitmapFactory.decodeByteArray(data , 0 , data.length);
-//						dbMsg += "、bmp=" + bmp.getByteCount() + "バイト";
-//						bmp.recycle();
-//					}
-
-
-					degrees = camera.getCameraRotation();
-					dbMsg += "," + degrees + "dig";
-					readFrameRGB( bitmap);
-//					readFrame(YuvData , width , height);
-					image.close();
-					if ( bitmap != null ) {
-						bitmap.recycle();
-					}
-					byteArrayOutputStream.close();
-
+					imageFromImageReader(reader);
 					myLog(TAG , dbMsg);
 				} catch (Exception er) {
 					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -760,18 +734,18 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 			final String TAG = "open[C2]";
 			String dbMsg = "";
 			try {
+				StreamConfigurationMap map = null;
+
 				Size mCameraSize_sub = null;
 				if ( mCameraManager == null ) {
 					mCameraManager = ( CameraManager ) context.getSystemService(CAMERA_SERVICE);      //逐次取り直さないとダメ？
 				}
-
 				dbMsg += "、getCameraIdList=" + mCameraManager.getCameraIdList().length + "件";
 				for ( String cId : mCameraManager.getCameraIdList() ) {
 					dbMsg += "cameraId=" + cId;
 //					if ( mCharacteristics == null ) {
 					mCharacteristics = mCameraManager.getCameraCharacteristics(cId);
 //					}
-					StreamConfigurationMap map;
 					if ( mCharacteristics.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics.LENS_FACING_BACK ) {    //1;メインカメラ
 						dbMsg += ";LENS_FACING_BACK";
 						this.cameraId = cId;
@@ -811,10 +785,11 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 					mCameraSize = mCameraSize_sub;
 				}
 
+//				Camera2Util C2U =new Camera2Util();
+//				mImageReader = C2U.getMaxSizeImageReader(map, ImageFormat.JPEG);
 				mImageReader = ImageReader.newInstance(mCameraSize.getWidth() , mCameraSize.getHeight() , irFoimat , maxImages);
 				mImageReader.setOnImageAvailableListener(mOnImageAvailableListener , irHandre);
-
-
+//				mPreviewSize = C2U.getBestPreviewSize(map, mImageReader);
 				myLog(TAG , dbMsg);
 			} catch (CameraAccessException er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -1063,6 +1038,12 @@ public class C2SurfaceView extends SurfaceView implements SurfaceHolder.Callback
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 			}
+		}
+		public boolean takePicture(ImageReader.OnImageAvailableListener listener) {
+//			if (mState != mPreviewState) return false;
+			mTakePictureListener = listener;
+//			nextState(mAutoFocusState);
+			return true;
 		}
 
 		/***
