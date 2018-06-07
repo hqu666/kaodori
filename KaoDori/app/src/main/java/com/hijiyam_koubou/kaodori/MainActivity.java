@@ -196,7 +196,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 			findViewById(R.id.picture).setOnClickListener(this);
 			findViewById(R.id.info).setOnClickListener(this);
-
+			mFile = new File(writeFolder, "pic.jpg");                 //getActivity().getExternalFilesDir(null)
+			dbMsg += ",mFile=" + mFile.getAbsolutePath();
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -216,7 +217,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					openCamera(mTextureView.getWidth() , mTextureView.getHeight());
 				} else {
 					mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
-					mFile = new File(writeFolder, "pic.jpg");                 //getActivity().getExternalFilesDir(null)
 
 				}
 			} else{
@@ -338,6 +338,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 //					mySurfaceView.surfaceDestroy();
 //				}
 //			}
+			closeCamera();
 			this.finish();
 			if ( Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ) {
 				finishAndRemoveTask();                      //アプリケーションのタスクを消去する事でデバッガーも停止する。
@@ -674,6 +675,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				dbMsg = "Couldn't find any suitable preview size";
 				retSize= choices[0];
 			}
+			dbMsg += ",retSize=" + retSize;
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -695,10 +697,11 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			CameraManager manager = ( CameraManager ) activity.getSystemService(Context.CAMERA_SERVICE);
 			try {
 				for ( String cameraId : manager.getCameraIdList() ) {
+					dbMsg += ",cameraId=" +cameraId;
 					CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
 
-					// We don't use a front facing camera in this sample.
-					Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
+					Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);    					// We don't use a front facing camera in this sample.
+					dbMsg += ",facing=" +facing +"0;FRONT";
 					if ( facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT ) {
 						continue;
 					}
@@ -710,14 +713,16 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 					// For still image captures, we use the largest available size.
 					Size largest = Collections.max(Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)) , ( Comparator< ? super Size > ) new CompareSizesByArea());
+					dbMsg += "m,largest[" + largest.getWidth() + "×" + largest.getHeight()  + "]";
 					mImageReader = ImageReader.newInstance(largest.getWidth() , largest.getHeight() , ImageFormat.JPEG , /*maxImages*/2);
 					mImageReader.setOnImageAvailableListener(mOnImageAvailableListener , mBackgroundHandler);
 
-					// Find out if we need to swap dimension to get the preview size relative to sensor
-					// coordinate.
+					// Find out if we need to swap dimension to get the preview size relative to sensor coordinate.
 					int displayRotation = activity.getWindowManager().getDefaultDisplay().getRotation();
+					dbMsg += ",displayRotation=" + displayRotation;
 					//noinspection ConstantConditions
 					mSensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
+					dbMsg += ",mSensorOrientation=" + mSensorOrientation;
 					boolean swappedDimensions = false;
 					switch ( displayRotation ) {
 						case Surface.ROTATION_0:
@@ -733,7 +738,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 							}
 							break;
 						default:
-							dbMsg = "Display rotation is invalid: " + displayRotation;
+							dbMsg += "Display rotation is invalid: " + displayRotation;
 					}
 
 					Point displaySize = new Point();
@@ -757,23 +762,27 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					if ( maxPreviewHeight > MAX_PREVIEW_HEIGHT ) {
 						maxPreviewHeight = MAX_PREVIEW_HEIGHT;
 					}
+					dbMsg += ",rotatedPreview[" + rotatedPreviewWidth + "×" + rotatedPreviewHeight  + "]";
+					dbMsg += ",maxPreview[" + maxPreviewWidth + "×" + maxPreviewHeight  + "]";
 
 					// Danger, W.R.! Attempting to use too large a preview size could  exceed the camera
-					// bus' bandwidth limitation, resulting in gorgeous previews but the storage of
-					// garbage capture data.
+					// bus' bandwidth limitation, resulting in gorgeous previews but the storage of garbage capture data.
 					mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class) , rotatedPreviewWidth , rotatedPreviewHeight , maxPreviewWidth , maxPreviewHeight , largest);
 
 					// We fit the aspect ratio of TextureView to the size of preview we picked.
 					int orientation = getResources().getConfiguration().orientation;
+					dbMsg += ",orientation=" + orientation;
 					if ( orientation == Configuration.ORIENTATION_LANDSCAPE ) {
 						mTextureView.setAspectRatio(mPreviewSize.getWidth() , mPreviewSize.getHeight());
 					} else {
 						mTextureView.setAspectRatio(mPreviewSize.getHeight() , mPreviewSize.getWidth());
 					}
+					dbMsg += ",Preview[" + mPreviewSize.getWidth() + "×" + mPreviewSize.getHeight()  + "]";
 
 					// Check if the flash is supported.
 					Boolean available = characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
 					mFlashSupported = available == null ? false : available;
+					dbMsg += ",mFlashSupported=" + mFlashSupported;
 
 					mCameraId = cameraId;
 					return;
@@ -800,6 +809,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		final String TAG = "openCamera[MA]";
 		String dbMsg = "";
 		try {
+			dbMsg = "[" + width + "×" + height  + "]";
 			setUpCameraOutputs(width , height);
 			configureTransform(width , height);
 			Activity activity = MainActivity.this;            //getActivity();
@@ -808,6 +818,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				if ( !mCameraOpenCloseLock.tryAcquire(2500 , TimeUnit.MILLISECONDS) ) {
 					throw new RuntimeException("Time out waiting to lock camera opening.");
 				}
+				dbMsg = ",mCameraId=" + mCameraId;
+				dbMsg = ",mStateCallback=" + mStateCallback;
+				dbMsg = ",mBackgroundHandler=" + mBackgroundHandler;
 				manager.openCamera(mCameraId , mStateCallback , mBackgroundHandler);
 			} catch (CameraAccessException er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -982,11 +995,13 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				return;
 			}
 			int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
+			dbMsg += ",rotation=" + rotation;
 			Matrix matrix = new Matrix();
 			RectF viewRect = new RectF(0 , 0 , viewWidth , viewHeight);
 			RectF bufferRect = new RectF(0 , 0 , mPreviewSize.getHeight() , mPreviewSize.getWidth());
 			float centerX = viewRect.centerX();
 			float centerY = viewRect.centerY();
+			dbMsg += ",center(" + centerY +","+ centerY+ ")";
 			if ( Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation ) {
 				bufferRect.offset(centerX - bufferRect.centerX() , centerY - bufferRect.centerY());
 				matrix.setRectToRect(viewRect , bufferRect , Matrix.ScaleToFit.FILL);
@@ -1346,3 +1361,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 //参照 	 11 Oct 2017	https://github.com/googlesamples/android-Camera2Basic/blob/master/Application/src/main/java/com/example/android/camera2basic/Camera2BasicFragment.java
 //参照		 http://blog.kotemaru.org/2015/05/23/android-camera2-sample.html
+/**
+ * 保存ファイル名
+ *
+ * E/mm-camera: <STATS_AF ><ERROR> 4436: af_port_handle_pdaf_stats: Fail to init buf divert ack ctrl
+
+ * */
