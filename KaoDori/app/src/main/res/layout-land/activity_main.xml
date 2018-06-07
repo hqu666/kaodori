@@ -1,4 +1,5 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+			  xmlns:app="http://schemas.android.com/apk/res-auto"
 			  xmlns:tools="http://schemas.android.com/tools"
 			  android:layout_width="match_parent"
 			  android:layout_height="match_parent"
@@ -12,38 +13,48 @@
 
 	<com.hijiyam_koubou.kaodori.AutoFitTextureView
 		android:id="@+id/ma_aft"
-		android:layout_width="wrap_content"
+		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
-		android:layout_alignParentBottom="true"
-		android:layout_alignParentStart="true"
-		android:layout_alignParentTop="true"
+		android:layout_alignParentBottom="false"
+		android:layout_alignParentStart="false"
+		android:layout_alignParentTop="false"
+		android:layout_gravity="center"
 		android:layout_weight="1"/>
 
 	<FrameLayout
 		android:id="@+id/control"
-		android:layout_width="112dp"
+		android:layout_width="match_parent"
 		android:layout_height="match_parent"
-		android:layout_alignParentBottom="true"
-		android:layout_alignParentEnd="true"
-		android:layout_alignParentTop="true"
-		android:layout_toRightOf="@id/ma_aft"
-		android:layout_weight="1"
-		android:background="@color/control_background"
+		android:layout_alignParentBottom="false"
+		android:layout_alignParentEnd="false"
+		android:layout_alignParentTop="false"
+		android:layout_gravity="right"
 		android:orientation="horizontal">
 
-		<Button
+		<ImageView
+			android:id="@+id/mm_iv"
+			android:layout_width="60dp"
+			android:layout_height="60dp"
+			android:layout_marginLeft="5dp"
+			android:layout_marginTop="5dp"
+			android:src="@android:color/transparent"/>
+
+		<ImageButton
 			android:id="@+id/picture"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
-			android:layout_gravity="center"
-			android:text="@string/picture"/>
+			android:layout_gravity="right|center"
+			android:layout_marginRight="5dp"
+			android:src="@android:drawable/ic_menu_camera"/>
 
 		<ImageButton
 			android:id="@+id/info"
 			style="@android:style/Widget.Material.Light.Button.Borderless"
-			android:layout_width="wrap_content"
+			android:layout_width="50dp"
 			android:layout_height="wrap_content"
-			android:layout_gravity="center_horizontal|bottom"
+			android:layout_gravity="top|right"
+			android:layout_marginRight="5dp"
+			android:layout_marginTop="5dp"
 			android:contentDescription="@string/description_info"
 			android:src="@android:drawable/ic_menu_info_details"/>
 
@@ -51,4 +62,4 @@
 	</FrameLayout>
 
 	<!--</RelativeLayout>-->
-</LinearLayout>
+</FrameLayout>

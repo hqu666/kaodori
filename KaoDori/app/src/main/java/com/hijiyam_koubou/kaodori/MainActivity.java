@@ -181,7 +181,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		}
 	}
 
-//Life Cycle// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//Life Cycle// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -197,7 +197,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			findViewById(R.id.picture).setOnClickListener(this);
 			findViewById(R.id.info).setOnClickListener(this);
 			mFile = new File(writeFolder, "pic.jpg");                 //getActivity().getExternalFilesDir(null)
-			dbMsg += ",mFile=" + mFile.getAbsolutePath();
+			dbMsg += ",mFile=" + mFile.getParent();
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -213,11 +213,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			startBackgroundThread();
 			if(mTextureView!= null){
 				if ( mTextureView.isAvailable() ) {
-					//Attempt to invoke virtual method 'boolean com.hijiyam_koubou.kaodori.AutoFitTextureView.isAvailable()' on a null object reference
 					openCamera(mTextureView.getWidth() , mTextureView.getHeight());
 				} else {
 					mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
-
 				}
 			} else{
 				dbMsg += "mTextureView== null";
@@ -250,16 +248,16 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		String dbMsg = "hasFocus=" + hasFocus;
 		try {
 			if(hasFocus){
-				if(mTextureView!= null){
-					if ( mTextureView.isAvailable() ) {
-						//Attempt to invoke virtual method 'boolean com.hijiyam_koubou.kaodori.AutoFitTextureView.isAvailable()' on a null object reference
-						openCamera(mTextureView.getWidth() , mTextureView.getHeight());
-					} else {
-						mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
-					}
-				} else{
-					dbMsg += "mTextureView== null";
-				}
+//				if(mTextureView!= null){
+//					if ( mTextureView.isAvailable() ) {
+//						//Attempt to invoke virtual method 'boolean com.hijiyam_koubou.kaodori.AutoFitTextureView.isAvailable()' on a null object reference
+//						openCamera(mTextureView.getWidth() , mTextureView.getHeight());
+//					} else {
+//						mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
+//					}
+//				} else{
+//					dbMsg += "mTextureView== null";
+//				}
 			}
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
@@ -500,7 +498,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			final String TAG = "onImageAvailable[MA]";
 			String dbMsg = "";
 			try {
-				mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage() , mFile));
+				mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage() , writeFolder));      //mFile
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -818,9 +816,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				if ( !mCameraOpenCloseLock.tryAcquire(2500 , TimeUnit.MILLISECONDS) ) {
 					throw new RuntimeException("Time out waiting to lock camera opening.");
 				}
-				dbMsg = ",mCameraId=" + mCameraId;
-				dbMsg = ",mStateCallback=" + mStateCallback;
-				dbMsg = ",mBackgroundHandler=" + mBackgroundHandler;
+				dbMsg += ",mCameraId=" + mCameraId;
+				dbMsg += ",mStateCallback=" + mStateCallback;
+				dbMsg += ",mBackgroundHandler=" + mBackgroundHandler;
 				manager.openCamera(mCameraId , mStateCallback , mBackgroundHandler);
 			} catch (CameraAccessException er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -1199,13 +1197,16 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		 * The file we save the image into.
 		 */
 		private File mFile;
+		private File saveFolder;
+		private String saveFolderName;
 
-		ImageSaver(Image image , File file) {
+		ImageSaver(Image image , String _saveFolderName) {          		//
 			final String TAG = "ImageSaver[MA]";
 			String dbMsg = "";
 			try {
 				mImage = image;
-				mFile = file;
+				saveFolderName = _saveFolderName;
+//				mFile = file;
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -1214,14 +1215,30 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 		@Override
 		public void run() {
-			final String TAG = "run[MA]";
+			final String TAG = "ImageSaver.run[MA]";
 			String dbMsg = "";
 			try {
+				int width = mImage.getWidth();
+				int height = mImage.getHeight();
+				long timestamp = mImage.getTimestamp();
+				dbMsg += ",image[" + width + "×" + height + "]Format=" + mImage.getFormat();
+				dbMsg += ",=" + timestamp + "," + mImage.getPlanes().length + "枚";
 				ByteBuffer buffer = mImage.getPlanes()[0].getBuffer();
 				byte[] bytes = new byte[buffer.remaining()];
+				dbMsg += ",bytes="+bytes.length+"バイト";
 				buffer.get(bytes);
 				FileOutputStream output = null;
 				try {
+					dbMsg += ",saveFolder="+saveFolderName;
+					saveFolder= new File(saveFolderName);
+					if(! saveFolder.exists()){
+						saveFolder.mkdir();
+						dbMsg += "作成";
+					} else{
+						dbMsg += "有り";
+					}
+					mFile = new File(saveFolderName, timestamp+".jpg");                 //getActivity().getExternalFilesDir(null)
+					dbMsg += ",mFile="+mFile.toString();
 					output = new FileOutputStream(mFile);
 					output.write(bytes);
 				} catch (IOException er) {
@@ -1365,5 +1382,15 @@ public class MainActivity extends Activity implements View.OnClickListener {
  * 保存ファイル名
  *
  * E/mm-camera: <STATS_AF ><ERROR> 4436: af_port_handle_pdaf_stats: Fail to init buf divert ack ctrl
+      6/8
+ 			コンテキストをコントロールパネルに
+ 			年月日フォルダ
+ 			撮影された写真のsサムネイル
+ 			ファイルビュー連携
+ 			情報表示
+
+ 			オーバーレイのveiwクラスで機能実行
+ 				位置とサイズをプレビューに合わせ
+
 
  * */
