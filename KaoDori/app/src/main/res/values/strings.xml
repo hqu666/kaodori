@@ -4,4 +4,25 @@
 	<string name="write_folder">書込みフォルダ</string>
 	<string name="up_scale">保存時の枠拡大</string>
 	<string name="haarcascades_last_modified">最新の顔認証プロファイル</string>
+	<string name="googlc2">Google推奨Camera2</string>
+	<string name="c1surfas">Camera1</string>
+	<string name="c2sarfece">Camera2Sarfec</string>
+	<string name="mm_setting_titol">設定</string>
+	<string name="mm_quit_titol">終了</string>
+
+
+	<string name="picture">Picture</string>
+	<string name="description_info">Info</string>
+	<string name="request_permission">This sample needs camera permission.</string>
+	<string name="camera_error">This device doesn\'t support Camera2 API.</string>
+	<string name="intro_message">
+        <![CDATA[
+
+
+            This sample demonstrates the basic use of Camera2 API. Check the source code to see how
+            you can display camera preview and take pictures.
+
+
+        ]]>
+    </string>
 </resources>

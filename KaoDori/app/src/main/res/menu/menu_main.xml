@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+	  xmlns:app="http://schemas.android.com/apk/res-auto"
+	  xmlns:tools="http://schemas.android.com/tools">
+
+	<group android:checkableBehavior="single">
+
+		<item
+			android:id="@+id/mm_googlec2"
+			android:checkable="false"
+			android:icon="@android:drawable/ic_menu_directions"
+			android:title="@string/googlc2"/>
+		<!--<string name="">カメラ起動</string>-->
+		<item
+			android:id="@+id/mm_c1surfas"
+			android:checkable="false"
+			android:icon="@android:drawable/ic_menu_share"
+			android:title="@string/c1surfas"/>
+		<item
+			android:id="@+id/mm_c2sarfece"
+			android:checkable="false"
+			android:checked="false"
+			android:title="@string/c2sarfece"/>
+	</group>
+
+	<item
+		android:title="その他"
+		>
+
+		<menu>
+			<item
+				android:id="@+id/mm_prefarence"
+				android:checkable="false"
+				android:icon="@android:drawable/ic_menu_manage"
+				android:title="@string/mm_setting_titol"/>
+			<item
+				android:id="@+id/mm_quit"
+				android:checkable="false"
+				android:icon="@android:drawable/ic_lock_power_off"
+				android:title="@string/mm_quit_titol"/>
+
+		</menu>
+	</item>
+
+</menu>

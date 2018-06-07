@@ -75,13 +75,20 @@ public class AutoFitTextureView extends TextureView {
 
 	//-----------------------------------------------------------
 	// added by kotemaru.org
-	public void setPreviewSize(int width, int height) {
-		setAspectRatio(width, height);
-	}
-	public int getPreviewWidth() {
-		return mRatioWidth;
-	}
-	public int getPreviewHeight() {
-		return mRatioHeight;
-	}
+//	public void setPreviewSize(int width, int height) {
+//		setAspectRatio(width, height);
+//	}
+//	public int getPreviewWidth() {
+//		return mRatioWidth;
+//	}
+//	public int getPreviewHeight() {
+//		return mRatioHeight;
+//	}
+
+
+
 }
+
+
+//参照 19 Nov 2014		https://github.com/googlesamples/android-Camera2Basic/blob/master/Application/src/main/java/com/example/android/camera2basic/AutoFitTextureView.java
+//

@@ -12,7 +12,10 @@ import android.hardware.camera2.CameraAccessException;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.view.ContextMenu;
 import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
@@ -34,7 +37,7 @@ public class FdActivity extends Activity {
 
 	public ViewGroup activityMain;            //プレビュー読込み場所
 	public ImageButton fda_capture_bt;      //キャプチャーボタン
-	public ImageButton fda_setting_bt ;      //設定ボタン
+	public ImageButton fda_setting_bt;      //設定ボタン
 
 	public boolean isTextureView = false;            //プレビューにTextureViewを使用する
 	public boolean isC2 = true;            //camera2を使用する
@@ -55,7 +58,7 @@ public class FdActivity extends Activity {
 	 * このアプリケーションの設定ファイル読出し
 	 **/
 	public void readPref() {
-		final String TAG = "readPref[MA]";
+		final String TAG = "readPref[FdA}";
 		String dbMsg = "許諾済み";//////////////////
 		try {
 			if ( Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ) {                //(初回起動で)全パーミッションの許諾を取る
@@ -81,12 +84,12 @@ public class FdActivity extends Activity {
 			prefs.readPref(this);
 			writeFolder = prefs.write_folder;
 			dbMsg += "," + getResources().getString(R.string.write_folder) + "=" + writeFolder;
-			if(prefs.up_scale != null ) {
+			if ( prefs.up_scale != null ) {
 				dbMsg += ",up_scale=" + prefs.up_scale;
 				CS_Util UTIL = new CS_Util();
-				if(UTIL.isFloatVal( prefs.up_scale)){
+				if ( UTIL.isFloatVal(prefs.up_scale) ) {
 					upScale = Float.parseFloat(prefs.up_scale);
-				}   else{
+				} else {
 					upScale = 2.0f;
 				}
 				dbMsg += "," + getResources().getString(R.string.up_scale) + "=" + upScale;
@@ -105,7 +108,7 @@ public class FdActivity extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		final String TAG = "onCreate[MA]";
+		final String TAG = "onCreate[FdA}";
 		String dbMsg = "";//////////////////
 		try {
 			isCrated = false;
@@ -118,9 +121,10 @@ public class FdActivity extends Activity {
 			}
 			setContentView(R.layout.face_detect_surface_view);
 			activityMain = ( ViewGroup ) findViewById(R.id.fd_activity_surface_view);
-			 fda_capture_bt = ( ImageButton ) findViewById(R.id.fda_capture_bt);      //キャプチャーボタン
-			 fda_setting_bt = ( ImageButton ) findViewById(R.id.fda_setting_bt);      //設定ボタン
-
+			fda_capture_bt = ( ImageButton ) findViewById(R.id.fda_capture_bt);      //キャプチャーボタン
+			fda_setting_bt = ( ImageButton ) findViewById(R.id.fda_setting_bt);      //設定ボタン
+			registerForContextMenu(activityMain);
+			
 			try {
 				copyAssets("haarcascades");                    // assetsの内容を /data/data/*/files/ にコピーします。
 			} catch (IOException er) {
@@ -135,7 +139,7 @@ public class FdActivity extends Activity {
 	@Override
 	protected void onStart() {
 		super.onStart();
-		final String TAG = "onStart[MA]";
+		final String TAG = "onStart[FdA}";
 		String dbMsg = "";
 		try {
 			myLog(TAG , dbMsg);
@@ -147,7 +151,7 @@ public class FdActivity extends Activity {
 	@Override
 	protected void onResume() {
 		super.onResume();
-		final String TAG = "onResume[MA]";
+		final String TAG = "onResume[FdA}";
 		String dbMsg = "";
 		try {
 			laterCreate();
@@ -160,27 +164,27 @@ public class FdActivity extends Activity {
 	@Override
 	protected void onPause() {
 		super.onPause();
-		final String TAG = "onPause[MA]";
+		final String TAG = "onPause[FdA}";
 		String dbMsg = "";
 		try {
 			if ( myTextureView != null ) {
 //				camera2Dispose();
 //				faceRecognition.frCameraManager.stopBackgroundThread();
 			}
-			if ( c2SufaceView.camera.mPreviewSession != null ) {
-					try {
-						c2SufaceView.camera.mPreviewSession.stopRepeating();
-					} catch (CameraAccessException  er) {
-						myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-					}
-				c2SufaceView.camera.mPreviewSession.close();
-
-
-				// カメラデバイスとの切断
-				if (c2SufaceView.camera.mCamera != null) {
-					c2SufaceView.camera.mCamera.close();
-				}
-			}
+//			if ( c2SufaceView.camera.mPreviewSession != null ) {
+//					try {
+//						c2SufaceView.camera.mPreviewSession.stopRepeating();
+//					} catch (CameraAccessException  er) {
+//						myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+//					}
+//				c2SufaceView.camera.mPreviewSession.close();
+//
+//
+//				// カメラデバイスとの切断
+//				if (c2SufaceView.camera.mCamera != null) {
+//					c2SufaceView.camera.mCamera.close();
+//				}
+//			}
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -190,7 +194,7 @@ public class FdActivity extends Activity {
 	@Override
 	protected void onStop() {
 		super.onStop();
-		final String TAG = "onStop[MA]";
+		final String TAG = "onStop[FdA}";
 		String dbMsg = "";
 		try {
 			myLog(TAG , dbMsg);
@@ -202,7 +206,7 @@ public class FdActivity extends Activity {
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
-		final String TAG = "onDestroy[MA]";
+		final String TAG = "onDestroy[FdA}";
 		String dbMsg = "";
 		try {
 			myLog(TAG , dbMsg);
@@ -214,7 +218,7 @@ public class FdActivity extends Activity {
 	@Override
 	public void onWindowFocusChanged(boolean hasFocus) {
 		super.onWindowFocusChanged(hasFocus);
-		final String TAG = "onWindowFocusChanged[MA]";
+		final String TAG = "onWindowFocusChanged[FdA}";
 		String dbMsg = "hasFocus=" + hasFocus;
 		try {
 			myLog(TAG , dbMsg);
@@ -230,7 +234,7 @@ public class FdActivity extends Activity {
 //	@Override
 	public void onMultiWindowChanged(boolean isInMultiWindowMode) {
 		super.onMultiWindowModeChanged(isInMultiWindowMode);
-		final String TAG = "onMultiWindowChanged[MA]";
+		final String TAG = "onMultiWindowChanged[FdA}";
 		String dbMsg = "isInMultiWindowMode=" + isInMultiWindowMode;
 		try {
 			myLog(TAG , dbMsg);
@@ -244,7 +248,7 @@ public class FdActivity extends Activity {
 	 */
 	@Override
 	public void onConfigurationChanged(Configuration newConfig) {
-		final String TAG = "onConfigurationChanged[MA]";
+		final String TAG = "onConfigurationChanged[FdA}";
 		String dbMsg = "";
 		try {
 
@@ -261,7 +265,7 @@ public class FdActivity extends Activity {
 //				faceRecognition.setDig2Cam(dispDegrees);
 			} else {
 				if ( isC2 ) {
-					if(c2SufaceView.camera != null){
+					if ( c2SufaceView.camera != null ) {
 						c2SufaceView.camera.setPreviewSize();
 					}
 //					c2SufaceView.setDig2Cam(dispDegrees);
@@ -307,6 +311,133 @@ public class FdActivity extends Activity {
 		}
 	}
 
+
+	//メニューボタンで表示するメニュー///////////////////////////////////////////////////////////////////////////////
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		//	Log.d("onCreateOptionsMenu","NakedFileVeiwActivity;mlMenu="+wkMenu);
+		makeOptionsMenu(menu);    //ボタンで表示するメニューの内容の実記述
+		return super.onCreateOptionsMenu(menu);
+	}
+
+	public boolean makeOptionsMenu(Menu menu) {    //ボタンで表示するメニューの内容
+//		Log.d("makeOptionsMenu",dbBlock);
+//			wkMenu.add(0, MENU_kore, 0, "これ");	//メニューそのもので起動するパターン
+//		SubMenu koreMenu = wkMenu.addSubMenu("操作");
+//		koreMenu.add(MENU_WQKIT , MENU_WQKIT_ZUP , 0 , CTM_WQKIT_ZUP);                //ズームアップ";
+//		koreMenu.add(MENU_WQKIT , MENU_WQKIT_ZDW , 0 , CTM_WQKIT_ZDW);                //ズームダウン";
+//		koreMenu.add(MENU_WQKIT , MENU_WQKIT_FOR , 0 , CTM_WQKIT_FOR);                //1ページ進む";
+//		koreMenu.add(MENU_WQKIT , MENU_WQKIT_BAC , 0 , CTM_WQKIT_BAC);                //1ページ戻る";
+//		koreMenu.add(MENU_WQKIT , MENU_WQKIT_END , 0 , CTM_WQKIT_END);        // = "終了";
+		return true;
+		//	return super.onCreateOptionsMenu(wkMenu);			//102SHでメニューが消えなかった
+	}
+
+
+	@Override
+	public boolean onPrepareOptionsMenu(Menu menu) {            //表示直前に行う非表示や非選択設定
+//		dbBlock = "MenuItem" + wkMenu.toString() + ",進み" + webView.canGoForward() + ",戻り" + webView.canGoBack();////////////////////////////////////////////////////////////////////////////
+//		Log.d("onPrepareOptionsMenu" , dbBlock);
+//		if ( webView.canGoForward() ) {        //戻るページがあれば
+//			En_FOR = true;                //1ページ進むを表示
+//		} else {
+//			En_FOR = false;
+//		}
+//		if ( webView.canGoBack() ) {        //戻るページがあれば
+//			En_BAC = true;                //1ページ戻るを表示
+//		} else {
+//			En_BAC = false;
+//		}
+//		wkMenu.findItem(MENU_WQKIT_ZUP).setEnabled(En_ZUP);        //ズームアップ";
+//		wkMenu.findItem(MENU_WQKIT_ZDW).setEnabled(En_ZDW);        //ズームダウン";
+//		wkMenu.findItem(MENU_WQKIT_FOR).setEnabled(En_FOR);        //1ページ進む";
+//		wkMenu.findItem(MENU_WQKIT_BAC).setEnabled(En_BAC);        //1ページ戻る";
+		return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		final String TAG = "onOptionsItemSelected[WabA]";
+		String dbMsg = "";
+		myMenuSelected(item);
+		return super.onOptionsItemSelected(item);
+	}
+
+	@Override
+	public void onOptionsMenuClosed(Menu wkMenu) {
+		final String TAG = "onOptionsMenuClosed[WabA]";
+		String dbMsg = "";
+		try {
+			dbMsg = "NakedFileVeiwActivity;mlMenu=" + wkMenu;//////////////拡張子=.m4a,ファイルタイプ=audio/*,フルパス=/mnt/sdcard/Music/AC DC/Blow Up Your Video/03 Meanstreak.m4a
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+	@Override
+	public void onCreateContextMenu(ContextMenu menu , View v , ContextMenu.ContextMenuInfo menuInfo) {
+		// registerForContextMenu()で登録したViewが長押しされると、 onCreateContextMenu()が呼ばれる。ここでメニューを作成する。
+		super.onCreateContextMenu(menu , v , menuInfo);
+		getMenuInflater().inflate(R.menu.menu_main , menu);
+	}
+
+	@Override
+	public boolean onContextItemSelected(MenuItem item) {
+		final String TAG = "onContextItemSelected[WabA}";
+		String dbMsg = "開始" + item;                    //表記が返る
+		myLog(TAG , dbMsg);
+		myMenuSelected(item);
+		return super.onContextItemSelected(item);
+	}
+
+	public boolean myMenuSelected(MenuItem item) {
+		final String TAG = "myMenuSelected[MA}";
+		String dbMsg = "開始" + item;                    //表記が返る
+		try {
+			dbMsg += "=" + item.getItemId() + "を操作";
+			int dispDegrees = getDisplayOrientation();
+			dbMsg += ",Disp=" + dispDegrees + "dig";
+			myLog(TAG , dbMsg);
+			switch ( item.getItemId() ) {
+				case R.id.mm_googlec2:
+					dbMsg += ";" + getResources().getString(R.string.googlc2);
+					Intent mIntent = new Intent(FdActivity.this , MainActivity.class);
+					 startActivity( mIntent );
+					return true;
+				case R.id.mm_c1surfas:
+					dbMsg += ";" + getResources().getString(R.string.c1surfas);
+					activityMain.removeAllViews();
+					c2SufaceView = null;
+					mySurfaceView = new C1SurfaceView(this , dispDegrees);        //orgは90°固定だった
+					activityMain.addView(mySurfaceView);
+					return true;
+				case R.id.mm_c2sarfece:
+					dbMsg += ";" + getResources().getString(R.string.c2sarfece);
+					activityMain.removeAllViews();
+					mySurfaceView = null;
+					c2SufaceView = new C2SurfaceView(this , getDisplayOrientation() , writeFolder);            //camera2でSurfaceのプレビュークラス
+					activityMain.addView(c2SufaceView);
+					return true;
+
+				case R.id.mm_prefarence:
+					dbMsg += ";" + getResources().getString(R.string.mm_setting_titol);
+					Intent settingsIntent = new Intent(FdActivity.this , MyPreferencesActivty.class);
+					startActivityForResult(settingsIntent , REQUEST_PREF);                    //    startActivity( settingsIntent );
+					return true;
+				case R.id.mm_quit:
+					dbMsg += ";" + getResources().getString(R.string.mm_quit_titol);
+					callQuit();
+					return true;              // 処理に成功したらtrueを返す
+			}
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + "で" + er.toString());
+		}
+		return super.onContextItemSelected(item);
+	}
+
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////
 	static final int REQUEST_PREF = 100;                          //Prefarensからの戻り
 	static final int REQUEST_SWOPEN = REQUEST_PREF + 1;        //skyway接続開始
 
@@ -315,7 +446,7 @@ public class FdActivity extends Activity {
 	 */
 	@Override
 	public void onRequestPermissionsResult(int requestCode , String permissions[] , int[] grantResults) {
-		final String TAG = "onRequestPermissionsResult[MA]";
+		final String TAG = "onRequestPermissionsResult[FdA}";
 		String dbMsg = "";
 		try {
 			dbMsg = "requestCode=" + requestCode;
@@ -332,7 +463,7 @@ public class FdActivity extends Activity {
 
 
 	public int getDisplayOrientation() {
-		final String TAG = "getDisplayOrientation[MA]";
+		final String TAG = "getDisplayOrientation[FdA}";
 		String dbMsg = "";
 		int degrees = 0;
 		try {
@@ -363,13 +494,13 @@ public class FdActivity extends Activity {
 	 * onCreateは終了処理後のonDestroyの後でも再度、呼び出されるので実データの割り付けなどを分離する
 	 */
 	public void laterCreate() {
-		final String TAG = "laterCreate[MA]";
+		final String TAG = "laterCreate[FdA}";
 		String dbMsg = "";
 		try {
 			fda_capture_bt.setOnClickListener(new View.OnClickListener() {         //キャプチャーボタン
 				@Override
 				public void onClick(View v) {
-					final String TAG = "fda_capture_bt[MA]";
+					final String TAG = "fda_capture_bt[FdA}";
 					String dbMsg = "";
 					myLog(TAG , dbMsg);
 					if ( isTextureView ) {
@@ -386,12 +517,12 @@ public class FdActivity extends Activity {
 					}
 				}
 			});
-			
+
 			fda_setting_bt.setOnClickListener(new View.OnClickListener() {       //設定ボタン
 				@Override
 				public void onClick(View v) {
 					Intent settingsIntent = new Intent(FdActivity.this , MyPreferencesActivty.class);
-					startActivityForResult(settingsIntent , REQUEST_PREF);					//    startActivity( settingsIntent );
+					startActivityForResult(settingsIntent , REQUEST_PREF);                    //    startActivity( settingsIntent );
 				}
 			});
 
@@ -409,7 +540,7 @@ public class FdActivity extends Activity {
 				}
 			} else if ( isC2 ) {
 				if ( c2SufaceView == null ) {
-					c2SufaceView = new C2SurfaceView(this , getDisplayOrientation(),writeFolder);            //camera2でSurfaceのプレビュークラス
+					c2SufaceView = new C2SurfaceView(this , getDisplayOrientation() , writeFolder);            //camera2でSurfaceのプレビュークラス
 					activityMain.addView(c2SufaceView);
 				}
 			} else {
@@ -425,7 +556,7 @@ public class FdActivity extends Activity {
 	}
 
 	public void callQuit() {
-		final String TAG = "callQuit[MA]";
+		final String TAG = "callQuit[FdA}";
 		String dbMsg = "";
 		try {
 			if ( isTextureView ) {
@@ -457,7 +588,7 @@ public class FdActivity extends Activity {
 	 * assetsの内容を /data/data/.../files/ にコピーします。
 	 */
 	private void copyAssets(String dir) throws IOException {
-		final String TAG = "copyAssets[MA]";
+		final String TAG = "copyAssets[FdA}";
 		String dbMsg = "";
 		try {
 			dbMsg = "dir=" + dir;

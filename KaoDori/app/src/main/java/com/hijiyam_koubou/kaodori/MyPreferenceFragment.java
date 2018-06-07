@@ -254,6 +254,16 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 					String key = pref.getKey();
 					String val = PreferenceManager.getDefaultSharedPreferences(this.getActivity()).getString(key , "");
 					dbMsg += ";" + key + ";" + val;
+					if (key.equals(up_scale_key) ) {
+						dbMsg += ",up_scale=" + val;
+						CS_Util UTIL = new CS_Util();
+						if ( UTIL.isFloatVal(val) ) {
+							val = Float.parseFloat(val)+"";
+						} else {
+							val = "1.2";
+						}
+						dbMsg += "," + getResources().getString(R.string.up_scale) + "=" + val;
+					}
 					pref.setSummary(val);
 					//if (key.Equals("waiting_scond_key")) {
 					//	if (stock_count != val) {
