@@ -86,6 +86,26 @@ public class CS_Util {
 			return false;
 		}
 	}
+
+	public boolean isFloatVal(String val) {
+		try {
+			Float.parseFloat(val);
+			return true;
+		} catch (NumberFormatException nfex) {
+			return false;
+		}
+	}
+
+
+	public boolean isDoubleVal(String val) {
+		try {
+			Double.parseDouble(val);
+			return true;
+		} catch (NumberFormatException nfex) {
+			return false;
+		}
+	}
+
 //保留；入力ダイアログ
 //    public String retStr = "";
 //     public void inputShow(String titolStr, String mggStr, String defaultStr) {

@@ -83,8 +83,12 @@ public class FdActivity extends Activity {
 			dbMsg += "," + getResources().getString(R.string.write_folder) + "=" + writeFolder;
 			if(prefs.up_scale != null ) {
 				dbMsg += ",up_scale=" + prefs.up_scale;
-				upScale = Float.parseFloat(prefs.up_scale);
-
+				CS_Util UTIL = new CS_Util();
+				if(UTIL.isFloatVal( prefs.up_scale)){
+					upScale = Float.parseFloat(prefs.up_scale);
+				}   else{
+					upScale = 2.0f;
+				}
 				dbMsg += "," + getResources().getString(R.string.up_scale) + "=" + upScale;
 			}
 			haarcascadesLastModified = Long.parseLong(prefs.haarcascades_last_modified);
