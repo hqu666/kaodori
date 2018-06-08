@@ -1,44 +1,65 @@
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+			  xmlns:app="http://schemas.android.com/apk/res-auto"
 			  xmlns:tools="http://schemas.android.com/tools"
 			  android:layout_width="match_parent"
 			  android:layout_height="match_parent"
-			  android:orientation="vertical"
-			  tools:context="com.hijiyam_koubou.kaodori.MainActivity" >
+			  android:orientation="horizontal"
+			  tools:context="com.hijiyam_koubou.kaodori.MainActivity">
 
+
+	<!--<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"-->
+					<!--android:layout_width="match_parent"-->
+					<!--android:layout_height="match_parent">-->
 
 	<com.hijiyam_koubou.kaodori.AutoFitTextureView
 		android:id="@+id/ma_aft"
 		android:layout_width="match_parent"
-		android:layout_height="match_parent"
-		android:layout_gravity="bottom"
+		android:layout_height="wrap_content"
+		android:layout_alignParentBottom="false"
+		android:layout_alignParentStart="false"
+		android:layout_alignParentTop="false"
+		android:layout_gravity="center"
 		android:layout_weight="1"/>
-
 
 	<FrameLayout
 		android:id="@+id/control"
 		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
-		android:layout_alignParentBottom="true"
-		android:layout_alignParentStart="true"
-		>
+		android:layout_height="match_parent"
+		android:layout_alignParentBottom="false"
+		android:layout_alignParentEnd="false"
+		android:layout_alignParentTop="false"
+		android:layout_gravity="right"
+		android:orientation="horizontal">
+
+		<ImageView
+			android:id="@+id/ma_iv"
+			android:layout_width="60dp"
+			android:layout_height="60dp"
+			android:layout_marginLeft="5dp"
+			android:layout_marginTop="5dp"
+			android:src="@android:color/transparent"/>
 
 		<ImageButton
-			android:id="@+id/picture"
+			android:id="@+id/ma_shot_bt"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
-			android:layout_gravity="center"
+			android:layout_gravity="bottom|center"
+			android:layout_marginBottom="20dp"
 			android:src="@android:drawable/ic_menu_camera"/>
 
 		<ImageButton
-			android:id="@+id/info"
+			android:id="@+id/ma_func_bt"
 			style="@android:style/Widget.Material.Light.Button.Borderless"
-			android:layout_width="wrap_content"
+			android:layout_width="50dp"
 			android:layout_height="wrap_content"
-			android:layout_gravity="center_vertical|right"
+			android:layout_gravity="top|right"
+			android:layout_marginRight="5dp"
+			android:layout_marginTop="5dp"
 			android:contentDescription="@string/description_info"
 			android:src="@android:drawable/ic_menu_info_details"/>
 
+
 	</FrameLayout>
 
-
-</LinearLayout>
+	<!--</RelativeLayout>-->
+</FrameLayout>

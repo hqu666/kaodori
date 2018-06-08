@@ -10,6 +10,7 @@ import android.app.DialogFragment;
 import android.app.Fragment;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
@@ -32,6 +33,7 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -71,8 +73,8 @@ import java.util.concurrent.TimeUnit;
 public class MainActivity extends Activity implements View.OnClickListener {
 	public AutoFitTextureView mTextureView;
 	public ImageButton ma_shot_bt;      //キャプチャーボタン
-	public ImageButton 	ma_func_bt;      //設定ボタン
-	public ImageView ma_iv ;					//撮影結果
+	public ImageButton ma_func_bt;      //設定ボタン
+	public ImageView ma_iv;                    //撮影結果
 
 	private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 	private static final int REQUEST_CAMERA_PERMISSION = 1;
@@ -112,7 +114,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	 * Max preview height that is guaranteed by Camera2 API
 	 */
 	private static final int MAX_PREVIEW_HEIGHT = 1080;
-
 
 
 	public static SharedPreferences sharedPref;
@@ -171,6 +172,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}
+
 	static final int REQUEST_PREF = 100;                          //Prefarensからの戻り
 	static final int REQUEST_SWOPEN = REQUEST_PREF + 1;        //skyway接続開始
 
@@ -208,11 +210,12 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			mTextureView = ( AutoFitTextureView ) findViewById(R.id.ma_aft);
 			ma_shot_bt = ( ImageButton ) findViewById(R.id.ma_shot_bt);      //キャプチャーボタン
 			ma_func_bt = ( ImageButton ) findViewById(R.id.ma_func_bt);      //設定ボタン
-			ma_iv = ( ImageView ) findViewById(R.id.ma_iv);					//撮影結果
+			ma_iv = ( ImageView ) findViewById(R.id.ma_iv);                    //撮影結果
 
-			findViewById(R.id.picture).setOnClickListener(this);
-			findViewById(R.id.info).setOnClickListener(this);
-			mFile = new File(writeFolder, "pic.jpg");                 //getActivity().getExternalFilesDir(null)
+			findViewById(R.id.ma_shot_bt).setOnClickListener(this);
+			findViewById(R.id.ma_func_bt).setOnClickListener(this);
+			findViewById(R.id.ma_iv).setOnClickListener(this);
+			mFile = new File(writeFolder , "pic.jpg");                 //getActivity().getExternalFilesDir(null)
 			dbMsg += ",mFile=" + mFile.getParent();
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
@@ -227,13 +230,13 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		String dbMsg = "";
 		try {
 			startBackgroundThread();
-			if(mTextureView!= null){
+			if ( mTextureView != null ) {
 				if ( mTextureView.isAvailable() ) {
 					openCamera(mTextureView.getWidth() , mTextureView.getHeight());
 				} else {
 					mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
 				}
-			} else{
+			} else {
 				dbMsg += "mTextureView== null";
 			}
 			myLog(TAG , dbMsg);
@@ -263,7 +266,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		final String TAG = "onWindowFocusChanged[MA}";
 		String dbMsg = "hasFocus=" + hasFocus;
 		try {
-			if(hasFocus){
+			if ( hasFocus ) {
 //				if(mTextureView!= null){
 //					if ( mTextureView.isAvailable() ) {
 //						//Attempt to invoke virtual method 'boolean com.hijiyam_koubou.kaodori.AutoFitTextureView.isAvailable()' on a null object reference
@@ -320,20 +323,46 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 	@Override
 	public void onClick(View view) {
-		switch ( view.getId() ) {
-			case R.id.picture: {
-				takePicture();
-				break;
-			}
-			case R.id.info: {
-				Activity activity = MainActivity.this;            //getActivity();
-				if ( null != activity ) {
-					new AlertDialog.Builder(activity).setMessage(R.string.intro_message).setPositiveButton(android.R.string.ok , null).show();
+		final String TAG = "onClick[MA]";
+		String dbMsg = "";
+		try {
+			switch ( view.getId() ) {
+				case R.id.ma_shot_bt: {
+					takePicture();
+					break;
+				}
+				case R.id.ma_func_bt: {
+					Activity activity = MainActivity.this;            //getActivity();
+					if ( null != activity ) {
+						Intent settingsIntent = new Intent(activity , MyPreferencesActivty.class);
+						startActivityForResult(settingsIntent , REQUEST_PREF);                    //    startActivity( settingsIntent );
+
+//					new AlertDialog.Builder(activity).setMessage(R.string.intro_message).setPositiveButton(android.R.string.ok , null).show();
+					}
+					break;
+				}
+				case R.id.ma_iv: {
+					Activity activity = MainActivity.this;            //getActivity();
+					if ( null != activity ) {
+						Intent fIntent = new Intent(Intent.ACTION_GET_CONTENT);
+//						String fName = mFile.getName();					//単独ファイル名
+						String fName = mFile.getPath();					//フルパスファイル名
+						dbMsg += ",fName="+ fName;
+						fIntent.setData(Uri.parse(fName));       //これだけでは開かない
+						fIntent.setType("image/*"); //fIntent.setDataAndType(Uri.parse(fName), "image/*");では関連無い処まで開く
+						if ( fIntent.resolveActivity(getPackageManager()) != null ) {
+							startActivity(fIntent);
+						}
+					}
 				}
 				break;
 			}
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}
+
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	public void callQuit() {
 		final String TAG = "callQuit[MA}";
@@ -352,10 +381,10 @@ public class MainActivity extends Activity implements View.OnClickListener {
 //					mySurfaceView.surfaceDestroy();
 //				}
 //			}
-						closeCamera();
+			closeCamera();
 			stopBackgroundThread();
 			this.finish();
-			if ( Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ) {
+			if ( Build.VERSION.SDK_INT >= 21 ) {
 				finishAndRemoveTask();                      //アプリケーションのタスクを消去する事でデバッガーも停止する。
 			} else {
 				moveTaskToBack(true);                       //ホームボタン相当でアプリケーション全体が中断状態
@@ -378,8 +407,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			final String TAG = "onSurfaceTextureAvailable[MA]";
 			String dbMsg = "";
 			try {
-				dbMsg = "[" + width + "×"+ height+"]";
-				openCamera(width, height);
+				dbMsg = "[" + width + "×" + height + "]";
+				openCamera(width , height);
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -391,7 +420,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			final String TAG = "onSurfaceTextureSizeChanged[MA]";
 			String dbMsg = "";
 			try {
-				dbMsg = "[" + width + "×"+ height+"]";
+				dbMsg = "[" + width + "×" + height + "]";
 				configureTransform(width , height);
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
@@ -515,7 +544,48 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			final String TAG = "onImageAvailable[MA]";
 			String dbMsg = "";
 			try {
-				mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage() , writeFolder , ma_iv));      //mFile
+				dbMsg += ",writeFolder="+writeFolder;
+				long timestamp = System.currentTimeMillis();
+				dbMsg += ",timestamp="+timestamp;
+				File saveFolder = new File(writeFolder);
+				if ( !saveFolder.exists() ) {
+					saveFolder.mkdir();
+					dbMsg += "作成";
+				} else {
+					dbMsg += "有り";
+				}
+//					Date shotDate = new Date(timestamp);
+//					Calendar shotCalendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Tokyo"), Locale.JAPAN);    // Calendar オブジェクトを使って  Date オブジェクトを取得。
+//					shotCalendar.setTime(shotDate);
+				java.text.DateFormat df = new SimpleDateFormat("yyyy/MM/dd/HH:mm:ssZ" , Locale.JAPAN);
+				String dtStr = df.format(timestamp);
+				dbMsg += ",dtStr=" + dtStr;
+				String[] dtStrs = dtStr.split("/");
+				int lCount = 0;
+				String pFolderName = saveFolder.getPath();
+				for ( String rStr : dtStrs ) {
+					dbMsg += "(" + lCount + ")" + rStr;
+					if ( lCount < 3 ) {
+						File pFolder = new File(pFolderName , rStr);
+						if ( !pFolder.exists() ) {
+							pFolder.mkdir();
+							dbMsg += "作成";
+						} else {
+							dbMsg += "有り";
+						}
+						pFolderName = pFolder.toString();
+						dbMsg += ",dtStr=" + pFolderName;
+					}
+					lCount++;
+				}
+				dtStr=dtStr.replaceAll("/","");
+				dtStr=dtStr.replaceAll(":","") ;
+				dtStr=dtStr.substring(0,dtStr.length()-5) + ".jpg";
+				mFile = new File(pFolderName , dtStr);                 //getActivity().getExternalFilesDir(null)
+				dbMsg += ",mFile=" + mFile.toString();
+
+				ImageSaver IS =  new ImageSaver(reader.acquireNextImage() , pFolderName , ma_iv,dtStr);
+				mBackgroundHandler.post(IS); 
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -615,6 +685,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			final String TAG = "onCaptureCompleted[MA]";
 			String dbMsg = "";
 			try {
+				dbMsg += ",CaptureRequest=" + request.toString();
+				dbMsg += ",TotalCaptureResult=" + result.toString();
+				//,CaptureRequest=android.hardware.camera2.CaptureRequest@a1ff6d90,TotalCaptureResult=android.hardware.camera2.TotalCaptureResult@cf92614
 				process(result);
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
@@ -662,7 +735,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	private static Size chooseOptimalSize(Size[] choices , int textureViewWidth , int textureViewHeight , int maxWidth , int maxHeight , Size aspectRatio) {
 		final String TAG = "chooseOptimalSize[MA]";
 		String dbMsg = "";
-		Size retSize=null;
+		Size retSize = null;
 		try {
 			// Collect the supported resolutions that are at least as big as the preview Surface
 			List< Size > bigEnough = new ArrayList<>();
@@ -683,12 +756,12 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			// Pick the smallest of those big enough. If there is no one big enough, pick the
 			// largest of those not big enough.
 			if ( bigEnough.size() > 0 ) {
-				retSize=  Collections.min(bigEnough , new CompareSizesByArea());
+				retSize = Collections.min(bigEnough , new CompareSizesByArea());
 			} else if ( notBigEnough.size() > 0 ) {
-				retSize= Collections.max(notBigEnough , new CompareSizesByArea());
+				retSize = Collections.max(notBigEnough , new CompareSizesByArea());
 			} else {
 				dbMsg = "Couldn't find any suitable preview size";
-				retSize= choices[0];
+				retSize = choices[0];
 			}
 			dbMsg += ",retSize=" + retSize;
 			myLog(TAG , dbMsg);
@@ -712,11 +785,11 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			CameraManager manager = ( CameraManager ) activity.getSystemService(Context.CAMERA_SERVICE);
 			try {
 				for ( String cameraId : manager.getCameraIdList() ) {
-					dbMsg += ",cameraId=" +cameraId;
+					dbMsg += ",cameraId=" + cameraId;
 					CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
 
-					Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);    					// We don't use a front facing camera in this sample.
-					dbMsg += ",facing=" +facing +"0;FRONT";
+					Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);                        // We don't use a front facing camera in this sample.
+					dbMsg += ",facing=" + facing + "0;FRONT";
 					if ( facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT ) {
 						continue;
 					}
@@ -728,7 +801,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 					// For still image captures, we use the largest available size.
 					Size largest = Collections.max(Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)) , ( Comparator< ? super Size > ) new CompareSizesByArea());
-					dbMsg += "m,largest[" + largest.getWidth() + "×" + largest.getHeight()  + "]";
+					dbMsg += "m,largest[" + largest.getWidth() + "×" + largest.getHeight() + "]";
 					mImageReader = ImageReader.newInstance(largest.getWidth() , largest.getHeight() , ImageFormat.JPEG , /*maxImages*/2);
 					mImageReader.setOnImageAvailableListener(mOnImageAvailableListener , mBackgroundHandler);
 
@@ -777,8 +850,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					if ( maxPreviewHeight > MAX_PREVIEW_HEIGHT ) {
 						maxPreviewHeight = MAX_PREVIEW_HEIGHT;
 					}
-					dbMsg += ",rotatedPreview[" + rotatedPreviewWidth + "×" + rotatedPreviewHeight  + "]";
-					dbMsg += ",maxPreview[" + maxPreviewWidth + "×" + maxPreviewHeight  + "]";
+					dbMsg += ",rotatedPreview[" + rotatedPreviewWidth + "×" + rotatedPreviewHeight + "]";
+					dbMsg += ",maxPreview[" + maxPreviewWidth + "×" + maxPreviewHeight + "]";
 
 					// Danger, W.R.! Attempting to use too large a preview size could  exceed the camera
 					// bus' bandwidth limitation, resulting in gorgeous previews but the storage of garbage capture data.
@@ -792,7 +865,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					} else {
 						mTextureView.setAspectRatio(mPreviewSize.getHeight() , mPreviewSize.getWidth());
 					}
-					dbMsg += ",Preview[" + mPreviewSize.getWidth() + "×" + mPreviewSize.getHeight()  + "]";
+					dbMsg += ",Preview[" + mPreviewSize.getWidth() + "×" + mPreviewSize.getHeight() + "]";
 
 					// Check if the flash is supported.
 					Boolean available = characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
@@ -824,7 +897,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		final String TAG = "openCamera[MA]";
 		String dbMsg = "";
 		try {
-			dbMsg = "[" + width + "×" + height  + "]";
+			dbMsg = "[" + width + "×" + height + "]";
 			setUpCameraOutputs(width , height);
 			configureTransform(width , height);
 			Activity activity = MainActivity.this;            //getActivity();
@@ -1016,7 +1089,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			RectF bufferRect = new RectF(0 , 0 , mPreviewSize.getHeight() , mPreviewSize.getWidth());
 			float centerX = viewRect.centerX();
 			float centerY = viewRect.centerY();
-			dbMsg += ",center(" + centerY +","+ centerY+ ")";
+			dbMsg += ",center(" + centerY + "," + centerY + ")";
 			if ( Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation ) {
 				bufferRect.offset(centerX - bufferRect.centerX() , centerY - bufferRect.centerY());
 				matrix.setRectToRect(viewRect , bufferRect , Matrix.ScaleToFit.FILL);
@@ -1054,11 +1127,11 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		final String TAG = "lockFocus[MA]";
 		String dbMsg = "";
 		try {
-			if(mPreviewRequestBuilder!= null) {
+			if ( mPreviewRequestBuilder != null ) {
 				mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER , CameraMetadata.CONTROL_AF_TRIGGER_START);            // This is how to tell the camera to lock focus.
 				mState = STATE_WAITING_LOCK;            // Tell #mCaptureCallback to wait for the lock.
 				mCaptureSession.capture(mPreviewRequestBuilder.build() , mCaptureCallback , mBackgroundHandler);
-			}   else{
+			} else {
 				dbMsg = "mPreviewRequestBuilder== null";
 			}
 			myLog(TAG , dbMsg);
@@ -1066,10 +1139,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			e.printStackTrace();
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-			// Attempt to invoke virtual method 'void android.hardware.camera2.CaptureRequest$Builder.
-			// set(android.hardware.camera2.CaptureRequest$Key, java.lang.Object)' on a null object reference
 		}
-
 	}
 
 	/**
@@ -1123,8 +1193,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					final String TAG = "onCaptureCompleted[MA]";
 					String dbMsg = "";
 					try {
-						dbMsg = "Saved: " + mFile;
-						Log.d(TAG , mFile.toString());
+						dbMsg = "Saved: " + mFile.getPath();
 						unlockFocus();
 						myLog(TAG , dbMsg);
 					} catch (Exception er) {
@@ -1205,7 +1274,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	 * Saves a JPEG {@link Image} into the specified {@link File}.
 	 */
 	private static class ImageSaver implements Runnable {
-
+//		private Context context;
 		/**
 		 * The JPEG image
 		 */
@@ -1217,18 +1286,22 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		private File saveFolder;
 		private String saveFolderName;
 		private ImageView ma_iv;
-		private long timestamp;
+		private String saveFileName;
 
-		ImageSaver(Image image , String _saveFolderName , ImageView _ma_iv) {          		//
+//		ImageSaver() {
+//		}
+
+		ImageSaver(Image image , String _saveFolderName , ImageView _ma_iv , String _saveFileName ) {                //
 			final String TAG = "ImageSaver[MA]";
 			String dbMsg = "";
 			try {
+//				context = _context;
 				mImage = image;
 				saveFolderName = _saveFolderName;
 				ma_iv = _ma_iv;
-				timestamp = System.currentTimeMillis();
+				saveFileName = _saveFileName;
 //				timestamp = mImage.getTimestamp()/1000;
-				dbMsg += ",=" + timestamp;
+//				dbMsg += ",timestamp=" + timestamp;
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -1240,64 +1313,66 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			final String TAG = "ImageSaver.run[MA]";
 			String dbMsg = "";
 			try {
-				int width = mImage.getWidth();
-				int height = mImage.getHeight();
-				dbMsg += ",image[" + width + "×" + height + "]Format=" + mImage.getFormat()+"," + mImage.getPlanes().length + "枚";
-				ByteBuffer imageBuf = mImage.getPlanes()[0].getBuffer();
-				byte[] bytes = new byte[imageBuf.remaining()];
-				dbMsg += ",bytes="+bytes.length+"バイト";
-				imageBuf.get(bytes);
+
 				FileOutputStream output = null;
 				try {
-					dbMsg += ",saveFolder="+saveFolderName;
-					saveFolder= new File(saveFolderName);
-					if(! saveFolder.exists()){
-						saveFolder.mkdir();
-						dbMsg += "作成";
-					} else{
-						dbMsg += "有り";
-					}
-//					Date shotDate = new Date(timestamp);
-//					Calendar shotCalendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Tokyo"), Locale.JAPAN);    // Calendar オブジェクトを使って  Date オブジェクトを取得。
-//					shotCalendar.setTime(shotDate);
-					java.text.DateFormat df = new SimpleDateFormat("yyyy/MM/dd/HH:mm:ssZ", Locale.JAPAN);
-  					String dtStr = df.format(timestamp);
-					dbMsg += ",dtStr="+dtStr;
-					String[] dtStrs = dtStr.split("/");
-					int lCount = 0;
-					String pFolderName = saveFolderName;
-					for(String rStr : dtStrs){
-						dbMsg += "("+ lCount+ ")" + rStr;
-						if(lCount < 3){
-							File pFolder = new File(pFolderName , rStr);
-							if(! pFolder.exists()){
-								pFolder.mkdir();
-								dbMsg += "作成";
-							} else{
-								dbMsg += "有り";
-							}
-							pFolderName = pFolder.toString();
-							dbMsg += ",dtStr="+pFolderName;
-						}
-						lCount++;
-					}
-
-					mFile = new File(pFolderName, timestamp+".jpg");                 //getActivity().getExternalFilesDir(null)
-					dbMsg += ",mFile="+mFile.toString();
+					dbMsg += ",saveFolder=" + saveFolderName;
+//					saveFolder = new File(saveFolderName);
+//					if ( !saveFolder.exists() ) {
+//						saveFolder.mkdir();
+//						dbMsg += "作成";
+//					} else {
+//						dbMsg += "有り";
+//					}
+////					Date shotDate = new Date(timestamp);
+////					Calendar shotCalendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Tokyo"), Locale.JAPAN);    // Calendar オブジェクトを使って  Date オブジェクトを取得。
+////					shotCalendar.setTime(shotDate);
+//					java.text.DateFormat df = new SimpleDateFormat("yyyy/MM/dd/HH:mm:ssZ" , Locale.JAPAN);
+//					String dtStr = df.format(timestamp);
+//					dbMsg += ",dtStr=" + dtStr;
+//					String[] dtStrs = dtStr.split("/");
+//					int lCount = 0;
+//					String pFolderName = saveFolderName;
+//					for ( String rStr : dtStrs ) {
+//						dbMsg += "(" + lCount + ")" + rStr;
+//						if ( lCount < 3 ) {
+//							File pFolder = new File(pFolderName , rStr);
+//							if ( !pFolder.exists() ) {
+//								pFolder.mkdir();
+//								dbMsg += "作成";
+//							} else {
+//								dbMsg += "有り";
+//							}
+//							pFolderName = pFolder.toString();
+//							dbMsg += ",dtStr=" + pFolderName;
+//						}
+//						lCount++;
+//					}
+					mFile = new File(saveFolderName , saveFileName);                 //getActivity().getExternalFilesDir(null)
+					dbMsg += ",mFile=" + mFile.toString();
 					output = new FileOutputStream(mFile);
-					output.write(bytes);
+					int width = mImage.getWidth();
+					int height = mImage.getHeight();
+					dbMsg += ",image[" + width + "×" + height + "]Format=" + mImage.getFormat() + "," + mImage.getPlanes().length + "枚";
+					ByteBuffer imageBuf = mImage.getPlanes()[0].getBuffer();
+					byte[] bytes = new byte[imageBuf.remaining()];
+					dbMsg += ",bytes=" + bytes.length + "バイト";
+					imageBuf.get(bytes);
 
-					final byte[] imageBytes = new byte[imageBuf.remaining()];        //直接渡すと.ArrayIndexOutOfBoundsException: length=250,095; index=15,925,248
-					dbMsg += ",imageBytes=" + imageBytes.length;
-					final Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes , 0 , imageBytes.length);
-//					ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-//					bitmap.compress(Bitmap.CompressFormat.JPEG , 100 , byteArrayOutputStream);
-					dbMsg += ",bitmap[" + bitmap.getWidth() + "×" + bitmap.getHeight() + "]";
-					int byteCount = bitmap.getByteCount();
+					output.write(bytes);                    //書込み
+
+//					final Bitmap bitmap =BitmapFactory.decodeFile(mFile.getPath());
+//					final byte[] imageBytes = new byte[imageBuf.remaining()];        //直接渡すと.ArrayIndexOutOfBoundsException: length=250,095; index=15,925,248
+//					dbMsg += ",imageBytes=" + imageBytes.length;
+					Bitmap shotBitmap = BitmapFactory.decodeByteArray(bytes , 0 , bytes.length);
+					ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+					shotBitmap.compress(Bitmap.CompressFormat.JPEG , 100 , output);
+					Double bmWidth = shotBitmap.getWidth() * 1.0;
+					Double bmHeigh = shotBitmap.getHeight() * 1.0;
+					dbMsg += ",bitmap[" + bmWidth + "×" + bmHeigh + "]";
+					int byteCount = shotBitmap.getByteCount();
 					dbMsg += "" + byteCount + "バイト";
-
-					ma_iv.setImageBitmap(bitmap);
-					//findViewById(R.id.ma_iv).setImageBitmap(bitmap);;					//撮影結果
+					wrigtThumbnail(shotBitmap);
 
 				} catch (IOException er) {
 					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -1316,7 +1391,54 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 			}
 		}
+
+
+		private Bitmap shotBitmap;
+  		public void wrigtThumbnail(Bitmap _shotBitmap) {
+			shotBitmap = _shotBitmap;
+			new Thread(new Runnable() {
+				@Override
+				public void run() {
+					final String TAG = "wrigtThumbnail[MA]";
+					String dbMsg = "";
+					try {
+						int ivWidth = ma_iv.getWidth();
+						int ivHeight = ma_iv.getHeight();
+						dbMsg += ",iv[" + ivWidth + "×" + ivHeight + "]";
+//					double wScale = ivWidth / bmWidth;
+//					dbMsg += ",wScale=" +wScale;
+						Bitmap thumbNail = Bitmap.createScaledBitmap(shotBitmap , ivWidth , ivHeight , false);
+						int thumbNailHeight = thumbNail.getHeight();
+						dbMsg += ",thumbNail[" + thumbNail.getWidth() + "×" + thumbNailHeight + "]";
+						ma_iv.setImageBitmap(thumbNail);
+						//findViewById(R.id.ma_iv).setImageBitmap(bitmap);;					//撮影結果
+						shotBitmap.recycle();
+						myLog(TAG , dbMsg);
+					} catch (Exception er) {
+						myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+					}
+				}
+			}).start();
+		}
+
+		public File getSaveFile() {
+			final String TAG = "getSaveFile[MA]";
+			String dbMsg = "";
+			File retFile = mFile;
+			try {
+				if(mFile != null){
+					dbMsg = "mFile=" + mFile.getPath();
+				} else{
+					dbMsg = "mFile=null" ;
+				}
+				myLog(TAG , dbMsg);
+			} catch (Exception er) {
+				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+			}
+			return retFile;
+		}
 	}
+
 
 	/**
 	 * Compares two {@code Size}s based on their areas.
@@ -1438,17 +1560,15 @@ public class MainActivity extends Activity implements View.OnClickListener {
 //参照		 http://blog.kotemaru.org/2015/05/23/android-camera2-sample.html
 /**
  * 保存ファイル名
- *
+ * <p>
  * E/mm-camera: <STATS_AF ><ERROR> 4436: af_port_handle_pdaf_stats: Fail to init buf divert ack ctrl
-      6/8
- 			コンテキストをコントロールパネルに
- 			年月日フォルダ
- 			撮影された写真のsサムネイル
- 			ファイルビュー連携
- 			情報表示
-
- 			オーバーレイのveiwクラスで機能実行
- 				位置とサイズをプレビューに合わせ
-
-
- * */
+ * 6/8
+ * コンテキストをコントロールパネルに
+ * 年月日フォルダ
+ * 撮影された写真のsサムネイル
+ * ファイルビュー連携
+ * 情報表示
+ * <p>
+ * オーバーレイのveiwクラスで機能実行
+ * 位置とサイズをプレビューに合わせ
+ */
