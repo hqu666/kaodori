@@ -1,15 +1,15 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-			  xmlns:app="http://schemas.android.com/apk/res-auto"
-			  xmlns:tools="http://schemas.android.com/tools"
-			  android:layout_width="match_parent"
-			  android:layout_height="match_parent"
-			  android:orientation="horizontal"
-			  tools:context="com.hijiyam_koubou.kaodori.MainActivity">
+			 xmlns:app="http://schemas.android.com/apk/res-auto"
+			 xmlns:tools="http://schemas.android.com/tools"
+			 android:layout_width="match_parent"
+			 android:layout_height="match_parent"
+			 android:orientation="horizontal"
+			 tools:context="com.hijiyam_koubou.kaodori.MainActivity">
 
 
 	<!--<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"-->
-					<!--android:layout_width="match_parent"-->
-					<!--android:layout_height="match_parent">-->
+	<!--android:layout_width="match_parent"-->
+	<!--android:layout_height="match_parent">-->
 
 	<com.hijiyam_koubou.kaodori.AutoFitTextureView
 		android:id="@+id/ma_aft"
@@ -20,6 +20,15 @@
 		android:layout_alignParentTop="false"
 		android:layout_gravity="center"
 		android:layout_weight="1"/>
+
+
+	<LinearLayout
+		android:id="@+id/ma_effect_fl"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:layout_weight="1"
+		android:gravity="center"
+		android:orientation="vertical"/>
 
 	<FrameLayout
 		android:id="@+id/control"
