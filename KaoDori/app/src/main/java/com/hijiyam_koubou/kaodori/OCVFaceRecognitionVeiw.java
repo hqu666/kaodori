@@ -6,6 +6,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 
@@ -24,7 +25,10 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-public class OCVFaceRecognitionVeiw extends SurfaceView {
+public class OCVFaceRecognitionVeiw extends View {
+	static {
+		System.loadLibrary("opencv_java3");  // OpenCV使用クラスに必須
+	}
 	private Context context;
 	private int[] rgb;
 	private Bitmap bitmap;
@@ -43,6 +47,7 @@ public class OCVFaceRecognitionVeiw extends SurfaceView {
 		String dbMsg = "";
 		try {
 			this.context = context;
+
 			try {
 				copyAssets("haarcascades" , haarcascadesLastModified);                    // assetsの内容を /data/data/*/files/ にコピーします。
 			} catch (IOException er) {
@@ -57,12 +62,27 @@ public class OCVFaceRecognitionVeiw extends SurfaceView {
 			detector = new CascadeClassifier(filename);
 			objects = new MatOfRect();
 
+
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}
 
+//	@Override
+//	public void surfaceCreated(SurfaceHolder holder) {
+//
+//	}
+//
+//	@Override
+//	public void surfaceChanged(SurfaceHolder holder , int format , int width , int height) {
+//
+//	}
+//
+//	@Override
+//	public void surfaceDestroyed(SurfaceHolder holder) {
+//
+//	}
 
 	/**
 	 * Bitmapデータを受け取り認証処理を開始する
