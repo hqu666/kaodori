@@ -32,7 +32,7 @@
 		android:orientation="horizontal">
 
 		<ImageView
-			android:id="@+id/mm_iv"
+			android:id="@+id/ma_iv"
 			android:layout_width="60dp"
 			android:layout_height="60dp"
 			android:layout_marginLeft="5dp"
@@ -40,7 +40,7 @@
 			android:src="@android:color/transparent"/>
 
 		<ImageButton
-			android:id="@+id/picture"
+			android:id="@+id/ma_shot_bt"
 			android:layout_width="wrap_content"
 			android:layout_height="wrap_content"
 			android:layout_gravity="right|center"
@@ -48,7 +48,7 @@
 			android:src="@android:drawable/ic_menu_camera"/>
 
 		<ImageButton
-			android:id="@+id/info"
+			android:id="@+id/ma_func_bt"
 			style="@android:style/Widget.Material.Light.Button.Borderless"
 			android:layout_width="50dp"
 			android:layout_height="wrap_content"

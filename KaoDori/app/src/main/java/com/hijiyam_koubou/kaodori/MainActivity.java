@@ -13,6 +13,8 @@ import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Point;
@@ -44,23 +46,34 @@ import android.view.TextureView;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.TimeZone;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends Activity implements View.OnClickListener {
-	private AutoFitTextureView mTextureView;
+	public AutoFitTextureView mTextureView;
+	public ImageButton ma_shot_bt;      //キャプチャーボタン
+	public ImageButton 	ma_func_bt;      //設定ボタン
+	public ImageView ma_iv ;					//撮影結果
+
 	private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 	private static final int REQUEST_CAMERA_PERMISSION = 1;
 	private static final String FRAGMENT_DIALOG = "dialog";
@@ -193,6 +206,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			requestWindowFeature(Window.FEATURE_NO_TITLE);
 			setContentView(R.layout.activity_main);
 			mTextureView = ( AutoFitTextureView ) findViewById(R.id.ma_aft);
+			ma_shot_bt = ( ImageButton ) findViewById(R.id.ma_shot_bt);      //キャプチャーボタン
+			ma_func_bt = ( ImageButton ) findViewById(R.id.ma_func_bt);      //設定ボタン
+			ma_iv = ( ImageView ) findViewById(R.id.ma_iv);					//撮影結果
 
 			findViewById(R.id.picture).setOnClickListener(this);
 			findViewById(R.id.info).setOnClickListener(this);
@@ -231,8 +247,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		final String TAG = "onPause[MA]";
 		String dbMsg = "";
 		try {
-			closeCamera();
-			stopBackgroundThread();
+//			closeCamera();
+//			stopBackgroundThread();
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -336,7 +352,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
 //					mySurfaceView.surfaceDestroy();
 //				}
 //			}
-			closeCamera();
+						closeCamera();
+			stopBackgroundThread();
 			this.finish();
 			if ( Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ) {
 				finishAndRemoveTask();                      //アプリケーションのタスクを消去する事でデバッガーも停止する。
@@ -498,7 +515,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			final String TAG = "onImageAvailable[MA]";
 			String dbMsg = "";
 			try {
-				mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage() , writeFolder));      //mFile
+				mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage() , writeFolder , ma_iv));      //mFile
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -1199,14 +1216,19 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		private File mFile;
 		private File saveFolder;
 		private String saveFolderName;
+		private ImageView ma_iv;
+		private long timestamp;
 
-		ImageSaver(Image image , String _saveFolderName) {          		//
+		ImageSaver(Image image , String _saveFolderName , ImageView _ma_iv) {          		//
 			final String TAG = "ImageSaver[MA]";
 			String dbMsg = "";
 			try {
 				mImage = image;
 				saveFolderName = _saveFolderName;
-//				mFile = file;
+				ma_iv = _ma_iv;
+				timestamp = System.currentTimeMillis();
+//				timestamp = mImage.getTimestamp()/1000;
+				dbMsg += ",=" + timestamp;
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -1220,13 +1242,11 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			try {
 				int width = mImage.getWidth();
 				int height = mImage.getHeight();
-				long timestamp = mImage.getTimestamp();
-				dbMsg += ",image[" + width + "×" + height + "]Format=" + mImage.getFormat();
-				dbMsg += ",=" + timestamp + "," + mImage.getPlanes().length + "枚";
-				ByteBuffer buffer = mImage.getPlanes()[0].getBuffer();
-				byte[] bytes = new byte[buffer.remaining()];
+				dbMsg += ",image[" + width + "×" + height + "]Format=" + mImage.getFormat()+"," + mImage.getPlanes().length + "枚";
+				ByteBuffer imageBuf = mImage.getPlanes()[0].getBuffer();
+				byte[] bytes = new byte[imageBuf.remaining()];
 				dbMsg += ",bytes="+bytes.length+"バイト";
-				buffer.get(bytes);
+				imageBuf.get(bytes);
 				FileOutputStream output = null;
 				try {
 					dbMsg += ",saveFolder="+saveFolderName;
@@ -1237,10 +1257,48 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					} else{
 						dbMsg += "有り";
 					}
-					mFile = new File(saveFolderName, timestamp+".jpg");                 //getActivity().getExternalFilesDir(null)
+//					Date shotDate = new Date(timestamp);
+//					Calendar shotCalendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Tokyo"), Locale.JAPAN);    // Calendar オブジェクトを使って  Date オブジェクトを取得。
+//					shotCalendar.setTime(shotDate);
+					java.text.DateFormat df = new SimpleDateFormat("yyyy/MM/dd/HH:mm:ssZ", Locale.JAPAN);
+  					String dtStr = df.format(timestamp);
+					dbMsg += ",dtStr="+dtStr;
+					String[] dtStrs = dtStr.split("/");
+					int lCount = 0;
+					String pFolderName = saveFolderName;
+					for(String rStr : dtStrs){
+						dbMsg += "("+ lCount+ ")" + rStr;
+						if(lCount < 3){
+							File pFolder = new File(pFolderName , rStr);
+							if(! pFolder.exists()){
+								pFolder.mkdir();
+								dbMsg += "作成";
+							} else{
+								dbMsg += "有り";
+							}
+							pFolderName = pFolder.toString();
+							dbMsg += ",dtStr="+pFolderName;
+						}
+						lCount++;
+					}
+
+					mFile = new File(pFolderName, timestamp+".jpg");                 //getActivity().getExternalFilesDir(null)
 					dbMsg += ",mFile="+mFile.toString();
 					output = new FileOutputStream(mFile);
 					output.write(bytes);
+
+					final byte[] imageBytes = new byte[imageBuf.remaining()];        //直接渡すと.ArrayIndexOutOfBoundsException: length=250,095; index=15,925,248
+					dbMsg += ",imageBytes=" + imageBytes.length;
+					final Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes , 0 , imageBytes.length);
+//					ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+//					bitmap.compress(Bitmap.CompressFormat.JPEG , 100 , byteArrayOutputStream);
+					dbMsg += ",bitmap[" + bitmap.getWidth() + "×" + bitmap.getHeight() + "]";
+					int byteCount = bitmap.getByteCount();
+					dbMsg += "" + byteCount + "バイト";
+
+					ma_iv.setImageBitmap(bitmap);
+					//findViewById(R.id.ma_iv).setImageBitmap(bitmap);;					//撮影結果
+
 				} catch (IOException er) {
 					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 				} finally {
