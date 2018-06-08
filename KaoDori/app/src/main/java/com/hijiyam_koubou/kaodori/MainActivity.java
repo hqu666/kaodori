@@ -74,7 +74,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	public AutoFitTextureView mTextureView;
 	public ImageButton ma_shot_bt;      //キャプチャーボタン
 	public ImageButton ma_func_bt;      //設定ボタン
-	public ImageView ma_iv;                    //撮影結果
+	public static ImageView ma_iv;                    //撮影結果
 
 	private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 	private static final int REQUEST_CAMERA_PERMISSION = 1;
@@ -1273,7 +1273,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	/**
 	 * Saves a JPEG {@link Image} into the specified {@link File}.
 	 */
-	private static class ImageSaver implements Runnable {
+	private  class ImageSaver implements Runnable {        //
 //		private Context context;
 		/**
 		 * The JPEG image
@@ -1291,7 +1291,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 //		ImageSaver() {
 //		}
 
-		ImageSaver(Image image , String _saveFolderName , ImageView _ma_iv , String _saveFileName ) {                //
+		ImageSaver(Image image , String _saveFolderName , ImageView _ma_iv , String _saveFileName ) {                //static
 			final String TAG = "ImageSaver[MA]";
 			String dbMsg = "";
 			try {
@@ -1317,37 +1317,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				FileOutputStream output = null;
 				try {
 					dbMsg += ",saveFolder=" + saveFolderName;
-//					saveFolder = new File(saveFolderName);
-//					if ( !saveFolder.exists() ) {
-//						saveFolder.mkdir();
-//						dbMsg += "作成";
-//					} else {
-//						dbMsg += "有り";
-//					}
-////					Date shotDate = new Date(timestamp);
-////					Calendar shotCalendar = Calendar.getInstance(TimeZone.getTimeZone("Asia/Tokyo"), Locale.JAPAN);    // Calendar オブジェクトを使って  Date オブジェクトを取得。
-////					shotCalendar.setTime(shotDate);
-//					java.text.DateFormat df = new SimpleDateFormat("yyyy/MM/dd/HH:mm:ssZ" , Locale.JAPAN);
-//					String dtStr = df.format(timestamp);
-//					dbMsg += ",dtStr=" + dtStr;
-//					String[] dtStrs = dtStr.split("/");
-//					int lCount = 0;
-//					String pFolderName = saveFolderName;
-//					for ( String rStr : dtStrs ) {
-//						dbMsg += "(" + lCount + ")" + rStr;
-//						if ( lCount < 3 ) {
-//							File pFolder = new File(pFolderName , rStr);
-//							if ( !pFolder.exists() ) {
-//								pFolder.mkdir();
-//								dbMsg += "作成";
-//							} else {
-//								dbMsg += "有り";
-//							}
-//							pFolderName = pFolder.toString();
-//							dbMsg += ",dtStr=" + pFolderName;
-//						}
-//						lCount++;
-//					}
 					mFile = new File(saveFolderName , saveFileName);                 //getActivity().getExternalFilesDir(null)
 					dbMsg += ",mFile=" + mFile.toString();
 					output = new FileOutputStream(mFile);
@@ -1372,8 +1341,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					dbMsg += ",bitmap[" + bmWidth + "×" + bmHeigh + "]";
 					int byteCount = shotBitmap.getByteCount();
 					dbMsg += "" + byteCount + "バイト";
-					wrigtThumbnail(shotBitmap);
-
+//					wrigtThumbnail(shotBitmap);
+					setThumbnail(shotBitmap);
 				} catch (IOException er) {
 					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 				} finally {
@@ -1420,23 +1389,37 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				}
 			}).start();
 		}
+	}
 
-		public File getSaveFile() {
-			final String TAG = "getSaveFile[MA]";
-			String dbMsg = "";
-			File retFile = mFile;
-			try {
-				if(mFile != null){
-					dbMsg = "mFile=" + mFile.getPath();
-				} else{
-					dbMsg = "mFile=null" ;
+	private static Bitmap shotBitmap;
+	public void setThumbnail(Bitmap _shotBitmap) {
+		shotBitmap = _shotBitmap;
+		// 別スレッドを実行
+		MainActivity.this.runOnUiThread(new Runnable() {
+			@Override
+			public void run() {
+				final String TAG = "setThumbnail[MA]";
+				String dbMsg = "";
+				try {
+					int ivWidth = ma_iv.getWidth();
+					int ivHeight = ma_iv.getHeight();
+					dbMsg += ",iv[" + ivWidth + "×" + ivHeight + "]";
+//					double wScale = ivWidth / bmWidth;
+//					dbMsg += ",wScale=" +wScale;
+					Bitmap thumbNail = Bitmap.createScaledBitmap(shotBitmap , ivWidth , ivHeight , false);
+					int thumbNailHeight = thumbNail.getHeight();
+					dbMsg += ",thumbNail[" + thumbNail.getWidth() + "×" + thumbNailHeight + "]";
+					ma_iv.setImageBitmap(thumbNail);
+					// Only the original thread that created a view hierarchy can touch its views.
+					//findViewById(R.id.ma_iv).setImageBitmap(bitmap);;					//撮影結果
+					shotBitmap.recycle();
+					myLog(TAG , dbMsg);
+				} catch (Exception er) {
+					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 				}
-				myLog(TAG , dbMsg);
-			} catch (Exception er) {
-				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 			}
-			return retFile;
-		}
+		});
+
 	}
 
 
