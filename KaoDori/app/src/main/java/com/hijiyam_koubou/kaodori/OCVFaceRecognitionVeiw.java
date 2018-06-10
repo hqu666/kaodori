@@ -39,6 +39,7 @@ public class OCVFaceRecognitionVeiw extends View {
 	private int degrees;
 	private int viewWidth;
 	private int viewHight;
+	private boolean isCompletion =true;
 
 
 	public OCVFaceRecognitionVeiw(Context context , long haarcascadesLastModified) {
@@ -62,27 +63,12 @@ public class OCVFaceRecognitionVeiw extends View {
 			detector = new CascadeClassifier(filename);
 			objects = new MatOfRect();
 
-
+			isCompletion =true;
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}
-
-//	@Override
-//	public void surfaceCreated(SurfaceHolder holder) {
-//
-//	}
-//
-//	@Override
-//	public void surfaceChanged(SurfaceHolder holder , int format , int width , int height) {
-//
-//	}
-//
-//	@Override
-//	public void surfaceDestroyed(SurfaceHolder holder) {
-//
-//	}
 
 	/**
 	 * Bitmapデータを受け取り認証処理を開始する
@@ -91,6 +77,7 @@ public class OCVFaceRecognitionVeiw extends View {
 		final String TAG = "readFrameRGB[OCVFR]";
 		String dbMsg = "";
 		try {
+			isCompletion =false;
 			int dWidth = bitmap.getWidth();
 			int dHight = bitmap.getHeight();
 			dbMsg += ",bitmap[" + dWidth + "×" + dHight + "]";
@@ -156,6 +143,7 @@ public class OCVFaceRecognitionVeiw extends View {
 				RectF r = new RectF(width * face.left , height * face.top , width * face.right , height * face.bottom);
 				canvas.drawRect(r , paint);
 			}
+			isCompletion =true;
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -225,12 +213,9 @@ public class OCVFaceRecognitionVeiw extends View {
 		String dbMsg = "";
 		try {
 			dbMsg += "[" + _width + "×" + _hight + "]_degrees=" + _degrees;
-
 			viewWidth = _width;
 			viewHight = _hight;
 			degrees = _degrees;
-
-
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -266,6 +251,11 @@ public class OCVFaceRecognitionVeiw extends View {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}
+
+	public  boolean getCompletion() {
+		return  isCompletion;
+	}
+
 
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	public static void myLog(String TAG , String dbMsg) {
