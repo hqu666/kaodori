@@ -1,13 +1,19 @@
 package com.hijiyam_koubou.kaodori;
 
+import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.util.Log;
+import android.view.Surface;
 
 
 public class CS_Util {
+	Context context;
 
+//	public CS_Util(Context context){
+//		context = context;
+//	}
 
 	public String  getAplPathName(Context context) {
 		final String TAG = "getAplPathName[util]";
@@ -66,6 +72,35 @@ public class CS_Util {
 		}
 		return nowCount;
 	}
+
+
+	public int getDisplayOrientation(Activity activity) {
+		final String TAG = "getDisplayOrientation[util}";
+		String dbMsg = "";
+		int degrees = 0;
+		try {
+			int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();   //helperからは((Activity)getContext()).
+			switch ( rotation ) {
+				case Surface.ROTATION_0:
+					degrees = 0;
+					break;
+				case Surface.ROTATION_90:
+					degrees = 90;
+					break;
+				case Surface.ROTATION_180:
+					degrees = 180;
+					break;
+				case Surface.ROTATION_270:
+					degrees = 270;
+					break;
+			}
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+		return degrees;
+	}
+
 
 	////汎用関数///////////////////////////////////////////////////////////////////////
 	public boolean isIntVar(String val) {

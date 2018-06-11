@@ -51,6 +51,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import java.io.ByteArrayOutputStream;
@@ -75,6 +76,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	static {
 		System.loadLibrary("opencv_java3");  // OpenCV使用クラスに必須
 	}
+
+	public CS_Util UTIL;
+	public static boolean debugNow = true;
 
 	public AutoFitTextureView mTextureView;
 	public ViewGroup ma_effect_fl;        //OpenCVの呼び込み枠
@@ -122,6 +126,21 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	 * Max preview height that is guaranteed by Camera2 API
 	 */
 	private static final int MAX_PREVIEW_HEIGHT = 1080;
+
+	/**
+	 * 実際に配置できたプレビュー幅
+	 */
+	private static int PREVIEW_WIDTH = MAX_PREVIEW_WIDTH;
+
+	/**
+	 * 実際に配置できたプレビュー高さ
+	 */
+	private static int PREVIEW_HEIGHT = MAX_PREVIEW_HEIGHT;
+
+	/**
+	 * 現在の端末の向き
+	 */
+	private static int DISP_DEGREES;
 
 
 	public static SharedPreferences sharedPref;
@@ -242,9 +261,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			startBackgroundThread();
 			if ( mTextureView != null ) {
 				if ( mTextureView.isAvailable() ) {
-					int TVWIdht= mTextureView.getWidth();
-					int TVHight=  mTextureView.getHeight();
-					dbMsg = "[" + TVWIdht +"×"+TVHight +"]";
+					int TVWIdht = mTextureView.getWidth();
+					int TVHight = mTextureView.getHeight();
+					dbMsg = "[" + TVWIdht + "×" + TVHight + "]";
 					openCamera(TVWIdht , TVHight);
 				} else {
 					mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
@@ -280,6 +299,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		String dbMsg = "hasFocus=" + hasFocus;
 		try {
 			if ( hasFocus ) {
+				setViewState();
 //				if(mTextureView!= null){
 //					if ( mTextureView.isAvailable() ) {
 //						//Attempt to invoke virtual method 'boolean com.hijiyam_koubou.kaodori.AutoFitTextureView.isAvailable()' on a null object reference
@@ -291,6 +311,79 @@ public class MainActivity extends Activity implements View.OnClickListener {
 //					dbMsg += "mTextureView== null";
 //				}
 			}
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+	/**
+	 * Android7以降のマルチウインドウ
+	 */
+	@TargetApi ( Build.VERSION_CODES.N )
+//	@Override
+	public void onMultiWindowChanged(boolean isInMultiWindowMode) {
+		super.onMultiWindowModeChanged(isInMultiWindowMode);
+		final String TAG = "onMultiWindowChanged[MA}";
+		String dbMsg = "isInMultiWindowMode=" + isInMultiWindowMode;
+		try {
+			setViewState();
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+	/**
+	 * 画面回転を検出
+	 */
+	@Override
+	public void onConfigurationChanged(Configuration newConfig) {
+		final String TAG = "onConfigurationChanged[FdA}";
+		String dbMsg = "";
+		try {
+			setViewState();
+			dbMsg += ",screenLayout=" + newConfig.screenLayout;
+			dbMsg += ",orientation=" + newConfig.orientation;
+//			if ( isTextureView ) {
+////				faceRecognition.setDig2Cam(dispDegrees);
+//			} else {
+//				if ( isC2 ) {
+//					if ( c2SufaceView.camera != null ) {
+//						c2SufaceView.camera.setPreviewSize();
+//					}
+////					c2SufaceView.setDig2Cam(dispDegrees);
+//				} else {
+//					mySurfaceView.setDig2Cam(dispDegrees);
+//				}
+//			}
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+		super.onConfigurationChanged(newConfig);
+	}
+
+	/**
+	 * プレビューの幅と角度を更新する
+	 */
+	public void setViewState() {
+		final String TAG = "setViewState[MA}";
+		String dbMsg = "";
+		try {
+			PREVIEW_WIDTH = mTextureView.getWidth();
+			PREVIEW_HEIGHT = mTextureView.getHeight();
+			dbMsg += "[" + PREVIEW_WIDTH + "×" + PREVIEW_HEIGHT + "]";
+			if ( UTIL == null ) {
+				UTIL = new CS_Util();
+			}
+			DISP_DEGREES = UTIL.getDisplayOrientation(this);
+			dbMsg += ",Disp=" + DISP_DEGREES + "dig";
+			/**
+			 * 上；,Disp=0dig,camera=90dig,screenLayout=268435794,orientation=1
+			 * 右；Disp=90dig,camera=0dig,screenLayout=268435794,orientation=2
+			 * 左；Disp=270dig,camera=180dig,screenLayout=268435794,orientation=2
+			 * */
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -399,20 +492,43 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	}
 
 	/***/
-	public void setEffectView(int width , int height) {
+	public void setEffectView() {
 		final String TAG = "setEffectView[MA}";
 		String dbMsg = "";
 		try {
-			//6/11 ここのスレッド分けから
-			//android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy can touch its views.
-			if(ma_effect_fl.getClipChildren()){
-				ma_effect_fl.removeAllViews();
-			}
-			OCVFRV = new OCVFaceRecognitionVeiw(MainActivity.this , haarcascadesLastModified);            //顔検出View
-			ma_effect_fl.addView(OCVFRV);
-			OCVFRV.setCondition(width , height , mSensorOrientation);
-
-			myLog(TAG , dbMsg);
+			//		shotBitmap = _shotBitmap;
+			// 別スレッドを実行
+			MainActivity.this.runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					final String TAG = "setEffectView[MA]";
+					String dbMsg = "";
+					try {
+						//6/11 ここのスレッド分けから
+						//android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy can touch its views.
+						if ( ma_effect_fl != null ) {
+							int cCount = ma_effect_fl.getChildCount();
+							dbMsg += ",getChildCount=" +cCount;
+//							if ( 1 < ma_effect_fl.getChildCount() ) {
+//								ma_effect_fl.removeAllViews();
+//							}
+							OCVFRV = new OCVFaceRecognitionVeiw(MainActivity.this , haarcascadesLastModified);            //顔検出View
+							ma_effect_fl.addView(OCVFRV , new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT , ViewGroup.LayoutParams.WRAP_CONTENT));
+							dbMsg += ",OCVFRV[" + OCVFRV.getWidth() + "×" + OCVFRV.getHeight() + "]"; 
+							dbMsg += "[" + PREVIEW_WIDTH + "×" + PREVIEW_HEIGHT + "]";  //表示サイズに変更する必要有り
+							dbMsg += ",camera=" + mSensorOrientation + "dig";
+							OCVFRV.setCondition(PREVIEW_WIDTH , PREVIEW_HEIGHT , mSensorOrientation);
+							dbMsg += ">>ChildCount=" + ma_effect_fl.getChildCount();
+							myLog(TAG , dbMsg);
+						} else {
+							dbMsg += "(ma_effect_fl = null";
+						}
+						myLog(TAG , dbMsg);
+					} catch (Exception er) {
+						myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+					}
+				}
+			});
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
@@ -443,6 +559,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			final String TAG = "onSurfaceTextureSizeChanged[MA]";
 			String dbMsg = "";
 			try {
+				PREVIEW_WIDTH = width;                    //mTextureView.getWidth();
+				PREVIEW_HEIGHT = height;                //mTextureView.getHeight();
 				dbMsg = "[" + width + "×" + height + "]";
 				configureTransform(width , height);
 				if ( OCVFRV != null ) {
@@ -571,9 +689,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			final String TAG = "mOnImageAvailableListener[MA]";
 			String dbMsg = "";
 			try {
-				dbMsg = "mState="+mState;
+				dbMsg = "mState=" + mState;
 				if ( mState == STATE_PREVIEW ) {
-//					sendPreview(reader);
+					sendPreview(reader);
 				} else {
 					dbMsg += ",writeFolder=" + writeFolder;
 					long timestamp = System.currentTimeMillis();
@@ -680,6 +798,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 //	};
 
 	public ImageReader prevReader;
+
 	public void sendPreview(ImageReader _prevReader) {
 		prevReader = _prevReader;
 //		shotBitmap = _shotBitmap;
@@ -693,36 +812,36 @@ public class MainActivity extends Activity implements View.OnClickListener {
 //					final Bitmap shotBitmap = null;
 //					if ( OCVFRV != null ) {
 //			if( camera.mImageReader != null) {
-						Image image = prevReader.acquireLatestImage();
-						if ( image != null ) {
-							int width = image.getWidth();
-							int height = image.getHeight();
-							long timestamp = image.getTimestamp();
-							dbMsg += ",image[" + width + "×" + height + "]Format=" + image.getFormat();
-							dbMsg += ",=" + timestamp + "," + image.getPlanes().length + "枚";
-							ByteBuffer imageBuf = image.getPlanes()[0].getBuffer();
-							final byte[] imageBytes = new byte[imageBuf.remaining()];        //直接渡すと.ArrayIndexOutOfBoundsException: length=250,095; index=15,925,248
-							dbMsg += ",imageBytes=" + imageBytes.length;
-							imageBuf.get(imageBytes);
+					Image image = prevReader.acquireLatestImage();
+					if ( image != null ) {
+						int width = image.getWidth();
+						int height = image.getHeight();
+						long timestamp = image.getTimestamp();
+						dbMsg += ",image[" + width + "×" + height + "]Format=" + image.getFormat();
+						dbMsg += ",=" + timestamp + "," + image.getPlanes().length + "枚";
+						ByteBuffer imageBuf = image.getPlanes()[0].getBuffer();
+						final byte[] imageBytes = new byte[imageBuf.remaining()];        //直接渡すと.ArrayIndexOutOfBoundsException: length=250,095; index=15,925,248
+						dbMsg += ",imageBytes=" + imageBytes.length;
+						imageBuf.get(imageBytes);
 
-							final Bitmap shotBitmap = BitmapFactory.decodeByteArray(imageBytes , 0 , imageBytes.length);
-							ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-							shotBitmap.compress(Bitmap.CompressFormat.JPEG , 100 , byteArrayOutputStream);
-							dbMsg += ",bitmap[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]";
-							int byteCount = shotBitmap.getByteCount();
-							dbMsg += "" + byteCount + "バイト";
-							//			}
-							OCVFRV.readFrameRGB(shotBitmap);
+						final Bitmap shotBitmap = BitmapFactory.decodeByteArray(imageBytes , 0 , imageBytes.length);
+						ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+						shotBitmap.compress(Bitmap.CompressFormat.JPEG , 100 , byteArrayOutputStream);
+						dbMsg += ",bitmap[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]";
+						int byteCount = shotBitmap.getByteCount();
+						dbMsg += "" + byteCount + "バイト";
+						//			}
+						OCVFRV.readFrameRGB(shotBitmap);
 
-							if ( shotBitmap != null ) {
-								shotBitmap.recycle();
-								byteCount = shotBitmap.getByteCount();
-								dbMsg += ">>" + byteCount + "バイト";
-							}
-							image.close();
-						} else {
-							dbMsg += ",image = null ";
+						if ( shotBitmap != null ) {
+							shotBitmap.recycle();
+							byteCount = shotBitmap.getByteCount();
+							dbMsg += ">>" + byteCount + "バイト";
 						}
+						image.close();
+					} else {
+						dbMsg += ",image = null ";
+					}
 //					} else {
 //						dbMsg += ",OCVFRV = null ";
 //					}
@@ -754,7 +873,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 //			CaptureRequest copyPreviewRequest = mCopyPreviewRequestBuilder.build();
 			try {
 				dbMsg += ",capture";
-				int retInt =mCaptureSession.capture(mPreviewRequestBuilder.build() , mCaptureCallback , mBackgroundHandler);
+				int retInt = mCaptureSession.capture(mPreviewRequestBuilder.build() , mCaptureCallback , mBackgroundHandler);
 //				int retInt = mCaptureSession.capture(copyPreviewRequest , null , null);                        // (プレビュー時にセッションは開いたままで、)追加で静止画送ってくれリクエストを送る
 				dbMsg += ",retInt=" + retInt;
 			} catch (CameraAccessException er) {
@@ -817,19 +936,18 @@ public class MainActivity extends Activity implements View.OnClickListener {
 ////							copyPreview();
 //						}
 						if ( OCVFRV != null ) {
-							dbMsg += ",completion=" + OCVFRV.getCompletion() ;
-							if ( OCVFRV.getCompletion() ) {
+							dbMsg += ",completion=" + OCVFRV.getCompletion();
+							if ( OCVFRV.getCompletion() ) {    //onDrawが終了するまでfalseが返る
 								copyPreview();
 //							} else {
 //								dbMsg += ",getCompletion = false ";
 							}
 						} else {
 							dbMsg += ",OCVFRV = null ";
-							int TVWIdht= mTextureView.getWidth();
-							int TVHight=  mTextureView.getHeight();
-							dbMsg = "[" + TVWIdht +"×"+TVHight +"]";
-							setEffectView(TVWIdht , TVHight);
-
+							int TVWIdht = mTextureView.getWidth();
+							int TVHight = mTextureView.getHeight();
+							dbMsg = "[" + TVWIdht + "×" + TVHight + "]";
+							setEffectView();
 						}
 						break;
 					}
@@ -982,9 +1100,11 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				retSize = choices[0];
 			}
 			dbMsg += ",retSize=" + retSize;
-			myLog(TAG , dbMsg);
+			if ( debugNow ) {
+				Log.i(TAG , dbMsg + "");
+			}
 		} catch (Exception er) {
-			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+			Log.e(TAG , dbMsg + "");
 		}
 		return retSize;
 	}
@@ -1107,12 +1227,13 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}
-	
+
 	// Opens the camera specified by {@link Camera2BasicFragment#mCameraId}.
+
 	/**
 	 * mCameraIdで指定されたカメラを開けます
-	 *  onResumeから呼ばれる
-	 * */
+	 * onResumeから呼ばれる
+	 */
 	@SuppressLint ( "MissingPermission" )
 	private void openCamera(int width , int height) {
 		final String TAG = "openCamera[MA]";
@@ -1302,7 +1423,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	 * setUpCameraOutputs and also the size of `mTextureView` is fixed.
 	 * @param viewWidth  The width of `mTextureView`
 	 * @param viewHeight The height of `mTextureView`
-	 * onSurfaceTextureSizeChanged、openCameraから呼ばれる
+	 *                   onSurfaceTextureSizeChanged、openCameraから呼ばれる
 	 */
 	private void configureTransform(int viewWidth , int viewHeight) {
 		final String TAG = "configureTransform[MA]";
@@ -1639,9 +1760,11 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				dbMsg += "lhs[" + lhs.getWidth() + "×" + lhs.getHeight() + "]";
 				dbMsg += ",rhs[" + rhs.getWidth() + "×" + rhs.getHeight() + "]";
 				// We cast here to ensure the multiplications won't overflow
-				myLog(TAG , dbMsg);
+				if ( debugNow ) {
+					Log.i(TAG , dbMsg + "");
+				}
 			} catch (Exception er) {
-				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+				Log.e(TAG , dbMsg + "");
 			}
 			return Long.signum(( long ) lhs.getWidth() * lhs.getHeight() - ( long ) rhs.getWidth() * rhs.getHeight());
 		}
@@ -1703,17 +1826,23 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 	///////////////////////////////////////////////////////////////////////////////////
 	public void messageShow(String titolStr , String mggStr) {
-		CS_Util UTIL = new CS_Util();
+		if ( UTIL == null ) {
+			UTIL = new CS_Util();
+		}
 		UTIL.messageShow(titolStr , mggStr , MainActivity.this);
 	}
 
-	public static void myLog(String TAG , String dbMsg) {
-		CS_Util UTIL = new CS_Util();
+	public void myLog(String TAG , String dbMsg) {
+		if ( UTIL == null ) {
+			UTIL = new CS_Util();
+		}
 		UTIL.myLog(TAG , dbMsg);
 	}
 
-	public static void myErrorLog(String TAG , String dbMsg) {
-		CS_Util UTIL = new CS_Util();
+	public void myErrorLog(String TAG , String dbMsg) {
+		if ( UTIL == null ) {
+			UTIL = new CS_Util();
+		}
 		UTIL.myErrorLog(TAG , dbMsg);
 	}
 

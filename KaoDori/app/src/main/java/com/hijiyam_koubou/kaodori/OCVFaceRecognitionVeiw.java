@@ -9,6 +9,8 @@ import android.graphics.RectF;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
 
 import org.opencv.android.Utils;
 import org.opencv.core.CvType;
@@ -30,6 +32,7 @@ public class OCVFaceRecognitionVeiw extends View {
 		System.loadLibrary("opencv_java3");  // OpenCV使用クラスに必須
 	}
 	private Context context;
+//	private ViewGroup VG;   					//読み込まれる土台
 	private int[] rgb;
 	private Bitmap bitmap;
 	private Mat image;
@@ -48,6 +51,7 @@ public class OCVFaceRecognitionVeiw extends View {
 		String dbMsg = "";
 		try {
 			this.context = context;
+//			this.VG = VG;
 
 			try {
 				copyAssets("haarcascades" , haarcascadesLastModified);                    // assetsの内容を /data/data/*/files/ にコピーします。
@@ -215,6 +219,29 @@ public class OCVFaceRecognitionVeiw extends View {
 			dbMsg += "[" + _width + "×" + _hight + "]_degrees=" + _degrees;
 			viewWidth = _width;
 			viewHight = _hight;
+//			LinearLayout linearLayout = (LinearLayout) findViewById(R.id.（）);
+			View taregetView = (View)this;
+			dbMsg += "[" + taregetView.getWidth() + "×" + taregetView.getHeight() + "]";
+			ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams)taregetView.getLayoutParams();
+			dbMsg += ",layoutParams[" + layoutParams.width + "×" + layoutParams.height + "]";
+			layoutParams.width =_width;
+			layoutParams.height =_hight;
+			taregetView.setLayoutParams(layoutParams);
+			taregetView.requestLayout();
+//			taregetView.setMinimumWidth(_width);
+//			taregetView.setMinimumHeight(_hight);
+			dbMsg += ">>[" + taregetView.getWidth() + "×" + taregetView.getHeight() + "]";
+//			faces.clear();
+//			for ( org.opencv.core.Rect rect : objects.toArray() ) {
+//				float left = ( float ) (1.0 * rect.x / _width);
+//				float top = ( float ) (1.0 * rect.y / _hight);
+//				float right = left + ( float ) (1.0 * rect.width / _width);
+//				float bottom = top + ( float ) (1.0 * rect.height / _hight);
+//				faces.add(new RectF(left , top , right , bottom));
+//			}
+//			dbMsg += ",faces=" + faces.size();
+//			invalidate();                                                //onDrawへ
+
 			degrees = _degrees;
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
