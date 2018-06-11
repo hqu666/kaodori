@@ -230,7 +230,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		final String TAG = "onCreate[MA]";
 		String dbMsg = "";
 		try {
-			readPref();
 			getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 			requestWindowFeature(Window.FEATURE_NO_TITLE);
 			setContentView(R.layout.activity_main);
@@ -246,6 +245,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			findViewById(R.id.ma_iv).setOnClickListener(this);
 			mFile = new File(writeFolder , "pic.jpg");                 //getActivity().getExternalFilesDir(null)
 			dbMsg += ",mFile=" + mFile.getParent();
+
+			readPref();                    //同期させないとインストール時にパーミッションエラー発生
+
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -379,6 +381,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			}
 			DISP_DEGREES = UTIL.getDisplayOrientation(this);
 			dbMsg += ",Disp=" + DISP_DEGREES + "dig";
+
 			/**
 			 * 上；,Disp=0dig,camera=90dig,screenLayout=268435794,orientation=1
 			 * 右；Disp=90dig,camera=0dig,screenLayout=268435794,orientation=2
@@ -514,7 +517,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 //							}
 							OCVFRV = new OCVFaceRecognitionVeiw(MainActivity.this , haarcascadesLastModified);            //顔検出View
 							ma_effect_fl.addView(OCVFRV , new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT , ViewGroup.LayoutParams.WRAP_CONTENT));
-							dbMsg += ",OCVFRV[" + OCVFRV.getWidth() + "×" + OCVFRV.getHeight() + "]"; 
+							dbMsg += ",OCVFRV[" + OCVFRV.getWidth() + "×" + OCVFRV.getHeight() + "]";
 							dbMsg += "[" + PREVIEW_WIDTH + "×" + PREVIEW_HEIGHT + "]";  //表示サイズに変更する必要有り
 							dbMsg += ",camera=" + mSensorOrientation + "dig";
 							OCVFRV.setCondition(PREVIEW_WIDTH , PREVIEW_HEIGHT , mSensorOrientation);

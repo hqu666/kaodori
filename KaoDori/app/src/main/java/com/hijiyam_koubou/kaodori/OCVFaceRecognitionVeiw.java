@@ -220,7 +220,7 @@ public class OCVFaceRecognitionVeiw extends View {
 			viewWidth = _width;
 			viewHight = _hight;
 //			LinearLayout linearLayout = (LinearLayout) findViewById(R.id.（）);
-			View taregetView = (View)this;
+			View taregetView = (View)this.getParent();              //親ビューでサイズを変更する
 			dbMsg += "[" + taregetView.getWidth() + "×" + taregetView.getHeight() + "]";
 			ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams)taregetView.getLayoutParams();
 			dbMsg += ",layoutParams[" + layoutParams.width + "×" + layoutParams.height + "]";
