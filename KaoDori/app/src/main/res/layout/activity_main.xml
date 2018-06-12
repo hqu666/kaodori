@@ -22,6 +22,16 @@
 		android:layout_weight="1"/>
 
 	<FrameLayout
+		android:id="@+id/ma_effect_fl"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:layout_alignParentBottom="false"
+		android:layout_alignParentEnd="false"
+		android:layout_alignParentTop="false"
+		android:layout_gravity="center"
+		android:orientation="horizontal"/>
+
+	<FrameLayout
 		android:id="@+id/control"
 		android:layout_width="match_parent"
 		android:layout_height="match_parent"

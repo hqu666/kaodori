@@ -33,6 +33,7 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
+import android.media.MediaActionSound;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -100,6 +101,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	}
 
 	private static final String TAG = "Camera2BasicFragment";
+	public boolean isPhotography = false;
 	private static final int STATE_PREVIEW = 0;    //Camera state: Showing camera preview.
 	private static final int STATE_WAITING_LOCK = 1;        // Camera state: Waiting for the focus to be locked.
 	/**
@@ -148,6 +150,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	public String writeFolder = "";
 	public float upScale = 1.2f;
 	public long haarcascadesLastModified = 0;
+	public boolean isRumbling = false;                        //シャッター音の鳴動
 
 	/**
 	 * このアプリケーションの設定ファイル読出し
@@ -239,10 +242,12 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			ma_shot_bt = ( ImageButton ) findViewById(R.id.ma_shot_bt);      //キャプチャーボタン
 			ma_func_bt = ( ImageButton ) findViewById(R.id.ma_func_bt);      //設定ボタン
 			ma_iv = ( ImageView ) findViewById(R.id.ma_iv);                    //撮影結果
-
-			findViewById(R.id.ma_shot_bt).setOnClickListener(this);
-			findViewById(R.id.ma_func_bt).setOnClickListener(this);
-			findViewById(R.id.ma_iv).setOnClickListener(this);
+			ma_shot_bt.setOnClickListener(this);
+			ma_func_bt.setOnClickListener(this);
+			ma_iv.setOnClickListener(this);
+//			findViewById(R.id.ma_shot_bt).setOnClickListener(this);
+//			findViewById(R.id.ma_func_bt).setOnClickListener(this);
+//			findViewById(R.id.ma_iv).setOnClickListener(this);
 			mFile = new File(writeFolder , "pic.jpg");                 //getActivity().getExternalFilesDir(null)
 			dbMsg += ",mFile=" + mFile.getParent();
 
@@ -266,13 +271,19 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					int TVWIdht = mTextureView.getWidth();
 					int TVHight = mTextureView.getHeight();
 					dbMsg = "[" + TVWIdht + "×" + TVHight + "]";
-					openCamera(TVWIdht , TVHight);
+//  openCamera(TVWIdht , TVHight);         //  onSurfaceTextureAvailable　へ
 				} else {
 					mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
 				}
 			} else {
 				dbMsg += "mTextureView== null";
 			}
+
+			if ( isRumbling ) {            //=false;						//シャッター音の鳴動
+				mSound = new MediaActionSound();                //撮影音をロードする
+				mSound.load(MediaActionSound.SHUTTER_CLICK);
+			}
+
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -435,12 +446,15 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		final String TAG = "onClick[MA]";
 		String dbMsg = "";
 		try {
+			dbMsg += ",getId=" + view.getId();
 			switch ( view.getId() ) {
 				case R.id.ma_shot_bt: {
+					dbMsg += "=ma_shot_bt";
 					takePicture();
 					break;
 				}
 				case R.id.ma_func_bt: {
+					dbMsg += "=ma_func_bt";
 					Activity activity = MainActivity.this;            //getActivity();
 					if ( null != activity ) {
 						Intent settingsIntent = new Intent(activity , MyPreferencesActivty.class);
@@ -451,6 +465,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					break;
 				}
 				case R.id.ma_iv: {
+					dbMsg += "=ma_iv";
 					Activity activity = MainActivity.this;            //getActivity();
 					if ( null != activity ) {
 						Intent fIntent = new Intent(Intent.ACTION_GET_CONTENT);
@@ -510,21 +525,25 @@ public class MainActivity extends Activity implements View.OnClickListener {
 						//6/11 ここのスレッド分けから
 						//android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy can touch its views.
 						if ( ma_effect_fl != null ) {
-							int cCount = ma_effect_fl.getChildCount();
-							dbMsg += ",getChildCount=" +cCount;
+							if ( OCVFRV == null ) {
+								int cCount = ma_effect_fl.getChildCount();
+								dbMsg += ",getChildCount=" + cCount;
 //							if ( 1 < ma_effect_fl.getChildCount() ) {
 //								ma_effect_fl.removeAllViews();
 //							}
-							OCVFRV = new OCVFaceRecognitionVeiw(MainActivity.this , haarcascadesLastModified);            //顔検出View
-							ma_effect_fl.addView(OCVFRV , new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT , ViewGroup.LayoutParams.WRAP_CONTENT));
-							dbMsg += ",OCVFRV[" + OCVFRV.getWidth() + "×" + OCVFRV.getHeight() + "]";
-							dbMsg += "[" + PREVIEW_WIDTH + "×" + PREVIEW_HEIGHT + "]";  //表示サイズに変更する必要有り
-							dbMsg += ",camera=" + mSensorOrientation + "dig";
-							OCVFRV.setCondition(PREVIEW_WIDTH , PREVIEW_HEIGHT , mSensorOrientation);
-							dbMsg += ">>ChildCount=" + ma_effect_fl.getChildCount();
-							myLog(TAG , dbMsg);
+								OCVFRV = new OCVFaceRecognitionVeiw(MainActivity.this , haarcascadesLastModified);            //顔検出View
+								ma_effect_fl.addView(OCVFRV , new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT , ViewGroup.LayoutParams.WRAP_CONTENT));
+								dbMsg += ",OCVFRV[" + OCVFRV.getWidth() + "×" + OCVFRV.getHeight() + "]";
+								dbMsg += "[" + PREVIEW_WIDTH + "×" + PREVIEW_HEIGHT + "]";  //表示サイズに変更する必要有り
+								dbMsg += ",camera=" + mSensorOrientation + "dig";
+								OCVFRV.setCondition(PREVIEW_WIDTH , PREVIEW_HEIGHT , mSensorOrientation);
+								dbMsg += ">>ChildCount=" + ma_effect_fl.getChildCount();
+								myLog(TAG , dbMsg);
+							} else {
+								dbMsg += ",作成済み";
+							}
 						} else {
-							dbMsg += "(ma_effect_fl = null";
+							dbMsg += ",ma_effect_fl = null";
 						}
 						myLog(TAG , dbMsg);
 					} catch (Exception er) {
@@ -587,12 +606,29 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			return true;
 		}
 
+		private final Object mCaptureSync = new Object();
+		private Bitmap mTempBitmap;
+		private boolean mReqesutCaptureStillImage;
+
 		@Override
 		public void onSurfaceTextureUpdated(SurfaceTexture texture) {
 			final String TAG = "onSurfaceTextureUpdated[MA]";
 			String dbMsg = "";
 			try {
 				dbMsg = "onSurfaceTextureUpdated";
+// Surface surface = new Surface(texture);  //までは出来る
+
+//				surface.
+//				synchronized (mCaptureSync) {
+//					if (mReqesutCaptureStillImage) {
+//						mReqesutCaptureStillImage = false;
+//						if (mTempBitmap == null)
+//							mTempBitmap = getBitmap(mPreviewSize.getWidth(),mPreviewSize.getHeight());
+//						else
+//							getBitmap(mTempBitmap);
+//						mCaptureSync.notifyAll();
+//					}
+//				}
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -615,17 +651,19 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	private Size mPreviewSize;
 	/**
 	 * {@link CameraDevice.StateCallback} is called when {@link CameraDevice} changes its state.
+	 * manager.openCamera() メソッドで指定
 	 */
 	private final CameraDevice.StateCallback mStateCallback = new CameraDevice.StateCallback() {
 
 		@Override
 		public void onOpened(CameraDevice cameraDevice) {
-			final String TAG = "onOpened[MA]";
+			final String TAG = "mStateCallback.onOpened[MA]";
 			String dbMsg = "";
 			try {
 				// This method is called when the camera is opened.  We start camera preview here.
 				mCameraOpenCloseLock.release();
 				mCameraDevice = cameraDevice;
+				dbMsg += ",mCameraDevice = " + mCameraDevice;
 				createCameraPreviewSession();
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
@@ -635,12 +673,13 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 		@Override
 		public void onDisconnected(CameraDevice cameraDevice) {
-			final String TAG = "onDisconnected[MA]";
+			final String TAG = "mStateCallback.onDisconnected[MA]";
 			String dbMsg = "";
 			try {
 				mCameraOpenCloseLock.release();
 				cameraDevice.close();
 				mCameraDevice = null;
+				dbMsg += ",mCameraDevice = " + mCameraDevice;
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -649,20 +688,16 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 		@Override
 		public void onError(CameraDevice cameraDevice , int error) {
-			final String TAG = "onError[MA]";
+			final String TAG = "mStateCallback.onError[MA]";
 			String dbMsg = "";
-			try {
-				mCameraOpenCloseLock.release();
-				cameraDevice.close();
-				mCameraDevice = null;
-				Activity activity = MainActivity.this;    // getActivity();
-				if ( null != activity ) {
-					activity.finish();
-				}
-				myLog(TAG , dbMsg);
-			} catch (Exception er) {
-				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+			mCameraOpenCloseLock.release();
+			cameraDevice.close();
+			mCameraDevice = null;
+			Activity activity = MainActivity.this;    // getActivity();
+			if ( null != activity ) {
+				activity.finish();
 			}
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + error);
 		}
 	};
 
@@ -684,6 +719,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 	/**
 	 * This a callback object for the {@link ImageReader}. "onImageAvailable" will be called when a still image is ready to be saved.
+	 * setUpCameraOutputsで設定
 	 */
 	private final ImageReader.OnImageAvailableListener mOnImageAvailableListener = new ImageReader.OnImageAvailableListener() {
 
@@ -692,10 +728,13 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			final String TAG = "mOnImageAvailableListener[MA]";
 			String dbMsg = "";
 			try {
-				dbMsg = "mState=" + mState;
-				if ( mState == STATE_PREVIEW ) {
-					sendPreview(reader);
-				} else {
+				dbMsg = "mState=" + mState;   //撮影時も STATE_PREVIEWになっている
+				dbMsg += ",isPhotography=" + isPhotography;   //撮影時も falseになっている
+//				if ( !isPhotography ) {     //撮影中で無ければ
+////					SendPreview SP = new SendPreview(reader.acquireLatestImage());
+////					mBackgroundHandler.post(SP);
+////					sendPreview(reader);
+//				} else {
 					dbMsg += ",writeFolder=" + writeFolder;
 					long timestamp = System.currentTimeMillis();
 					dbMsg += ",timestamp=" + timestamp;
@@ -733,9 +772,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					mFile = new File(pFolderName , dtStr);                 //getActivity().getExternalFilesDir(null)
 					dbMsg += ",mFile=" + mFile.toString();
 					//maxImages (2) has already been acquired, call #close before acquiring more.
-					ImageSaver IS = new ImageSaver(reader.acquireNextImage() , pFolderName , ma_iv , dtStr);
+					ImageSaver IS = new ImageSaver(reader.acquireNextImage() , pFolderName , ma_iv , dtStr);//第二引数以降は追加     /
 					mBackgroundHandler.post(IS);
-				}
+//				}
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -800,61 +839,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
 //		}
 //	};
 
-	public ImageReader prevReader;
-
-	public void sendPreview(ImageReader _prevReader) {
-		prevReader = _prevReader;
-//		shotBitmap = _shotBitmap;
-		// 別スレッドを実行
-		MainActivity.this.runOnUiThread(new Runnable() {
-			@Override
-			public void run() {
-				final String TAG = "sendPreview[MA]";
-				String dbMsg = "";
-				try {
-//					final Bitmap shotBitmap = null;
-//					if ( OCVFRV != null ) {
-//			if( camera.mImageReader != null) {
-					Image image = prevReader.acquireLatestImage();
-					if ( image != null ) {
-						int width = image.getWidth();
-						int height = image.getHeight();
-						long timestamp = image.getTimestamp();
-						dbMsg += ",image[" + width + "×" + height + "]Format=" + image.getFormat();
-						dbMsg += ",=" + timestamp + "," + image.getPlanes().length + "枚";
-						ByteBuffer imageBuf = image.getPlanes()[0].getBuffer();
-						final byte[] imageBytes = new byte[imageBuf.remaining()];        //直接渡すと.ArrayIndexOutOfBoundsException: length=250,095; index=15,925,248
-						dbMsg += ",imageBytes=" + imageBytes.length;
-						imageBuf.get(imageBytes);
-
-						final Bitmap shotBitmap = BitmapFactory.decodeByteArray(imageBytes , 0 , imageBytes.length);
-						ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-						shotBitmap.compress(Bitmap.CompressFormat.JPEG , 100 , byteArrayOutputStream);
-						dbMsg += ",bitmap[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]";
-						int byteCount = shotBitmap.getByteCount();
-						dbMsg += "" + byteCount + "バイト";
-						//			}
-						OCVFRV.readFrameRGB(shotBitmap);
-
-						if ( shotBitmap != null ) {
-							shotBitmap.recycle();
-							byteCount = shotBitmap.getByteCount();
-							dbMsg += ">>" + byteCount + "バイト";
-						}
-						image.close();
-					} else {
-						dbMsg += ",image = null ";
-					}
-//					} else {
-//						dbMsg += ",OCVFRV = null ";
-//					}
-					myLog(TAG , dbMsg);
-				} catch (Exception er) {
-					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-				}
-			}
-		});
-	}
 
 	//	private	CaptureRequest copyPreviewRequest;
 	//	private CaptureRequest.Builder mCopyPreviewRequestBuilder ;                    // 静止画を送ってもらうためのリクエストのビルダーですよ
@@ -864,20 +848,21 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		try {
 //			mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER , CameraMetadata.CONTROL_AF_TRIGGER_START);            // This is how to tell the camera to lock focus.
 
-			// ImageViewへ静止画を送るためのCaptureRequestを作る 	http://woshidan.hatenadiary.jp/entry/2017/09/10/022510
-//			CaptureRequest.Builder mCopyPreviewRequestBuilder = null;                    // 静止画を送ってもらうためのリクエストのビルダーですよ
-//			try {
-//				dbMsg += ",createCaptureRequest";
-//				mCopyPreviewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
-//			} catch (CameraAccessException er) {
-//				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-//			}
-//			mCopyPreviewRequestBuilder.addTarget(mImageReader.getSurface());                        // 送り先はImageReaderにしてね
-//			CaptureRequest copyPreviewRequest = mCopyPreviewRequestBuilder.build();
+//			 ImageViewへ静止画を送るためのCaptureRequestを作る 	http://woshidan.hatenadiary.jp/entry/2017/09/10/022510
+			CaptureRequest.Builder mCopyPreviewRequestBuilder = null;                    // 静止画を送ってもらうためのリクエストのビルダーですよ
+			try {
+				dbMsg += ",createCaptureRequest";
+				mCopyPreviewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+			} catch (CameraAccessException er) {
+				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+			}
+			mCopyPreviewRequestBuilder.addTarget(mImageReader.getSurface());                        // 送り先はImageReaderにしてね
+			CaptureRequest copyPreviewRequest = mCopyPreviewRequestBuilder.build();
 			try {
 				dbMsg += ",capture";
-				int retInt = mCaptureSession.capture(mPreviewRequestBuilder.build() , mCaptureCallback , mBackgroundHandler);
-//				int retInt = mCaptureSession.capture(copyPreviewRequest , null , null);                        // (プレビュー時にセッションは開いたままで、)追加で静止画送ってくれリクエストを送る
+//				int retInt = mCaptureSession.capture(mPreviewRequestBuilder.build() , mCaptureCallback , mBackgroundHandler);    //
+//				int retInt = mCaptureSession.capture(mPreviewRequestBuilder.build() ,null , null);	// 1から順次増加
+				int retInt = mCaptureSession.capture(copyPreviewRequest , mCaptureCallback , mBackgroundHandler);                        // (プレビュー時にセッションは開いたままで、)追加で静止画送ってくれリクエストを送る
 				dbMsg += ",retInt=" + retInt;
 			} catch (CameraAccessException er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -887,6 +872,78 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}
+
+//	private final ImageReader.OnImageAvailableListener mOnPreviwListener = new ImageReader.OnImageAvailableListener() {
+//
+//		@Override
+//		public void onImageAvailable(ImageReader reader) {
+//			final String TAG = "mOnPreviwListener[MA]";
+//			String dbMsg = "";
+//			try {
+//					sendPreview(reader);
+//				myLog(TAG , dbMsg);
+//			} catch (Exception er) {
+//				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+//			}
+//		}
+//	};
+
+//	public ImageReader prevReader;
+//	public void sendPreview(ImageReader _prevReader) {
+//		prevReader = _prevReader;
+////		shotBitmap = _shotBitmap;
+//		// 別スレッドを実行
+//		MainActivity.this.runOnUiThread(new Runnable() {
+//			@Override
+//			public void run() {
+//				final String TAG = "sendPreview[MA]";
+//				String dbMsg = "";
+//				try {
+////					final Bitmap shotBitmap = null;
+////					if ( OCVFRV != null ) {
+////			if( camera.mImageReader != null) {
+//					Image image = prevReader.acquireLatestImage();
+//					if ( image != null ) {
+//						int width = image.getWidth();
+//						int height = image.getHeight();
+//						long timestamp = image.getTimestamp();
+//						dbMsg += ",image[" + width + "×" + height + "]Format=" + image.getFormat();
+//						dbMsg += ",=" + timestamp + "," + image.getPlanes().length + "枚";
+//						ByteBuffer imageBuf = image.getPlanes()[0].getBuffer();
+//						final byte[] imageBytes = new byte[imageBuf.remaining()];        //直接渡すと.ArrayIndexOutOfBoundsException: length=250,095; index=15,925,248
+//						dbMsg += ",imageBytes=" + imageBytes.length;
+//						imageBuf.get(imageBytes);
+//
+//						final Bitmap shotBitmap = BitmapFactory.decodeByteArray(imageBytes , 0 , imageBytes.length);
+//						ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+//						shotBitmap.compress(Bitmap.CompressFormat.JPEG , 100 , byteArrayOutputStream);
+//						dbMsg += ",bitmap[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]";
+//						int byteCount = shotBitmap.getByteCount();
+//						dbMsg += "" + byteCount + "バイト";
+//						//			}
+//						OCVFRV.readFrameRGB(shotBitmap);
+//
+//						if ( shotBitmap != null ) {
+//							shotBitmap.recycle();
+//							byteCount = shotBitmap.getByteCount();
+//							dbMsg += ">>" + byteCount + "バイト";
+//						}
+//						image.close();
+//					} else {
+//						dbMsg += ",image = null ";
+//					}
+////					} else {
+////						dbMsg += ",OCVFRV = null ";
+////					}
+//					myLog(TAG , dbMsg);
+//				} catch (Exception er) {
+//					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+//				}
+//			}
+//		});
+//	}
+
+
 	//
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////プレビューの画像取得 ///
 
@@ -914,6 +971,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	public int mSensorOrientation;
 	public int fpsCount = 0;
 	public int fpsLimi = 10;
+	private MediaActionSound mSound;    //撮影音のためのMediaActionSound
 
 	/**
 	 * JPEG捕獲に関連したそのハンドル・イベント。
@@ -924,10 +982,10 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			final String TAG = "process[MA]";
 			String dbMsg = "";
 			try {
-				dbMsg += "result=" + result;
+//				dbMsg += "result=" + result;
 				dbMsg += ",mState=" + mState;
 				switch ( mState ) {
-					case STATE_PREVIEW: {                //0 We have nothing to do when the camera preview is working normally.
+					case STATE_PREVIEW: {                //0 ＜＜初期値とunlockFocus() 、We have nothing to do when the camera preview is working normally.
 //						dbMsg = "";
 //						dbMsg += "(" + fpsCount + "/" + fpsLimi + ")";
 //						if ( fpsCount < fpsLimi ) {
@@ -941,7 +999,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 						if ( OCVFRV != null ) {
 							dbMsg += ",completion=" + OCVFRV.getCompletion();
 							if ( OCVFRV.getCompletion() ) {    //onDrawが終了するまでfalseが返る
-								copyPreview();
+//								copyPreview();
 //							} else {
 //								dbMsg += ",getCompletion = false ";
 							}
@@ -954,7 +1012,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 						}
 						break;
 					}
-					case STATE_WAITING_LOCK: {            //1	::lockFocus()から                ；
+					case STATE_WAITING_LOCK: {        //1	::lockFocus()から                ；
 						/**
 						 *  lockFocus() で
 						 mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER , CameraMetadata.CONTROL_AF_TRIGGER_START);            // This is how to tell the camera to lock focus.
@@ -977,8 +1035,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 						}
 						break;
 					}
-					case STATE_WAITING_PRECAPTURE: {        //2
-						// CONTROL_AE_STATE can be null on some devices
+					case STATE_WAITING_PRECAPTURE: {    //2	<runPrecaptureSequence// CONTROL_AE_STATE can be null on some devices
 						Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
 						dbMsg += ",aeState=" + aeState;
 						if ( aeState == null || aeState == CaptureResult.CONTROL_AE_STATE_PRECAPTURE || aeState == CaptureRequest.CONTROL_AE_STATE_FLASH_REQUIRED ) {
@@ -986,8 +1043,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 						}
 						break;
 					}
-					case STATE_WAITING_NON_PRECAPTURE: {            //3
-						// CONTROL_AE_STATE can be null on some devices
+					case STATE_WAITING_NON_PRECAPTURE: {    //3<STATE_WAITING_PRECAPTURE	// CONTROL_AE_STATE can be null on some devices
 						Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
 						dbMsg += ",aeState=" + aeState;
 						if ( aeState == null || aeState != CaptureResult.CONTROL_AE_STATE_PRECAPTURE ) {
@@ -998,6 +1054,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					}
 				}
 				if ( !dbMsg.equals("") ) {
+					dbMsg += ",mState=" + mState;
 					myLog(TAG , dbMsg);
 				}
 			} catch (Exception er) {
@@ -1020,22 +1077,18 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 		@Override
 		public void onCaptureCompleted(CameraCaptureSession session , CaptureRequest request , TotalCaptureResult result) {
-			final String TAG = "onCaptureCompleted[MA]";
+			final String TAG = "MCC.onCaptureCompleted[MA]";
 			String dbMsg = "";
 			try {
-				dbMsg += ",CaptureRequest=" + request.toString();
-				dbMsg += ",TotalCaptureResult=" + result.toString();
-				//,CaptureRequest=android.hardware.camera2.CaptureRequest@a1ff6d90,TotalCaptureResult=android.hardware.camera2.
-				// TotalCaptureResult@cf92614
+				dbMsg += ",CaptureRequest=" + request.toString();    //CaptureRequest=android.hardware.camera2.CaptureRequest@ed0bb9ae,TotalCaptureResult=android.hardware.camera2
+				dbMsg += ",TotalCaptureResult=" + result.toString();   // TotalCaptureResult@17e91b3
 				process(result);
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 			}
 		}
-
 	};
-
 
 	private void showToast(final String text) {
 		final String TAG = "showToast[MA]";
@@ -1145,7 +1198,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					dbMsg += "m,largest[" + largest.getWidth() + "×" + largest.getHeight() + "]";
 					mImageReader = ImageReader.newInstance(largest.getWidth() , largest.getHeight() , ImageFormat.JPEG , /*maxImages*/2);
 					mImageReader.setOnImageAvailableListener(mOnImageAvailableListener , mBackgroundHandler);
-//					mImageReader.setOnImageAvailableListener(mOnPreviwListener , null);            //プレビューの画像取得
+//					mImageReader.setOnImageAvailableListener(mOnPreviwListener , mBackgroundHandler);            //プレビューの画像取得
 
 					// Find out if we need to swap dimension to get the preview size relative to sensor coordinate.
 					int displayRotation = activity.getWindowManager().getDefaultDisplay().getRotation();
@@ -1275,8 +1328,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		String dbMsg = "";
 		try {
 			try {
+				dbMsg += "mCaptureSession=" + mCaptureSession;
 				mCameraOpenCloseLock.acquire();
-
+				dbMsg = "";
 				if ( null != mCaptureSession ) {
 					mCaptureSession.close();
 					mCaptureSession = null;
@@ -1342,7 +1396,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 	/**
 	 * Creates a new {@link CameraCaptureSession} for camera preview.
-	 * onOpenedから
+	 * onOpened	から
 	 */
 	private void createCameraPreviewSession() {
 		final String TAG = "createCameraPreviewSession[MA]";
@@ -1350,44 +1404,37 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		try {
 			SurfaceTexture texture = mTextureView.getSurfaceTexture();
 			assert texture != null;
-
-			// We configure the size of default buffer to be the size of camera preview we want.
-			texture.setDefaultBufferSize(mPreviewSize.getWidth() , mPreviewSize.getHeight());
-
-			// This is the output Surface we need to start preview.
-			Surface surface = new Surface(texture);
-
-			// We set up a CaptureRequest.Builder with the output Surface.
-			mPreviewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+			int tWidth = mPreviewSize.getWidth();
+			int tHight = mPreviewSize.getHeight();
+			dbMsg = "PreviewSize[" + tWidth + "×" + tHight + "]";
+			texture.setDefaultBufferSize(tWidth , tHight);     // バッファサイズを、プレビューサイズに合わせる
+			Surface surface = new Surface(texture);   // プレビューが描画されるSurface	This is the output Surface we need to start preview.
+			mPreviewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);    //(5)CaptureRequest作成	 We set up a CaptureRequest.Builder with the output Surface.
 			mPreviewRequestBuilder.addTarget(surface);
-
-			// Here, we create a CameraCaptureSession for camera preview.
+			dbMsg += ",surface=" + surface.toString();
+			// (6)プレビュー用のセッション生成を要求する// Here, we create a CameraCaptureSession for camera preview.
 			mCameraDevice.createCaptureSession(Arrays.asList(surface , mImageReader.getSurface()) , new CameraCaptureSession.StateCallback() {
-
 				@Override
 				public void onConfigured(CameraCaptureSession cameraCaptureSession) {
-					final String TAG = "onPause[MA]";
+					final String TAG = "CCPS.onConfigured[MA]";
 					String dbMsg = "";
 					try {
-						// The camera is already closed
-						if ( null == mCameraDevice ) {
-							return;
-						}
-
-						// When the session is ready, we start displaying the preview.
-						mCaptureSession = cameraCaptureSession;
-						try {
-							// Auto focus should be continuous for camera preview.
-							mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE , CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-							// Flash is automatically enabled when necessary.
-							setAutoFlash(mPreviewRequestBuilder);
-
-							// Finally, we start displaying the camera preview.
-							mPreviewRequest = mPreviewRequestBuilder.build();
-							mCaptureSession.setRepeatingRequest(mPreviewRequest , mCaptureCallback , mBackgroundHandler);
-							//APIL21;このキャプチャセッションで、イメージのキャプチャを無限に繰り返すように要求:ここの他は unlockFocus()
-						} catch (CameraAccessException er) {
-							myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+						if ( null != mCameraDevice ) {  // カメラが閉じていなければ	// The camera is already closed
+							mCaptureSession = cameraCaptureSession;        // When the session is ready, we start displaying the preview.
+							dbMsg += ",getId=" + mCaptureSession.getDevice().getId();
+							try {
+								mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE , CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+								// オートフォーカスを設定する// Auto focus should be continuous for camera preview.
+								setAutoFlash(mPreviewRequestBuilder);        // Flash is automatically enabled when necessary.
+								mPreviewRequest = mPreviewRequestBuilder.build();        // リクエスト作成// Finally, we start displaying the camera preview.
+								mCaptureSession.setRepeatingRequest(mPreviewRequest , mCaptureCallback , mBackgroundHandler);
+								//(7)RepeatSession作成 カメラプレビューを表示する
+								//APIL21;このキャプチャセッションで、イメージのキャプチャを無限に繰り返すように要求:ここの他は unlockFocus()
+							} catch (CameraAccessException er) {
+								myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+							}
+						} else {
+							dbMsg += "mCameraDevice = null";
 						}
 						myLog(TAG , dbMsg);
 					} catch (Exception er) {
@@ -1397,17 +1444,14 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 				@Override
 				public void onConfigureFailed(CameraCaptureSession cameraCaptureSession) {
-					final String TAG = "onPause[MA]";
+					final String TAG = "CCPS.onConfigureFailed[MA]";
 					String dbMsg = "";
-					try {
-						dbMsg = "";
-						showToast("Failed");
-						myLog(TAG , dbMsg);
-					} catch (Exception er) {
-						myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-					}
+					dbMsg += ",getId=" + cameraCaptureSession.getDevice().getId();
+					showToast("Failed");
+					myErrorLog(TAG , dbMsg + "発生；");
 				}
 			} , null);
+			dbMsg += ",mPreviewRequestBuilder=" + mPreviewRequestBuilder.toString();
 
 			myLog(TAG , dbMsg);
 		} catch (CameraAccessException e) {
@@ -1466,8 +1510,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	 */
 	private void takePicture() {
 		final String TAG = "takePicture[MA]";
-		String dbMsg = "";
+		String dbMsg = "開始";
 		try {
+			isPhotography = true;
 			lockFocus();
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
@@ -1481,7 +1526,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	 */
 	private void lockFocus() {
 		final String TAG = "lockFocus[MA]";
-		String dbMsg = "";
+		String dbMsg = "開始";
 		try {
 			if ( mPreviewRequestBuilder != null ) {
 				mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER , CameraMetadata.CONTROL_AF_TRIGGER_START);            // This is how to tell the camera to lock focus.
@@ -1490,6 +1535,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			} else {
 				dbMsg = "mPreviewRequestBuilder== null";
 			}
+			dbMsg += ",mState= " + mState;
 			myLog(TAG , dbMsg);
 		} catch (CameraAccessException er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -1501,6 +1547,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	/**
 	 * 静止画像を捕えるために、プレ捕獲シーケンスを走らせてください。
 	 * 我々が反応を中で｛@link #mCaptureCallback｝得る｛@link #lockFocus（）｝とき、この方法は呼ばれなければなりません。
+	 * processで STATE_WAITING_LOCK の時に呼ばれる  <<  lockFocus()で　mState = STATE_WAITING_LOCK
 	 * Run the precapture sequence for capturing a still image.
 	 * This method should be called when we get a response in {@link #mCaptureCallback} from {@link #lockFocus()}.
 	 */
@@ -1534,40 +1581,40 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			if ( null == activity || null == mCameraDevice ) {
 				return;
 			}
-			// This is the CaptureRequest.Builder that we use to take a picture.
+			// 撮影用のCaptureRequestを設定する	// This is the CaptureRequest.Builder that we use to take a picture.
 			final CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
-			captureBuilder.addTarget(mImageReader.getSurface());
+			captureBuilder.addTarget(mImageReader.getSurface());  // キャプチャ結果をImageReaderに渡す
 
-			// Use the same AE and AF modes as the preview.
+			// オートフォーカス// Use the same AE and AF modes as the preview.
 			captureBuilder.set(CaptureRequest.CONTROL_AF_MODE , CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
 			setAutoFlash(captureBuilder);
-
-			// Orientation
 			int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
-			dbMsg = ",ディスプレイ=" + rotation;
+			dbMsg += ",端末の回転角=" + rotation;
 			int camLotation = getOrientation(rotation);
-			dbMsg = ",カメラ=" + camLotation;
-			captureBuilder.set(CaptureRequest.JPEG_ORIENTATION , camLotation);
-
+			dbMsg += ",カメラセンサーの方向=" + camLotation;
+			captureBuilder.set(CaptureRequest.JPEG_ORIENTATION , camLotation);        // JPEG画像の方向を設定する。
+			// 撮影が終わったら、フォーカスのロックを外すためのコールバック
 			CameraCaptureSession.CaptureCallback CaptureCallback = new CameraCaptureSession.CaptureCallback() {
 				@Override
 				public void onCaptureCompleted(CameraCaptureSession session , CaptureRequest request , TotalCaptureResult result) {
-					final String TAG = "onCaptureCompleted[MA]";
+					final String TAG = "CSP.onCaptureCompleted[MA]";
 					String dbMsg = "";
 					try {
-						dbMsg = "Saved: " + mFile.getPath();
+						dbMsg += "Saved: " + mFile.getPath();
 						unlockFocus();
-						dbMsg = "保存終了";
+						dbMsg += "保存終了";
 						myLog(TAG , dbMsg);
 					} catch (Exception er) {
 						myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 					}
 				}
 			};
-
+			if ( isRumbling ) {                                //シャッター音の鳴動
+				mSound.play(MediaActionSound.SHUTTER_CLICK);            // 撮影音を鳴らす
+			}
 			mCaptureSession.stopRepeating();
 			mCaptureSession.abortCaptures();
-			mCaptureSession.capture(captureBuilder.build() , CaptureCallback , null);
+			mCaptureSession.capture(captureBuilder.build() , CaptureCallback , null);  // 撮影する
 			myLog(TAG , dbMsg);
 		} catch (CameraAccessException er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -1609,14 +1656,15 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		final String TAG = "unlockFocus[MA]";
 		String dbMsg = "";
 		try {
-			// Reset the auto-focus trigger
 			mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER , CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
+			// オートフォーカストリガーを外す// Reset the auto-focus trigger
 			setAutoFlash(mPreviewRequestBuilder);
 			mCaptureSession.capture(mPreviewRequestBuilder.build() , mCaptureCallback , mBackgroundHandler);
-			// After this, the camera will go back to the normal state of preview.
 			mState = STATE_PREVIEW;
 			mCaptureSession.setRepeatingRequest(mPreviewRequest , mCaptureCallback , mBackgroundHandler);
+			// プレビューに戻る// After this, the camera will go back to the normal state of preview.
 			//APIL21;このキャプチャセッションで、イメージのキャプチャを無限に繰り返すように要求:ここの他は onConfigured
+			isPhotography = false;
 			myLog(TAG , dbMsg);
 		} catch (CameraAccessException er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -1667,6 +1715,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+				isPhotography = false;
 			}
 		}
 
@@ -1703,6 +1752,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					setThumbnail(shotBitmap);
 				} catch (IOException er) {
 					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+					isPhotography = false;
 				} finally {
 					mImage.close();
 					if ( null != output ) {
@@ -1716,9 +1766,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+				isPhotography = false;
 			}
 		}
-
 	}
 
 	private static Bitmap shotBitmap;
@@ -1747,6 +1797,69 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				}
 			}
 		});
+	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// /
+	private class SendPreview implements Runnable {        //static ?必要？
+		/**
+		 * The JPEG image
+		 */
+		private Image mImage;
+
+		/**
+		 * The file we save the image into.
+		 */
+
+		SendPreview(Image image) {                //static                , String _saveFolderName , ImageView _ma_iv , String _saveFileName
+			final String TAG = "SendPreview[MA]";
+			String dbMsg = "";
+			try {
+				mImage = image;
+				myLog(TAG , dbMsg);
+			} catch (Exception er) {
+				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+			}
+		}
+
+		@Override
+		public void run() {
+			final String TAG = "SendPreview.run[MA]";
+			String dbMsg = "";
+			try {
+//				if ( mImage != null ) {
+				int width = mImage.getWidth();
+				int height = mImage.getHeight();
+				long timestamp = mImage.getTimestamp();
+				dbMsg += ",image[" + width + "×" + height + "]Format=" + mImage.getFormat();
+				dbMsg += ",=" + timestamp + "," + mImage.getPlanes().length + "枚";
+				ByteBuffer imageBuf = mImage.getPlanes()[0].getBuffer();
+				final byte[] imageBytes = new byte[imageBuf.remaining()];        //直接渡すと.ArrayIndexOutOfBoundsException: length=250,095; index=15,925,248
+				dbMsg += ",imageBytes=" + imageBytes.length;
+				imageBuf.get(imageBytes);
+
+				final Bitmap shotBitmap = BitmapFactory.decodeByteArray(imageBytes , 0 , imageBytes.length);
+				ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+				shotBitmap.compress(Bitmap.CompressFormat.JPEG , 100 , byteArrayOutputStream);
+				dbMsg += ",bitmap[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]";
+				int byteCount = shotBitmap.getByteCount();
+				dbMsg += "" + byteCount + "バイト";
+				//			}
+				OCVFRV.readFrameRGB(shotBitmap);
+
+				if ( shotBitmap != null ) {
+					shotBitmap.recycle();
+					byteCount = shotBitmap.getByteCount();
+					dbMsg += ">>" + byteCount + "バイト";
+				}
+				mImage.close();
+//				} else {
+//					dbMsg += ",image = null ";
+//				}
+				myLog(TAG , dbMsg);
+			} catch (Exception er) {
+				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+			}
+		}
 	}
 
 
