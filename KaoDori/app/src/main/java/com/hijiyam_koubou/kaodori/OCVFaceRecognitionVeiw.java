@@ -82,12 +82,18 @@ public class OCVFaceRecognitionVeiw extends View {
 		String dbMsg = "";
 		try {
 			isCompletion =false;
+//			int dWidth = bitmapOrg.getWidth();
+//			int dHight = bitmapOrg.getHeight();
+//			dbMsg += ",bitmap[" + dWidth + "×" + dHight + "]";
+//			Double wScale = (Double)(1.0*viewWidth/  dWidth);
+//			Double hScale = (Double)(1.0*viewHight/  dHight);
+//			dbMsg += ",wScale=" + wScale + ",hScale=" + hScale + "]";
+//			Bitmap bitmap= Bitmap.createScaledBitmap(bitmapOrg, viewWidth, viewHight, false);
 			int dWidth = bitmap.getWidth();
 			int dHight = bitmap.getHeight();
-			dbMsg += ",bitmap[" + dWidth + "×" + dHight + "]";
-			int byteCount = bitmap.getByteCount();
-			dbMsg += "" + byteCount + "バイト";
 			dbMsg += "[" + dWidth + "×" + dHight + "]" + degrees + "dig";
+			 int byteCount = bitmap.getByteCount();
+			dbMsg += "" + byteCount + "バイト";
 //			Bitmap bitmap = decode(data , previewWidth , previewHeight , degrees);
 //			if ( bitmap != null ) {
 			dbMsg += ",bitmap=" + bitmap.getByteCount();
@@ -231,16 +237,16 @@ public class OCVFaceRecognitionVeiw extends View {
 //			taregetView.setMinimumWidth(_width);
 //			taregetView.setMinimumHeight(_hight);
 			dbMsg += ">>[" + taregetView.getWidth() + "×" + taregetView.getHeight() + "]";
-//			faces.clear();
-//			for ( org.opencv.core.Rect rect : objects.toArray() ) {
-//				float left = ( float ) (1.0 * rect.x / _width);
-//				float top = ( float ) (1.0 * rect.y / _hight);
-//				float right = left + ( float ) (1.0 * rect.width / _width);
-//				float bottom = top + ( float ) (1.0 * rect.height / _hight);
-//				faces.add(new RectF(left , top , right , bottom));
-//			}
-//			dbMsg += ",faces=" + faces.size();
-//			invalidate();                                                //onDrawへ
+			faces.clear();
+			for ( org.opencv.core.Rect rect : objects.toArray() ) {
+				float left = ( float ) (1.0 * rect.x / _width);
+				float top = ( float ) (1.0 * rect.y / _hight);
+				float right = left + ( float ) (1.0 * rect.width / _width);
+				float bottom = top + ( float ) (1.0 * rect.height / _hight);
+				faces.add(new RectF(left , top , right , bottom));
+			}
+			dbMsg += ",faces=" + faces.size();
+			invalidate();                                                //onDrawへ
 
 			degrees = _degrees;
 			myLog(TAG , dbMsg);

@@ -730,11 +730,11 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			try {
 				dbMsg = "mState=" + mState;   //撮影時も STATE_PREVIEWになっている
 				dbMsg += ",isPhotography=" + isPhotography;   //撮影時も falseになっている
-//				if ( !isPhotography ) {     //撮影中で無ければ
-////					SendPreview SP = new SendPreview(reader.acquireLatestImage());
-////					mBackgroundHandler.post(SP);
-////					sendPreview(reader);
-//				} else {
+				if ( !isPhotography ) {     //撮影中で無ければ
+					SendPreview SP = new SendPreview(reader.acquireLatestImage());
+					mBackgroundHandler.post(SP);
+//					sendPreview(reader);
+				} else {
 					dbMsg += ",writeFolder=" + writeFolder;
 					long timestamp = System.currentTimeMillis();
 					dbMsg += ",timestamp=" + timestamp;
@@ -774,7 +774,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					//maxImages (2) has already been acquired, call #close before acquiring more.
 					ImageSaver IS = new ImageSaver(reader.acquireNextImage() , pFolderName , ma_iv , dtStr);//第二引数以降は追加     /
 					mBackgroundHandler.post(IS);
-//				}
+				}
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -970,7 +970,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	 */
 	public int mSensorOrientation;
 	public int fpsCount = 0;
-	public int fpsLimi = 10;
+	public int fpsLimi = 30;
 	private MediaActionSound mSound;    //撮影音のためのMediaActionSound
 
 	/**
@@ -986,33 +986,30 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				dbMsg += ",mState=" + mState;
 				switch ( mState ) {
 					case STATE_PREVIEW: {                //0 ＜＜初期値とunlockFocus() 、We have nothing to do when the camera preview is working normally.
-//						dbMsg = "";
-//						dbMsg += "(" + fpsCount + "/" + fpsLimi + ")";
-//						if ( fpsCount < fpsLimi ) {
-//							fpsCount++;
-//						} else {
-//							fpsCount = 0;
-//							final CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
-//							captureBuilder.addTarget(mImageReader.getSurface());
-////							copyPreview();
-//						}
-						if ( OCVFRV != null ) {
-							dbMsg += ",completion=" + OCVFRV.getCompletion();
-							if ( OCVFRV.getCompletion() ) {    //onDrawが終了するまでfalseが返る
-//								copyPreview();
+						dbMsg = "";
+						dbMsg += "(" + fpsCount + "/" + fpsLimi + ")";
+						if ( fpsCount < fpsLimi ) {
+							fpsCount++;
+						} else {
+							if ( OCVFRV != null ) {
+								dbMsg += ",completion=" + OCVFRV.getCompletion();
+								if ( OCVFRV.getCompletion() ) {    //onDrawが終了するまでfalseが返る
+									copyPreview();
 //							} else {
 //								dbMsg += ",getCompletion = false ";
+								}
+							} else {
+								dbMsg += ",OCVFRV = null ";
+								int TVWIdht = mTextureView.getWidth();
+								int TVHight = mTextureView.getHeight();
+								dbMsg = "[" + TVWIdht + "×" + TVHight + "]";
+								setEffectView();
 							}
-						} else {
-							dbMsg += ",OCVFRV = null ";
-							int TVWIdht = mTextureView.getWidth();
-							int TVHight = mTextureView.getHeight();
-							dbMsg = "[" + TVWIdht + "×" + TVHight + "]";
-							setEffectView();
+							fpsCount = 0;
 						}
 						break;
 					}
-					case STATE_WAITING_LOCK: {        //1	::lockFocus()から                ；
+					case STATE_WAITING_LOCK: {        //1<<lockFocus()から
 						/**
 						 *  lockFocus() で
 						 mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER , CameraMetadata.CONTROL_AF_TRIGGER_START);            // This is how to tell the camera to lock focus.
@@ -1033,6 +1030,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 								runPrecaptureSequence();
 							}
 						}
+						isPhotography = true;
 						break;
 					}
 					case STATE_WAITING_PRECAPTURE: {    //2	<runPrecaptureSequence// CONTROL_AE_STATE can be null on some devices
@@ -1600,7 +1598,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					final String TAG = "CSP.onCaptureCompleted[MA]";
 					String dbMsg = "";
 					try {
+						/*このタイミングではmOnImageAvailableListenerに到達していない						 * */
 						dbMsg += "Saved: " + mFile.getPath();
+						Thread.sleep(1000);
 						unlockFocus();
 						dbMsg += "保存終了";
 						myLog(TAG , dbMsg);
@@ -1664,7 +1664,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			mCaptureSession.setRepeatingRequest(mPreviewRequest , mCaptureCallback , mBackgroundHandler);
 			// プレビューに戻る// After this, the camera will go back to the normal state of preview.
 			//APIL21;このキャプチャセッションで、イメージのキャプチャを無限に繰り返すように要求:ここの他は onConfigured
-			isPhotography = false;
+//			isPhotography = false;
 			myLog(TAG , dbMsg);
 		} catch (CameraAccessException er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -1763,6 +1763,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 						}
 					}
 				}
+				isPhotography = false;
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
