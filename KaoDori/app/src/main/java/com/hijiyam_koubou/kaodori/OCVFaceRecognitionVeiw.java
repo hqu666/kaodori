@@ -31,8 +31,9 @@ public class OCVFaceRecognitionVeiw extends View {
 	static {
 		System.loadLibrary("opencv_java3");  // OpenCV使用クラスに必須
 	}
+
 	private Context context;
-//	private ViewGroup VG;   					//読み込まれる土台
+	//	private ViewGroup VG;   					//読み込まれる土台
 	private int[] rgb;
 	private Bitmap bitmap;
 	private Mat image;
@@ -42,7 +43,10 @@ public class OCVFaceRecognitionVeiw extends View {
 	private int degrees;
 	private int viewWidth;
 	private int viewHight;
-	private boolean isCompletion =true;
+	/**
+	 * 書き換え終了
+	 */
+	private boolean isCompletion = true;
 
 
 	public OCVFaceRecognitionVeiw(Context context , long haarcascadesLastModified) {
@@ -67,7 +71,7 @@ public class OCVFaceRecognitionVeiw extends View {
 			detector = new CascadeClassifier(filename);
 			objects = new MatOfRect();
 
-			isCompletion =true;
+			isCompletion = true;
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -81,7 +85,7 @@ public class OCVFaceRecognitionVeiw extends View {
 		final String TAG = "readFrameRGB[OCVFR]";
 		String dbMsg = "";
 		try {
-			isCompletion =false;
+			isCompletion = false;
 //			int dWidth = bitmapOrg.getWidth();
 //			int dHight = bitmapOrg.getHeight();
 //			dbMsg += ",bitmap[" + dWidth + "×" + dHight + "]";
@@ -92,7 +96,7 @@ public class OCVFaceRecognitionVeiw extends View {
 			int dWidth = bitmap.getWidth();
 			int dHight = bitmap.getHeight();
 			dbMsg += "[" + dWidth + "×" + dHight + "]" + degrees + "dig";
-			 int byteCount = bitmap.getByteCount();
+			int byteCount = bitmap.getByteCount();
 			dbMsg += "" + byteCount + "バイト";
 //			Bitmap bitmap = decode(data , previewWidth , previewHeight , degrees);
 //			if ( bitmap != null ) {
@@ -119,15 +123,19 @@ public class OCVFaceRecognitionVeiw extends View {
 				faces.add(new RectF(left , top , right , bottom));
 			}
 			dbMsg += ",faces=" + faces.size();
-			invalidate();                                                //onDrawへ
+			if ( 0 < faces.size() ) {
+				invalidate();
+			}
+			//onDrawへ
 //			}
-
+			bitmap.recycle();
 			//	 data=3110400[1920×1080]0dig,bitmap=8294400,image=1920x1080,objects=1x0,faces=0
 			//I/onPreviewFrame[Surface]: data=3110400{1920×1080]
 
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+			isCompletion = true;
 		}
 	}
 
@@ -150,13 +158,17 @@ public class OCVFaceRecognitionVeiw extends View {
 			dbMsg += "[" + width + "×" + height + "]faces=" + faces.size();
 
 			for ( RectF face : faces ) {
+				dbMsg += ",face(" + face.left + "," + face.top + ")～（" + face.right + "," + face.bottom + "）";
 				RectF r = new RectF(width * face.left , height * face.top , width * face.right , height * face.bottom);
+				dbMsg += ",r(" + r.left + "," + r.top + ")～（" + r.right + "," + r.bottom + "）";
 				canvas.drawRect(r , paint);
 			}
-			isCompletion =true;
+			isCompletion = true;
+			dbMsg += ",isCompletion=" + isCompletion;
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+			isCompletion = true;
 		}
 	}
 
@@ -218,33 +230,55 @@ public class OCVFaceRecognitionVeiw extends View {
 
 	//////////////////////////////////////////////////////////////////////////////顔検出///
 
-	public void setCondition(int _width , int _hight , int _degrees) {
+	public void setCondition(int _degrees) {
 		final String TAG = "setCondition[OCVFR]";
 		String dbMsg = "";
 		try {
-			dbMsg += "[" + _width + "×" + _hight + "]_degrees=" + _degrees;
-			viewWidth = _width;
-			viewHight = _hight;
-//			LinearLayout linearLayout = (LinearLayout) findViewById(R.id.（）);
-			View taregetView = (View)this.getParent();              //親ビューでサイズを変更する
-			dbMsg += "[" + taregetView.getWidth() + "×" + taregetView.getHeight() + "]";
-			ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams)taregetView.getLayoutParams();
-			dbMsg += ",layoutParams[" + layoutParams.width + "×" + layoutParams.height + "]";
-			layoutParams.width =_width;
-			layoutParams.height =_hight;
-			taregetView.setLayoutParams(layoutParams);
-			taregetView.requestLayout();
-//			taregetView.setMinimumWidth(_width);
-//			taregetView.setMinimumHeight(_hight);
-			dbMsg += ">>[" + taregetView.getWidth() + "×" + taregetView.getHeight() + "]";
+			isCompletion = false;
+
+//			int width = getWidth();
+//			int height = getHeight();
+//			dbMsg += "[" + width + "×" + height + "]" ;
+			View taregetView = ( View ) this;              //親ビューでサイズを変更する
+//			if(! taregetView.isFocused()){
+//				dbMsg += "isFocused=false";
+//				taregetView.setFocusable(true);
+//				dbMsg += ">>"+taregetView.isFocused();
+//			}
+//			dbMsg += "、現在[" + taregetView.getWidth() + "×" + taregetView.getHeight() + "]";
+//			ViewGroup.MarginLayoutParams layoutParams = (ViewGroup.MarginLayoutParams)taregetView.getLayoutParams();
+//			dbMsg += ",layoutParams[" + layoutParams.width + "×" + layoutParams.height + "]";
+//			layoutParams.width =_width;
+//			layoutParams.height =_hight;
+//			taregetView.setLayoutParams(layoutParams);
+//			taregetView.requestLayout();
+////			taregetView.setMinimumWidth(_width);
+////			taregetView.setMinimumHeight(_hight);
+//			dbMsg += ">>[" + taregetView.getWidth() + "×" + taregetView.getHeight() + "]";
 			faces.clear();
-			for ( org.opencv.core.Rect rect : objects.toArray() ) {
-				float left = ( float ) (1.0 * rect.x / _width);
-				float top = ( float ) (1.0 * rect.y / _hight);
-				float right = left + ( float ) (1.0 * rect.width / _width);
-				float bottom = top + ( float ) (1.0 * rect.height / _hight);
-				faces.add(new RectF(left , top , right , bottom));
+//			for ( org.opencv.core.Rect rect : objects.toArray() ) {
+			ViewGroup.MarginLayoutParams layoutParams = ( ViewGroup.MarginLayoutParams ) taregetView.getLayoutParams();
+			dbMsg += ",layoutParams(" + layoutParams.leftMargin + "," + layoutParams.topMargin + ")[" + layoutParams.width + "×" + layoutParams.height + "]";
+			float left = 0;//layoutParams.leftMargin;                // float ) (1.0 * rect.x / _width);
+//			if ( 0 < left ) {
+//				left = ( float ) (1.0 * left /  layoutParams.width);     //?2
+//			}
+			float top = 0;//layoutParams.topMargin;                    // float ) (1.0 * rect.y / _hight);
+//			if ( 0 < top ) {
+//				top = ( float ) (1.0 * top / layoutParams.height);
+//			}
+			float right = left + layoutParams.width;            //( float ) (1.0 * rect.width / _width);
+			if ( 0 < right ) {
+				right = ( float ) (1.0 * right /  layoutParams.width);
 			}
+			float bottom = top + layoutParams.height;            // top + ( float ) (1.0 * rect.height / _hight);
+			if ( 0 < bottom ) {
+				bottom = ( float ) (1.0 * bottom / layoutParams.height);
+			}
+			dbMsg += ">>(" + left + "," + top + ")～(" + right + "," + bottom + "）";
+
+			faces.add(new RectF(left , top , right , bottom));            //APIL1
+//			}
 			dbMsg += ",faces=" + faces.size();
 			invalidate();                                                //onDrawへ
 
@@ -252,6 +286,7 @@ public class OCVFaceRecognitionVeiw extends View {
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+			isCompletion = true;
 		}
 	}
 
@@ -285,8 +320,8 @@ public class OCVFaceRecognitionVeiw extends View {
 		}
 	}
 
-	public  boolean getCompletion() {
-		return  isCompletion;
+	public boolean getCompletion() {
+		return isCompletion;
 	}
 
 

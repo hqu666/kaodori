@@ -50,6 +50,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -82,7 +83,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	public static boolean debugNow = true;
 
 	public AutoFitTextureView mTextureView;
-	public ViewGroup ma_effect_fl;        //OpenCVの呼び込み枠
+	public FrameLayout ma_effect_fl;        //OpenCVの呼び込み枠
 	public OCVFaceRecognitionVeiw OCVFRV;            //顔検出View
 
 	public ImageButton ma_shot_bt;      //キャプチャーボタン
@@ -217,7 +218,11 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			dbMsg = "requestCode=" + requestCode;
 			switch ( requestCode ) {
 				case REQUEST_PREF:
-					readPref();        //ループする？
+					Intent intent = new Intent();
+					intent.setClass(this , this.getClass());
+					this.startActivity(intent);
+					this.finish();                    //http://attyo0.blog.fc2.com/blog-entry-9.html
+//					readPref();        //ループする？
 					break;
 			}
 			myLog(TAG , dbMsg);
@@ -237,7 +242,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			requestWindowFeature(Window.FEATURE_NO_TITLE);
 			setContentView(R.layout.activity_main);
 			mTextureView = ( AutoFitTextureView ) findViewById(R.id.ma_aft);
-			ma_effect_fl = ( ViewGroup ) findViewById(R.id.ma_effect_fl);        //OpenCVの呼び込み枠
+			ma_effect_fl = ( FrameLayout ) findViewById(R.id.ma_effect_fl);        //OpenCVの呼び込み枠       ViewGroup
 
 			ma_shot_bt = ( ImageButton ) findViewById(R.id.ma_shot_bt);      //キャプチャーボタン
 			ma_func_bt = ( ImageButton ) findViewById(R.id.ma_func_bt);      //設定ボタン
@@ -377,33 +382,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		super.onConfigurationChanged(newConfig);
 	}
 
-	/**
-	 * プレビューの幅と角度を更新する
-	 */
-	public void setViewState() {
-		final String TAG = "setViewState[MA}";
-		String dbMsg = "";
-		try {
-			PREVIEW_WIDTH = mTextureView.getWidth();
-			PREVIEW_HEIGHT = mTextureView.getHeight();
-			dbMsg += "[" + PREVIEW_WIDTH + "×" + PREVIEW_HEIGHT + "]";
-			if ( UTIL == null ) {
-				UTIL = new CS_Util();
-			}
-			DISP_DEGREES = UTIL.getDisplayOrientation(this);
-			dbMsg += ",Disp=" + DISP_DEGREES + "dig";
-
-			/**
-			 * 上；,Disp=0dig,camera=90dig,screenLayout=268435794,orientation=1
-			 * 右；Disp=90dig,camera=0dig,screenLayout=268435794,orientation=2
-			 * 左；Disp=270dig,camera=180dig,screenLayout=268435794,orientation=2
-			 * */
-			myLog(TAG , dbMsg);
-		} catch (Exception er) {
-			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-		}
-	}
-
 	@Override
 	public boolean onKeyDown(int keyCode , KeyEvent event) {
 		final String TAG = "onKeyDown[MA]";
@@ -486,7 +464,38 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		}
 	}
 
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//アプリケーション動作////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	/**
+	 * プレビューの幅と角度を更新する
+	 */
+	public void setViewState() {
+		final String TAG = "setViewState[MA}";
+		String dbMsg = "";
+		try {
+			PREVIEW_WIDTH = mTextureView.getWidth();
+			PREVIEW_HEIGHT = mTextureView.getHeight();
+			dbMsg += "[" + PREVIEW_WIDTH + "×" + PREVIEW_HEIGHT + "]";
+			if ( UTIL == null ) {
+				UTIL = new CS_Util();
+			}
+			DISP_DEGREES = UTIL.getDisplayOrientation(this);
+			dbMsg += ",Disp=" + DISP_DEGREES + "dig";
+
+			/**
+			 * 上；,Disp=0dig,camera=90dig,screenLayout=268435794,orientation=1
+			 * 右；Disp=90dig,camera=0dig,screenLayout=268435794,orientation=2
+			 * 左；Disp=270dig,camera=180dig,screenLayout=268435794,orientation=2
+			 * */
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+	/**
+	 * 終了時の清掃
+	 */
 	public void callQuit() {
 		final String TAG = "callQuit[MA}";
 		String dbMsg = "";
@@ -509,6 +518,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		}
 	}
 
+	//エフェクト////////////////////////////////////////////////////////////////////////////////////アプリケーション動作//
+
 	/***/
 	public void setEffectView() {
 		final String TAG = "setEffectView[MA}";
@@ -522,23 +533,25 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					final String TAG = "setEffectView[MA]";
 					String dbMsg = "";
 					try {
-						//6/11 ここのスレッド分けから
-						//android.view.ViewRootImpl$CalledFromWrongThreadException: Only the original thread that created a view hierarchy can touch its views.
 						if ( ma_effect_fl != null ) {
 							if ( OCVFRV == null ) {
+//								ma_effect_fl.setFocusable(true);
+//								ma_effect_fl.setFocusableInTouchMode(true);
+//								ma_effect_fl.setActivated(true);
+//								ma_effect_fl.requestFocus();
 								int cCount = ma_effect_fl.getChildCount();
 								dbMsg += ",getChildCount=" + cCount;
-//							if ( 1 < ma_effect_fl.getChildCount() ) {
-//								ma_effect_fl.removeAllViews();
-//							}
+								dbMsg += ",PREVIEW[" + PREVIEW_WIDTH + "×" + PREVIEW_HEIGHT + "]";  //表示サイズに変更する必要有り
+
 								OCVFRV = new OCVFaceRecognitionVeiw(MainActivity.this , haarcascadesLastModified);            //顔検出View
-								ma_effect_fl.addView(OCVFRV , new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT , ViewGroup.LayoutParams.WRAP_CONTENT));
-								dbMsg += ",OCVFRV[" + OCVFRV.getWidth() + "×" + OCVFRV.getHeight() + "]";
-								dbMsg += "[" + PREVIEW_WIDTH + "×" + PREVIEW_HEIGHT + "]";  //表示サイズに変更する必要有り
-								dbMsg += ",camera=" + mSensorOrientation + "dig";
-								OCVFRV.setCondition(PREVIEW_WIDTH , PREVIEW_HEIGHT , mSensorOrientation);
+								LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(PREVIEW_WIDTH , PREVIEW_HEIGHT);
+//								LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT , ViewGroup.LayoutParams.MATCH_PARENT);
+								OCVFRV.setLayoutParams(layoutParams);
+								ma_effect_fl.addView(OCVFRV);
+//								dbMsg += ",OCVFRV[" + OCVFRV.getWidth() + "×" + OCVFRV.getHeight() + "]";
+
+								setEffectViewSize();
 								dbMsg += ">>ChildCount=" + ma_effect_fl.getChildCount();
-								myLog(TAG , dbMsg);
 							} else {
 								dbMsg += ",作成済み";
 							}
@@ -556,7 +569,72 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		}
 	}
 
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	public void setEffectViewSize() {
+		final String TAG = "setEffectViewSize[MA}";
+		String dbMsg = "";
+		try {
+			MainActivity.this.runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					final String TAG = "setEffectViewSize[MA]";
+					String dbMsg = "";
+					try {
+//						ma_effect_fl.setFocusable(true);
+//						ma_effect_fl.setFocusableInTouchMode(true);
+//						ma_effect_fl.setActivated(true);
+//						ma_effect_fl.requestFocus();
+						dbMsg += ",ma_effect_fl(" + ma_effect_fl.getLeft() + "," + ma_effect_fl.getTop() + ")[" + ma_effect_fl.getWidth() + "×" + ma_effect_fl.getHeight() + "]";
+						int sLeft = (ma_effect_fl.getWidth() - PREVIEW_WIDTH);
+						if ( 0 < sLeft ) {
+							sLeft = sLeft / 2;
+						}
+						int sTop = (ma_effect_fl.getHeight() - PREVIEW_HEIGHT);
+						if ( 0 < sTop ) {
+							sTop = sTop / 2;
+						}
+						dbMsg += ",shift(" + sLeft + "," + sTop + ")";
+//						if ( !OCVFRV.isFocused() ) {
+//							dbMsg += "isFocused=false";
+//							OCVFRV.setFocusable(true);
+//							OCVFRV.setFocusableInTouchMode(true);
+//							OCVFRV.setActivated(true);
+//							OCVFRV.requestFocus();
+//							dbMsg += ">>" + OCVFRV.isFocused();
+//						}
+						dbMsg += "、現在[" + OCVFRV.getWidth() + "×" + OCVFRV.getHeight() + "]";
+						ViewGroup.MarginLayoutParams layoutParams = ( ViewGroup.MarginLayoutParams ) OCVFRV.getLayoutParams();
+						dbMsg += ",layoutParams[" + layoutParams.width + "×" + layoutParams.height + "]";
+						layoutParams.leftMargin = sLeft;
+						layoutParams.topMargin = sTop;
+						layoutParams.width = PREVIEW_WIDTH;
+						layoutParams.height = PREVIEW_HEIGHT;
+						OCVFRV.setLayoutParams(layoutParams);
+						OCVFRV.requestLayout();
+
+//						OCVFRV.setFocusable(false);
+//						OCVFRV.setFocusableInTouchMode(false);
+//						OCVFRV.setActivated(false);
+//						OCVFRV.requestFocus();
+//						dbMsg += ">isFocused>" + OCVFRV.isFocused();
+
+						layoutParams = ( ViewGroup.MarginLayoutParams ) OCVFRV.getLayoutParams();
+						dbMsg += ",>layoutParams(" + layoutParams.leftMargin + "×" + layoutParams.topMargin + ")[" + layoutParams.width + "×" + layoutParams.height + "]";
+						dbMsg += ">>OCVFRV(" + OCVFRV.getLeft() + "," + OCVFRV.getTop() + ")s[" + OCVFRV.getWidth() + "×" + OCVFRV.getHeight() + "]";
+						dbMsg += ",camera=" + mSensorOrientation + "dig";
+						OCVFRV.setCondition(mSensorOrientation);
+
+						myLog(TAG , dbMsg);
+					} catch (Exception er) {
+						myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+					}
+				}
+			});
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+	//プレビュー////////////////////////////////////////////////////////////////////////////////////エフェクト//
 	/**
 	 * {@link TextureView.SurfaceTextureListener} handles several lifecycle events on a
 	 * {@link TextureView}.
@@ -586,7 +664,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				dbMsg = "[" + width + "×" + height + "]";
 				configureTransform(width , height);
 				if ( OCVFRV != null ) {
-					OCVFRV.setCondition(width , height , mSensorOrientation);
+					setEffectViewSize();
 				}
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
@@ -636,7 +714,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		}
 
 	};
-	///////////////////////////////////////////////////////////////////////////////////////////////
+	///カメラ/////////////////////////////////////////////////////////////////////////////////プレビュー//////
 	private String mCameraId;        //ID of the current {@link CameraDevice}.
 
 
@@ -852,7 +930,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			CaptureRequest.Builder mCopyPreviewRequestBuilder = null;                    // 静止画を送ってもらうためのリクエストのビルダーですよ
 			try {
 				dbMsg += ",createCaptureRequest";
-				mCopyPreviewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+				mCopyPreviewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);   //静止画像キャプチャに適した要求を作成
 			} catch (CameraAccessException er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 			}
@@ -986,10 +1064,10 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				dbMsg += ",mState=" + mState;
 				switch ( mState ) {
 					case STATE_PREVIEW: {                //0 ＜＜初期値とunlockFocus() 、We have nothing to do when the camera preview is working normally.
-						dbMsg = "";
 						dbMsg += "(" + fpsCount + "/" + fpsLimi + ")";
 						if ( fpsCount < fpsLimi ) {
 							fpsCount++;
+							dbMsg = "";
 						} else {
 							if ( OCVFRV != null ) {
 								dbMsg += ",completion=" + OCVFRV.getCompletion();
@@ -1002,7 +1080,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 								dbMsg += ",OCVFRV = null ";
 								int TVWIdht = mTextureView.getWidth();
 								int TVHight = mTextureView.getHeight();
-								dbMsg = "[" + TVWIdht + "×" + TVHight + "]";
+								dbMsg += "[" + TVWIdht + "×" + TVHight + "]";
 								setEffectView();
 							}
 							fpsCount = 0;
@@ -1052,7 +1130,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					}
 				}
 				if ( !dbMsg.equals("") ) {
-					dbMsg += ",mState=" + mState;
+					dbMsg += ">>mState=" + mState;
 					myLog(TAG , dbMsg);
 				}
 			} catch (Exception er) {
@@ -1087,23 +1165,52 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			}
 		}
 	};
+	//機器の状況取得////////////////////////////////////////////////////////////////////// /
 
-	private void showToast(final String text) {
-		final String TAG = "showToast[MA]";
+	/**
+	 * スクリーン回転の角度からカメラの角度を返す
+	 * Retrieves the JPEG orientation from the specified screen rotation.
+	 * @param rotation The screen rotation.
+	 * @return The JPEG orientation (one of 0, 90, 270, and 360)
+	 */
+	private int getOrientation(int rotation) {
+		final String TAG = "getOrientation[MA]";
 		String dbMsg = "";
+		int retInt = 0;
 		try {
-			final Activity activity = this;    //getActivity();
-			if ( activity != null ) {
-				activity.runOnUiThread(new Runnable() {
-					@Override
-					public void run() {
-						Toast.makeText(activity , text , Toast.LENGTH_SHORT).show();
-					}
-				});
-			}
+			dbMsg = "rotation=" + rotation;
+			dbMsg += "、mSensorOrientation=" + mSensorOrientation;
+			// Sensor orientation is 90 for most devices, or 270 for some devices (eg. Nexus 5X)
+			// We have to take that into account and rotate JPEG properly.
+			// For devices with orientation of 90, we simply return our mapping from ORIENTATIONS.
+			// For devices with orientation of 270, we need to rotate the JPEG 180 degrees.
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+		return (ORIENTATIONS.get(rotation) + mSensorOrientation + 270) % 360;
+	}
+
+	/**
+	 * Compares two {@code Size}s based on their areas.
+	 */
+	static class CompareSizesByArea implements Comparator< Size > {
+
+		@Override
+		public int compare(Size lhs , Size rhs) {
+			final String TAG = "compare[MA]";
+			String dbMsg = "";
+			try {
+				dbMsg += "lhs[" + lhs.getWidth() + "×" + lhs.getHeight() + "]";
+				dbMsg += ",rhs[" + rhs.getWidth() + "×" + rhs.getHeight() + "]";
+				// We cast here to ensure the multiplications won't overflow
+				if ( debugNow ) {
+					Log.i(TAG , dbMsg + "");
+				}
+			} catch (Exception er) {
+				Log.e(TAG , dbMsg + "");
+			}
+			return Long.signum(( long ) lhs.getWidth() * lhs.getHeight() - ( long ) rhs.getWidth() * rhs.getHeight());
 		}
 	}
 
@@ -1407,7 +1514,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			dbMsg = "PreviewSize[" + tWidth + "×" + tHight + "]";
 			texture.setDefaultBufferSize(tWidth , tHight);     // バッファサイズを、プレビューサイズに合わせる
 			Surface surface = new Surface(texture);   // プレビューが描画されるSurface	This is the output Surface we need to start preview.
-			mPreviewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);    //(5)CaptureRequest作成	 We set up a CaptureRequest.Builder with the output Surface.
+			mPreviewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);    //(5)CaptureRequest作成	 カメラのプレビューウィンドウに適した;We set up a CaptureRequest.Builder with the output Surface.
 			mPreviewRequestBuilder.addTarget(surface);
 			dbMsg += ",surface=" + surface.toString();
 			// (6)プレビュー用のセッション生成を要求する// Here, we create a CameraCaptureSession for camera preview.
@@ -1501,6 +1608,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}
+	///////////////////////////////////////////////////////////////////////
 
 	/**
 	 * レリースボタンクリックで呼ばれる
@@ -1580,7 +1688,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				return;
 			}
 			// 撮影用のCaptureRequestを設定する	// This is the CaptureRequest.Builder that we use to take a picture.
-			final CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+			final CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);    //静止画像キャプチャに適した
 			captureBuilder.addTarget(mImageReader.getSurface());  // キャプチャ結果をImageReaderに渡す
 
 			// オートフォーカス// Use the same AE and AF modes as the preview.
@@ -1598,9 +1706,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					final String TAG = "CSP.onCaptureCompleted[MA]";
 					String dbMsg = "";
 					try {
-						/*このタイミングではmOnImageAvailableListenerに到達していない						 * */
 						dbMsg += "Saved: " + mFile.getPath();
-						Thread.sleep(1000);
+						Thread.sleep(2000);            //暫定；このタイミングではmOnImageAvailableListenerに到達していないので待たせる
 						unlockFocus();
 						dbMsg += "保存終了";
 						myLog(TAG , dbMsg);
@@ -1621,30 +1728,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
-	}
-
-	/**
-	 * スクリーン回転の角度からカメラの角度を返す
-	 * Retrieves the JPEG orientation from the specified screen rotation.
-	 * @param rotation The screen rotation.
-	 * @return The JPEG orientation (one of 0, 90, 270, and 360)
-	 */
-	private int getOrientation(int rotation) {
-		final String TAG = "getOrientation[MA]";
-		String dbMsg = "";
-		int retInt = 0;
-		try {
-			dbMsg = "rotation=" + rotation;
-			dbMsg += "、mSensorOrientation=" + mSensorOrientation;
-			// Sensor orientation is 90 for most devices, or 270 for some devices (eg. Nexus 5X)
-			// We have to take that into account and rotate JPEG properly.
-			// For devices with orientation of 90, we simply return our mapping from ORIENTATIONS.
-			// For devices with orientation of 270, we need to rotate the JPEG 180 degrees.
-			myLog(TAG , dbMsg);
-		} catch (Exception er) {
-			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-		}
-		return (ORIENTATIONS.get(rotation) + mSensorOrientation + 270) % 360;
 	}
 
 	/**
@@ -1800,7 +1883,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		});
 	}
 
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////// /
+	///プレビューデータ操作//////////////////////////////////////////////////////////////////撮影操作//
 	private class SendPreview implements Runnable {        //static ?必要？
 		/**
 		 * The JPEG image
@@ -1862,28 +1945,25 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			}
 		}
 	}
+	/////////////////////////////////////////////////////////////////////プレビューデータ操作//
 
 
-	/**
-	 * Compares two {@code Size}s based on their areas.
-	 */
-	static class CompareSizesByArea implements Comparator< Size > {
-
-		@Override
-		public int compare(Size lhs , Size rhs) {
-			final String TAG = "compare[MA]";
-			String dbMsg = "";
-			try {
-				dbMsg += "lhs[" + lhs.getWidth() + "×" + lhs.getHeight() + "]";
-				dbMsg += ",rhs[" + rhs.getWidth() + "×" + rhs.getHeight() + "]";
-				// We cast here to ensure the multiplications won't overflow
-				if ( debugNow ) {
-					Log.i(TAG , dbMsg + "");
-				}
-			} catch (Exception er) {
-				Log.e(TAG , dbMsg + "");
+	private void showToast(final String text) {
+		final String TAG = "showToast[MA]";
+		String dbMsg = "";
+		try {
+			final Activity activity = this;    //getActivity();
+			if ( activity != null ) {
+				activity.runOnUiThread(new Runnable() {
+					@Override
+					public void run() {
+						Toast.makeText(activity , text , Toast.LENGTH_SHORT).show();
+					}
+				});
 			}
-			return Long.signum(( long ) lhs.getWidth() * lhs.getHeight() - ( long ) rhs.getWidth() * rhs.getHeight());
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}
 
