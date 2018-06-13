@@ -19,6 +19,8 @@ import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Point;
+import android.graphics.PointF;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
@@ -30,6 +32,7 @@ import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
+import android.hardware.camera2.params.MeteringRectangle;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
@@ -40,6 +43,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.preference.PreferenceManager;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
@@ -89,62 +93,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	public ImageButton ma_shot_bt;      //キャプチャーボタン
 	public ImageButton ma_func_bt;      //設定ボタン
 	public static ImageView ma_iv;                    //撮影結果
-
-	private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
-	private static final int REQUEST_CAMERA_PERMISSION = 1;
-	private static final String FRAGMENT_DIALOG = "dialog";
-
-	static {
-		ORIENTATIONS.append(Surface.ROTATION_0 , 90);
-		ORIENTATIONS.append(Surface.ROTATION_90 , 0);
-		ORIENTATIONS.append(Surface.ROTATION_180 , 270);
-		ORIENTATIONS.append(Surface.ROTATION_270 , 180);
-	}
-
-	private static final String TAG = "Camera2BasicFragment";
-	public boolean isPhotography = false;
-	private static final int STATE_PREVIEW = 0;    //Camera state: Showing camera preview.
-	private static final int STATE_WAITING_LOCK = 1;        // Camera state: Waiting for the focus to be locked.
-	/**
-	 * Camera state: Waiting for the exposure to be precapture state.
-	 */
-	private static final int STATE_WAITING_PRECAPTURE = 2;
-
-	/**
-	 * Camera state: Waiting for the exposure state to be something other than precapture.
-	 */
-	private static final int STATE_WAITING_NON_PRECAPTURE = 3;
-
-	/**
-	 * Camera state: Picture was taken.
-	 */
-	private static final int STATE_PICTURE_TAKEN = 4;
-
-	/**
-	 * Max preview width that is guaranteed by Camera2 API
-	 */
-	private static final int MAX_PREVIEW_WIDTH = 1920;
-
-	/**
-	 * Max preview height that is guaranteed by Camera2 API
-	 */
-	private static final int MAX_PREVIEW_HEIGHT = 1080;
-
-	/**
-	 * 実際に配置できたプレビュー幅
-	 */
-	private static int PREVIEW_WIDTH = MAX_PREVIEW_WIDTH;
-
-	/**
-	 * 実際に配置できたプレビュー高さ
-	 */
-	private static int PREVIEW_HEIGHT = MAX_PREVIEW_HEIGHT;
-
-	/**
-	 * 現在の端末の向き
-	 */
-	private static int DISP_DEGREES;
-
 
 	public static SharedPreferences sharedPref;
 	public SharedPreferences.Editor myEditor;
@@ -535,21 +483,14 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					try {
 						if ( ma_effect_fl != null ) {
 							if ( OCVFRV == null ) {
-//								ma_effect_fl.setFocusable(true);
-//								ma_effect_fl.setFocusableInTouchMode(true);
-//								ma_effect_fl.setActivated(true);
-//								ma_effect_fl.requestFocus();
 								int cCount = ma_effect_fl.getChildCount();
 								dbMsg += ",getChildCount=" + cCount;
 								dbMsg += ",PREVIEW[" + PREVIEW_WIDTH + "×" + PREVIEW_HEIGHT + "]";  //表示サイズに変更する必要有り
 
 								OCVFRV = new OCVFaceRecognitionVeiw(MainActivity.this , haarcascadesLastModified);            //顔検出View
 								LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(PREVIEW_WIDTH , PREVIEW_HEIGHT);
-//								LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT , ViewGroup.LayoutParams.MATCH_PARENT);
 								OCVFRV.setLayoutParams(layoutParams);
 								ma_effect_fl.addView(OCVFRV);
-//								dbMsg += ",OCVFRV[" + OCVFRV.getWidth() + "×" + OCVFRV.getHeight() + "]";
-
 								setEffectViewSize();
 								dbMsg += ">>ChildCount=" + ma_effect_fl.getChildCount();
 							} else {
@@ -579,10 +520,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					final String TAG = "setEffectViewSize[MA]";
 					String dbMsg = "";
 					try {
-//						ma_effect_fl.setFocusable(true);
-//						ma_effect_fl.setFocusableInTouchMode(true);
-//						ma_effect_fl.setActivated(true);
-//						ma_effect_fl.requestFocus();
 						dbMsg += ",ma_effect_fl(" + ma_effect_fl.getLeft() + "," + ma_effect_fl.getTop() + ")[" + ma_effect_fl.getWidth() + "×" + ma_effect_fl.getHeight() + "]";
 						int sLeft = (ma_effect_fl.getWidth() - PREVIEW_WIDTH);
 						if ( 0 < sLeft ) {
@@ -593,14 +530,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
 							sTop = sTop / 2;
 						}
 						dbMsg += ",shift(" + sLeft + "," + sTop + ")";
-//						if ( !OCVFRV.isFocused() ) {
-//							dbMsg += "isFocused=false";
-//							OCVFRV.setFocusable(true);
-//							OCVFRV.setFocusableInTouchMode(true);
-//							OCVFRV.setActivated(true);
-//							OCVFRV.requestFocus();
-//							dbMsg += ">>" + OCVFRV.isFocused();
-//						}
 						dbMsg += "、現在[" + OCVFRV.getWidth() + "×" + OCVFRV.getHeight() + "]";
 						ViewGroup.MarginLayoutParams layoutParams = ( ViewGroup.MarginLayoutParams ) OCVFRV.getLayoutParams();
 						dbMsg += ",layoutParams[" + layoutParams.width + "×" + layoutParams.height + "]";
@@ -610,19 +539,11 @@ public class MainActivity extends Activity implements View.OnClickListener {
 						layoutParams.height = PREVIEW_HEIGHT;
 						OCVFRV.setLayoutParams(layoutParams);
 						OCVFRV.requestLayout();
-
-//						OCVFRV.setFocusable(false);
-//						OCVFRV.setFocusableInTouchMode(false);
-//						OCVFRV.setActivated(false);
-//						OCVFRV.requestFocus();
-//						dbMsg += ">isFocused>" + OCVFRV.isFocused();
-
 						layoutParams = ( ViewGroup.MarginLayoutParams ) OCVFRV.getLayoutParams();
 						dbMsg += ",>layoutParams(" + layoutParams.leftMargin + "×" + layoutParams.topMargin + ")[" + layoutParams.width + "×" + layoutParams.height + "]";
 						dbMsg += ">>OCVFRV(" + OCVFRV.getLeft() + "," + OCVFRV.getTop() + ")s[" + OCVFRV.getWidth() + "×" + OCVFRV.getHeight() + "]";
 						dbMsg += ",camera=" + mSensorOrientation + "dig";
 						OCVFRV.setCondition(mSensorOrientation);
-
 						myLog(TAG , dbMsg);
 					} catch (Exception er) {
 						myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -716,6 +637,66 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	};
 	///カメラ/////////////////////////////////////////////////////////////////////////////////プレビュー//////
 	private String mCameraId;        //ID of the current {@link CameraDevice}.
+	private Surface surface;
+	private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
+	private static final int REQUEST_CAMERA_PERMISSION = 1;
+
+	static {
+		ORIENTATIONS.append(Surface.ROTATION_0 , 90);
+		ORIENTATIONS.append(Surface.ROTATION_90 , 0);
+		ORIENTATIONS.append(Surface.ROTATION_180 , 270);
+		ORIENTATIONS.append(Surface.ROTATION_270 , 180);
+	}
+
+	private static final String TAG = "Camera2BasicFragment";
+	public boolean isPhotography = false;
+	private static final int STATE_PREVIEW = 0;    //Camera state: Showing camera preview.
+	private static final int STATE_WAITING_LOCK = 1;        // Camera state: Waiting for the focus to be locked.
+	/**
+	 * Camera state: Waiting for the exposure to be precapture state.
+	 */
+	private static final int STATE_WAITING_PRECAPTURE = 2;
+
+	/**
+	 * Camera state: Waiting for the exposure state to be something other than precapture.
+	 */
+	private static final int STATE_WAITING_NON_PRECAPTURE = 3;
+
+	/**
+	 * Camera state: Picture was taken.
+	 */
+	private static final int STATE_PICTURE_TAKEN = 4;
+	/**
+	 * 使用しているカメラの現状
+	 * The current state of camera state for taking pictures.
+	 * @see #mCaptureCallback
+	 */
+	private int mState = STATE_PREVIEW;
+
+	/**
+	 * Max preview width that is guaranteed by Camera2 API
+	 */
+	private static final int MAX_PREVIEW_WIDTH = 1920;
+
+	/**
+	 * Max preview height that is guaranteed by Camera2 API
+	 */
+	private static final int MAX_PREVIEW_HEIGHT = 1080;
+
+	/**
+	 * 実際に配置できたプレビュー幅
+	 */
+	private static int PREVIEW_WIDTH = MAX_PREVIEW_WIDTH;
+
+	/**
+	 * 実際に配置できたプレビュー高さ
+	 */
+	private static int PREVIEW_HEIGHT = MAX_PREVIEW_HEIGHT;
+
+	/**
+	 * 現在の端末の向き
+	 */
+	private static int DISP_DEGREES;
 
 
 	/**
@@ -1028,12 +1009,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	private CaptureRequest.Builder mPreviewRequestBuilder;        // {@link CaptureRequest.Builder} for the camera preview
 	private CaptureRequest mPreviewRequest;    //{@link CaptureRequest} generated by {@link #mPreviewRequestBuilder}
 
-	/**
-	 * 使用しているカメラの現状
-	 * The current state of camera state for taking pictures.
-	 * @see #mCaptureCallback
-	 */
-	private int mState = STATE_PREVIEW;
 	private Semaphore mCameraOpenCloseLock = new Semaphore(1);        // A {@link Semaphore} to prevent the app from exiting before closing the camera.
 
 	/**
@@ -1513,7 +1488,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			int tHight = mPreviewSize.getHeight();
 			dbMsg = "PreviewSize[" + tWidth + "×" + tHight + "]";
 			texture.setDefaultBufferSize(tWidth , tHight);     // バッファサイズを、プレビューサイズに合わせる
-			Surface surface = new Surface(texture);   // プレビューが描画されるSurface	This is the output Surface we need to start preview.
+			surface = new Surface(texture);   // プレビューが描画されるSurface	This is the output Surface we need to start preview.
 			mPreviewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);    //(5)CaptureRequest作成	 カメラのプレビューウィンドウに適した;We set up a CaptureRequest.Builder with the output Surface.
 			mPreviewRequestBuilder.addTarget(surface);
 			dbMsg += ",surface=" + surface.toString();
@@ -1558,6 +1533,12 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			} , null);
 			dbMsg += ",mPreviewRequestBuilder=" + mPreviewRequestBuilder.toString();
 
+			DisplayMetrics metrics = MainActivity.this.getResources().getDisplayMetrics();
+			int r = ( int ) (4 * metrics.density);
+
+			PointF[] focusPoints = {new PointF(tWidth / 2 /r, tHight / 2/r)};
+			dbMsg += ",focusPoints(" + focusPoints[0].x + "," + focusPoints[0].x + ")";
+			startAutoFocus(focusPoints , MainActivity.this);
 			myLog(TAG , dbMsg);
 		} catch (CameraAccessException e) {
 			e.printStackTrace();
@@ -1608,7 +1589,175 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}
-	///////////////////////////////////////////////////////////////////////
+
+	///フォーカス設定////////////////////////////////////////////////////////////////////
+	//https://moewe-net.com/android/2016/camera2-af
+	private static final int STATE_INIT = -1;
+	private static final int STATE_WAITING_LOCK_FUCUS = 0;                    //STATE_WAITING_LOCK
+	private static final int STATE_WAITING_PRE_CAPTURE = 11;            //1
+	private static final int STATE_WAITING_NON_PRE_CAPTURE = 12;        //2
+	private static final int AF_SAME_STATE_REPEAT_MAX = 20;
+
+	private int fState;
+	private int mSameAFStateCount;
+	private int mPreAFState;
+
+	/**
+	 * focusPointsにオートフォーカスする
+	 **/
+	public void startAutoFocus(PointF[] focusPoints , Context context) {
+		final String TAG = "startAutoFocus[MA]";
+		String dbMsg = "";
+		try {
+			int maxRegionsAF = 0;
+			Rect activeArraySize = null;
+			CameraManager cameraManager = ( CameraManager ) context.getSystemService(Context.CAMERA_SERVICE);
+			try {
+				CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(mCameraId);
+				maxRegionsAF = characteristics.get(CameraCharacteristics.CONTROL_MAX_REGIONS_AF);
+				activeArraySize = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+			} catch (CameraAccessException er) {
+				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+			}
+			if ( activeArraySize == null ) {
+				activeArraySize = new Rect();
+			}
+
+			if ( maxRegionsAF <= 0 ) {
+				return;
+			}
+			if ( focusPoints == null ) {
+				return;
+			}
+
+			// フォーカス範囲
+			DisplayMetrics metrics = context.getResources().getDisplayMetrics();
+			int r = ( int ) (4 * metrics.density);
+			dbMsg += ",r=" + r +"分割？";
+			dbMsg += ",focusPoints=" + focusPoints.length + "件";
+			dbMsg += ",activeArraySize[" + activeArraySize.width() + "×" + activeArraySize.height() + "]";
+
+			MeteringRectangle[] afRegions = new MeteringRectangle[focusPoints.length];
+			for ( int i = 0 ; i < focusPoints.length ; i++ ) {
+				dbMsg += "(" + i + ")[" + focusPoints[i].x + "×" + focusPoints[i].y + "]";
+				int x = ( int ) (activeArraySize.width() * focusPoints[i].x);
+				int y = ( int ) (activeArraySize.height() * focusPoints[i].y);
+				dbMsg += ",>activeArray(" + x + "," + y + ")";
+				int rectLeft = Math.max(activeArraySize.bottom , x - r);
+				int rectTop = Math.max(activeArraySize.top , y - r);
+				int rectRight = Math.min(x + r , activeArraySize.right);
+				int rectBottom = Math.min(y + r , activeArraySize.bottom);
+				dbMsg += ",rect(" + rectLeft + "," + rectTop + ")～(" + rectRight + "×" + rectBottom + ")";
+				//(3363840,1892160)(3363828,1892148)～(4680×3512)
+				Rect p = new Rect(rectTop , rectLeft , rectRight , rectBottom);
+				afRegions[i] = new MeteringRectangle(p , MeteringRectangle.METERING_WEIGHT_MAX);
+			}
+			dbMsg += ",afRegions=" + afRegions.length + "件";
+
+			// 状態初期化
+			fState = STATE_WAITING_LOCK_FUCUS;
+			mSameAFStateCount = 0;
+			mPreAFState = -1;
+			try {
+				CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+				if ( null != surface ) {                                     //   if (null != mPreviewSurface) {
+					captureBuilder.addTarget(surface);  //        if (null != mPreviewSurface) {
+				}
+				captureBuilder.set(CaptureRequest.CONTROL_AF_MODE , CaptureRequest.CONTROL_AF_MODE_AUTO);
+				if ( 0 < afRegions.length ) {
+					captureBuilder.set(CaptureRequest.CONTROL_AF_REGIONS , afRegions);
+				}
+				captureBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER , CameraMetadata.CONTROL_AF_TRIGGER_START);
+				mCaptureSession.setRepeatingRequest(captureBuilder.build() , mAFListener , mBackgroundHandler);
+			} catch (CameraAccessException er) {
+				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+			}
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+	CameraCaptureSession.CaptureCallback mAFListener = new CameraCaptureSession.CaptureCallback() {
+		@Override
+		public void onCaptureCompleted(CameraCaptureSession session , CaptureRequest request , TotalCaptureResult result) {
+			super.onCaptureCompleted(session , request , result);
+			final String TAG = "FL.onCaptureCompleted[MA]";
+			String dbMsg = "";
+			try {
+				if ( fState == STATE_WAITING_LOCK_FUCUS ) {
+					Integer afState = result.get(CaptureResult.CONTROL_AF_STATE);
+					if ( afState == null ) {
+						Log.w(TAG , "onCaptureCompleted AF STATE is null");
+						fState = STATE_INIT;
+						autoFocusEnd(false);
+						return;
+					}
+
+					if ( afState == CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED || afState == CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED ) {
+						Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
+						Log.i(TAG , "onCaptureCompleted AF STATE = " + afState + ", AE STATE = " + aeState);
+						if ( (aeState == null || aeState == CaptureResult.CONTROL_AE_STATE_CONVERGED) ) {        //mCancel ||
+							fState = STATE_INIT;
+							autoFocusEnd(false);
+							return;
+						}
+					}
+
+					if ( afState != CaptureResult.CONTROL_AF_STATE_PASSIVE_SCAN && afState == mPreAFState ) {
+						mSameAFStateCount++;
+						// 同一状態上限
+						if ( mSameAFStateCount >= AF_SAME_STATE_REPEAT_MAX ) {
+							fState = STATE_INIT;
+							autoFocusEnd(false);
+							return;
+						}
+					} else {
+						mSameAFStateCount = 0;
+					}
+					mPreAFState = afState;
+					return;
+				}
+
+				if ( fState == STATE_WAITING_PRE_CAPTURE ) {
+					Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
+					Log.i(TAG , "WAITING_PRE_CAPTURE AE STATE = " + aeState);
+					if ( aeState == null || aeState == CaptureResult.CONTROL_AE_STATE_PRECAPTURE || aeState == CaptureRequest.CONTROL_AE_STATE_FLASH_REQUIRED ) {
+						fState = STATE_WAITING_NON_PRE_CAPTURE;
+					} else if ( aeState == CaptureResult.CONTROL_AE_STATE_CONVERGED ) {
+						fState = STATE_INIT;
+						autoFocusEnd(true);
+					}
+					return;
+				}
+
+				if ( fState == STATE_WAITING_NON_PRE_CAPTURE ) {
+					Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
+					Log.i(TAG , "WAITING_NON_PRE_CAPTURE AE STATE = " + aeState);
+					if ( aeState == null || aeState != CaptureResult.CONTROL_AE_STATE_PRECAPTURE ) {
+						fState = STATE_INIT;
+						autoFocusEnd(true);
+					}
+				}
+				myLog(TAG , dbMsg);
+			} catch (Exception er) {
+				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+			}
+		}
+
+		private void autoFocusEnd(boolean isSuccess) {
+			final String TAG = "FL.autoFocusEnd[MA]";
+			String dbMsg = "";
+			try {
+				// フォーカス完了/失敗時の処理
+				myLog(TAG , dbMsg);
+			} catch (Exception er) {
+				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+			}
+		}
+	};
+
+	///撮影操作////////////////////////////////////////////////////////////////フォーカス設定////
 
 	/**
 	 * レリースボタンクリックで呼ばれる
@@ -2063,6 +2212,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
  * java.lang.RuntimeException: Camera is being used after Camera.release() was called
  * <p>
  * E/mm-camera: <STATS_AF ><ERROR> 4436: af_port_handle_pdaf_stats: Fail to init buf divert ack ctrl
+ * これが消えるとクラッシュする　＞＞　AFの呼び方か？
  * <p>
  * in-out切替
  * <p>

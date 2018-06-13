@@ -73,20 +73,6 @@ public class AutoFitTextureView extends TextureView {
 		}
 	}
 
-	//-----------------------------------------------------------
-	// added by kotemaru.org
-//	public void setPreviewSize(int width, int height) {
-//		setAspectRatio(width, height);
-//	}
-//	public int getPreviewWidth() {
-//		return mRatioWidth;
-//	}
-//	public int getPreviewHeight() {
-//		return mRatioHeight;
-//	}
-
-
-
 }
 
 
