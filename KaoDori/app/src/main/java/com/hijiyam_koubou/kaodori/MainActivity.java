@@ -1503,7 +1503,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 							mCaptureSession = cameraCaptureSession;        // When the session is ready, we start displaying the preview.
 							dbMsg += ",getId=" + mCaptureSession.getDevice().getId();
 							try {
-								mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE , CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+//								mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE , CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
 								// オートフォーカスを設定する// Auto focus should be continuous for camera preview.
 								setAutoFlash(mPreviewRequestBuilder);        // Flash is automatically enabled when necessary.
 								mPreviewRequest = mPreviewRequestBuilder.build();        // リクエスト作成// Finally, we start displaying the camera preview.
@@ -1533,11 +1533,11 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			} , null);
 			dbMsg += ",mPreviewRequestBuilder=" + mPreviewRequestBuilder.toString();
 
-			DisplayMetrics metrics = MainActivity.this.getResources().getDisplayMetrics();
-			int r = ( int ) (4 * metrics.density);
+//			DisplayMetrics metrics = MainActivity.this.getResources().getDisplayMetrics();
+//			int r = ( int ) (4 * metrics.density);
 
-			PointF[] focusPoints = {new PointF(tWidth / 2 /r, tHight / 2/r)};
-			dbMsg += ",focusPoints(" + focusPoints[0].x + "," + focusPoints[0].x + ")";
+			PointF[] focusPoints = {new PointF(tWidth / 2 , tHight / 2)};
+			dbMsg += ",focusPoints(" + focusPoints[0].x + "," + focusPoints[0].y + ")";
 			startAutoFocus(focusPoints , MainActivity.this);
 			myLog(TAG , dbMsg);
 		} catch (CameraAccessException e) {
@@ -1615,14 +1615,16 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			try {
 				CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(mCameraId);
 				maxRegionsAF = characteristics.get(CameraCharacteristics.CONTROL_MAX_REGIONS_AF);
-				activeArraySize = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+				activeArraySize = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);  //カメラ最大出力サイズ
 			} catch (CameraAccessException er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 			}
 			if ( activeArraySize == null ) {
 				activeArraySize = new Rect();
+				//追加；カメラ最大出力サイズ
 			}
-
+			dbMsg += ",activeArraySize[" + activeArraySize.width() + "×" + activeArraySize.height() + "]"; //,[4672×3504
+			dbMsg += ",maxRegionsAF=" + maxRegionsAF;
 			if ( maxRegionsAF <= 0 ) {
 				return;
 			}
@@ -1633,20 +1635,20 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			// フォーカス範囲
 			DisplayMetrics metrics = context.getResources().getDisplayMetrics();
 			int r = ( int ) (4 * metrics.density);
-			dbMsg += ",r=" + r +"分割？";
+			dbMsg += ",r=" + r + "分割？";
 			dbMsg += ",focusPoints=" + focusPoints.length + "件";
-			dbMsg += ",activeArraySize[" + activeArraySize.width() + "×" + activeArraySize.height() + "]";
-
+			int ariaW = activeArraySize.width() / 20;                //追加
+			int ariaH = activeArraySize.height() / 20;                //追加
 			MeteringRectangle[] afRegions = new MeteringRectangle[focusPoints.length];
 			for ( int i = 0 ; i < focusPoints.length ; i++ ) {
 				dbMsg += "(" + i + ")[" + focusPoints[i].x + "×" + focusPoints[i].y + "]";
-				int x = ( int ) (activeArraySize.width() * focusPoints[i].x);
-				int y = ( int ) (activeArraySize.height() * focusPoints[i].y);
+				int x = ( int ) focusPoints[i].x;            //( int ) (activeArraySize.width() * focusPoints[i].x);
+				int y = ( int ) focusPoints[i].y;        // ( int ) (activeArraySize.height() * focusPoints[i].y);
 				dbMsg += ",>activeArray(" + x + "," + y + ")";
-				int rectLeft = Math.max(activeArraySize.bottom , x - r);
-				int rectTop = Math.max(activeArraySize.top , y - r);
-				int rectRight = Math.min(x + r , activeArraySize.right);
-				int rectBottom = Math.min(y + r , activeArraySize.bottom);
+				int rectLeft = x - ariaW;                        //Math.max(activeArraySize.bottom , x - r);
+				int rectTop = y - ariaH;                        //Math.max(activeArraySize.top , y - r);
+				int rectRight = x + ariaW;                        //Math.min(x + r , activeArraySize.right);
+				int rectBottom = y + ariaH;                        //Math.min(y + r , activeArraySize.bottom);
 				dbMsg += ",rect(" + rectLeft + "," + rectTop + ")～(" + rectRight + "×" + rectBottom + ")";
 				//(3363840,1892160)(3363828,1892148)～(4680×3512)
 				Rect p = new Rect(rectTop , rectLeft , rectRight , rectBottom);
@@ -1661,14 +1663,16 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			try {
 				CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
 				if ( null != surface ) {                                     //   if (null != mPreviewSurface) {
-					captureBuilder.addTarget(surface);  //        if (null != mPreviewSurface) {
+					captureBuilder.addTarget(surface);
+					dbMsg += ",addTarget" ;
 				}
 				captureBuilder.set(CaptureRequest.CONTROL_AF_MODE , CaptureRequest.CONTROL_AF_MODE_AUTO);
 				if ( 0 < afRegions.length ) {
 					captureBuilder.set(CaptureRequest.CONTROL_AF_REGIONS , afRegions);
+					dbMsg += ",CONTROL_AF_REGIONS" ;
 				}
-				captureBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER , CameraMetadata.CONTROL_AF_TRIGGER_START);
-				mCaptureSession.setRepeatingRequest(captureBuilder.build() , mAFListener , mBackgroundHandler);
+				captureBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER , CameraMetadata.CONTROL_AF_TRIGGER_START);  //6/13ここで落ちた
+				mCaptureSession.setRepeatingRequest(captureBuilder.build() , mAFListener , null);//mBackgroundHandler   /
 			} catch (CameraAccessException er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 			}
@@ -1688,7 +1692,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				if ( fState == STATE_WAITING_LOCK_FUCUS ) {
 					Integer afState = result.get(CaptureResult.CONTROL_AF_STATE);
 					if ( afState == null ) {
-						Log.w(TAG , "onCaptureCompleted AF STATE is null");
+						dbMsg += "onCaptureCompleted AF STATE is null";
 						fState = STATE_INIT;
 						autoFocusEnd(false);
 						return;
@@ -1696,7 +1700,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 					if ( afState == CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED || afState == CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED ) {
 						Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
-						Log.i(TAG , "onCaptureCompleted AF STATE = " + afState + ", AE STATE = " + aeState);
+						dbMsg += "onCaptureCompleted AF STATE = " + afState + ", AE STATE = " + aeState;
 						if ( (aeState == null || aeState == CaptureResult.CONTROL_AE_STATE_CONVERGED) ) {        //mCancel ||
 							fState = STATE_INIT;
 							autoFocusEnd(false);
@@ -1721,7 +1725,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 				if ( fState == STATE_WAITING_PRE_CAPTURE ) {
 					Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
-					Log.i(TAG , "WAITING_PRE_CAPTURE AE STATE = " + aeState);
+					dbMsg += "WAITING_PRE_CAPTURE AE STATE = " + aeState;
 					if ( aeState == null || aeState == CaptureResult.CONTROL_AE_STATE_PRECAPTURE || aeState == CaptureRequest.CONTROL_AE_STATE_FLASH_REQUIRED ) {
 						fState = STATE_WAITING_NON_PRE_CAPTURE;
 					} else if ( aeState == CaptureResult.CONTROL_AE_STATE_CONVERGED ) {
@@ -1733,7 +1737,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 				if ( fState == STATE_WAITING_NON_PRE_CAPTURE ) {
 					Integer aeState = result.get(CaptureResult.CONTROL_AE_STATE);
-					Log.i(TAG , "WAITING_NON_PRE_CAPTURE AE STATE = " + aeState);
+					dbMsg += "WAITING_NON_PRE_CAPTURE AE STATE = " + aeState;
 					if ( aeState == null || aeState != CaptureResult.CONTROL_AE_STATE_PRECAPTURE ) {
 						fState = STATE_INIT;
 						autoFocusEnd(true);
@@ -1756,6 +1760,75 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			}
 		}
 	};
+
+
+//	mTextureView.setOnTouchListener(new View.OnTouchListener() {
+//
+//		@Override
+//		public boolean onTouch(View v, MotionEvent event) {
+//			switch (event.getAction() & MotionEvent.ACTION_MASK) {
+//				case MotionEvent.ACTION_DOWN:
+//
+//					Rect rect = cameraCharacteristics
+//										.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+//					Size size = cameraCharacteristics
+//										.get(CameraCharacteristics.SENSOR_INFO_PIXEL_ARRAY_SIZE);
+//					int areaSize = 200;
+//					int right = rect.right;
+//					int bottom = rect.bottom;
+//					int viewWidth = mTextureView.getWidth();
+//					int viewHeight = mTextureView.getHeight();
+//					int ll,
+//							rr;
+//					Rect newRect;
+//					int centerX = (int) event.getX();
+//					int centerY = (int) event.getY();
+//					ll = ((centerX * right) - areaSize) / viewWidth;
+//					rr = ((centerY * bottom) - areaSize) / viewHeight;
+//
+//					int focusLeft =  clamp(ll, 0, right);
+//					int focusBottom = clamp(rr, 0, bottom);
+//
+//					newRect = new Rect(focusLeft, focusBottom, focusLeft
+//																	   + areaSize, focusBottom + areaSize);
+//					MeteringRectangle meteringRectangle = new MeteringRectangle(
+//							newRect, 500);
+//					MeteringRectangle[] meteringRectangleArr = { meteringRectangle };
+//
+//
+//					System.out.println("metering rectARR" + meteringRectangleArr);
+//
+//					mPreviewCaptureRequestBuilder.set(
+//							CaptureRequest.CONTROL_AF_TRIGGER,
+//							CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
+//
+//					mPreviewCaptureRequestBuilder.set(
+//							CaptureRequest.CONTROL_AF_REGIONS,
+//							meteringRectangleArr);
+//
+//					mPreviewCaptureRequestBuilder.set(
+//							CaptureRequest.CONTROL_AF_TRIGGER,
+//							CameraMetadata.CONTROL_AF_TRIGGER_START);
+//
+//					try {
+//						mCameraCaptureSession.setRepeatingRequest(
+//								mPreviewCaptureRequest,
+//								mSessionCaptureCallback,
+//								mBackgroundHandler);
+//					} catch (CameraAccessException e) {
+//						// TODO Auto-generated catch block
+//						e.printStackTrace();
+//					}
+//
+//
+//					break;
+//			}
+//
+//			return true;
+//
+//		}
+//	});
+//}
 
 	///撮影操作////////////////////////////////////////////////////////////////フォーカス設定////
 
