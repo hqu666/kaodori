@@ -1510,6 +1510,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 								mCaptureSession.setRepeatingRequest(mPreviewRequest , mCaptureCallback , mBackgroundHandler);
 								//(7)RepeatSession作成 カメラプレビューを表示する
 								//APIL21;このキャプチャセッションで、イメージのキャプチャを無限に繰り返すように要求:ここの他は unlockFocus()
+								PointF[] focusPoints = {new PointF(mPreviewSize.getWidth() / 2 , mPreviewSize.getHeight() / 2)};
+								dbMsg += ",focusPoints(" + focusPoints[0].x + "," + focusPoints[0].y + ")";
+								startAutoFocus(focusPoints , MainActivity.this);
 							} catch (CameraAccessException er) {
 								myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 							}
@@ -1536,9 +1539,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 //			DisplayMetrics metrics = MainActivity.this.getResources().getDisplayMetrics();
 //			int r = ( int ) (4 * metrics.density);
 
-			PointF[] focusPoints = {new PointF(tWidth / 2 , tHight / 2)};
-			dbMsg += ",focusPoints(" + focusPoints[0].x + "," + focusPoints[0].y + ")";
-			startAutoFocus(focusPoints , MainActivity.this);
+
 			myLog(TAG , dbMsg);
 		} catch (CameraAccessException e) {
 			e.printStackTrace();
@@ -1601,86 +1602,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	private int fState;
 	private int mSameAFStateCount;
 	private int mPreAFState;
-
-	/**
-	 * focusPointsにオートフォーカスする
-	 **/
-	public void startAutoFocus(PointF[] focusPoints , Context context) {
-		final String TAG = "startAutoFocus[MA]";
-		String dbMsg = "";
-		try {
-			int maxRegionsAF = 0;
-			Rect activeArraySize = null;
-			CameraManager cameraManager = ( CameraManager ) context.getSystemService(Context.CAMERA_SERVICE);
-			try {
-				CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(mCameraId);
-				maxRegionsAF = characteristics.get(CameraCharacteristics.CONTROL_MAX_REGIONS_AF);
-				activeArraySize = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);  //カメラ最大出力サイズ
-			} catch (CameraAccessException er) {
-				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-			}
-			if ( activeArraySize == null ) {
-				activeArraySize = new Rect();
-				//追加；カメラ最大出力サイズ
-			}
-			dbMsg += ",activeArraySize[" + activeArraySize.width() + "×" + activeArraySize.height() + "]"; //,[4672×3504
-			dbMsg += ",maxRegionsAF=" + maxRegionsAF;
-			if ( maxRegionsAF <= 0 ) {
-				return;
-			}
-			if ( focusPoints == null ) {
-				return;
-			}
-
-			// フォーカス範囲
-			DisplayMetrics metrics = context.getResources().getDisplayMetrics();
-			int r = ( int ) (4 * metrics.density);
-			dbMsg += ",r=" + r + "分割？";
-			dbMsg += ",focusPoints=" + focusPoints.length + "件";
-			int ariaW = activeArraySize.width() / 20;                //追加
-			int ariaH = activeArraySize.height() / 20;                //追加
-			MeteringRectangle[] afRegions = new MeteringRectangle[focusPoints.length];
-			for ( int i = 0 ; i < focusPoints.length ; i++ ) {
-				dbMsg += "(" + i + ")[" + focusPoints[i].x + "×" + focusPoints[i].y + "]";
-				int x = ( int ) focusPoints[i].x;            //( int ) (activeArraySize.width() * focusPoints[i].x);
-				int y = ( int ) focusPoints[i].y;        // ( int ) (activeArraySize.height() * focusPoints[i].y);
-				dbMsg += ",>activeArray(" + x + "," + y + ")";
-				int rectLeft = x - ariaW;                        //Math.max(activeArraySize.bottom , x - r);
-				int rectTop = y - ariaH;                        //Math.max(activeArraySize.top , y - r);
-				int rectRight = x + ariaW;                        //Math.min(x + r , activeArraySize.right);
-				int rectBottom = y + ariaH;                        //Math.min(y + r , activeArraySize.bottom);
-				dbMsg += ",rect(" + rectLeft + "," + rectTop + ")～(" + rectRight + "×" + rectBottom + ")";
-				//(3363840,1892160)(3363828,1892148)～(4680×3512)
-				Rect p = new Rect(rectTop , rectLeft , rectRight , rectBottom);
-				afRegions[i] = new MeteringRectangle(p , MeteringRectangle.METERING_WEIGHT_MAX);
-			}
-			dbMsg += ",afRegions=" + afRegions.length + "件";
-
-			// 状態初期化
-			fState = STATE_WAITING_LOCK_FUCUS;
-			mSameAFStateCount = 0;
-			mPreAFState = -1;
-			try {
-				CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-				if ( null != surface ) {                                     //   if (null != mPreviewSurface) {
-					captureBuilder.addTarget(surface);
-					dbMsg += ",addTarget" ;
-				}
-				captureBuilder.set(CaptureRequest.CONTROL_AF_MODE , CaptureRequest.CONTROL_AF_MODE_AUTO);
-				if ( 0 < afRegions.length ) {
-					captureBuilder.set(CaptureRequest.CONTROL_AF_REGIONS , afRegions);
-					dbMsg += ",CONTROL_AF_REGIONS" ;
-				}
-				captureBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER , CameraMetadata.CONTROL_AF_TRIGGER_START);  //6/13ここで落ちた
-				mCaptureSession.setRepeatingRequest(captureBuilder.build() , mAFListener , null);//mBackgroundHandler   /
-			} catch (CameraAccessException er) {
-				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-			}
-			myLog(TAG , dbMsg);
-		} catch (Exception er) {
-			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-		}
-	}
 
 	CameraCaptureSession.CaptureCallback mAFListener = new CameraCaptureSession.CaptureCallback() {
 		@Override
@@ -1761,6 +1682,95 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		}
 	};
 
+	/**
+	 * プレビュー画面上で指定したfocusPointsにオートフォーカスする
+	 **/
+	public void startAutoFocus(PointF[] focusPoints , Context context) {
+		final String TAG = "startAutoFocus[MA]";
+		String dbMsg = "";
+		try {
+			int maxRegionsAF = 0;
+			Rect activeArraySize = null;
+			CameraManager cameraManager = ( CameraManager ) context.getSystemService(Context.CAMERA_SERVICE);
+			try {
+				CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(mCameraId);
+				maxRegionsAF = characteristics.get(CameraCharacteristics.CONTROL_MAX_REGIONS_AF);
+				activeArraySize = characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);  //カメラ最大出力サイズ
+			} catch (CameraAccessException er) {
+				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+			}
+			if ( activeArraySize == null ) {
+				activeArraySize = new Rect();
+				//追加；カメラ最大出力サイズ
+			}
+			dbMsg += ",activeArraySize[" + activeArraySize.width() + "×" + activeArraySize.height() + "]"; //,[4672×3504
+			dbMsg += ",maxRegionsAF=" + maxRegionsAF;                                                        // 1
+			if ( maxRegionsAF <= 0 ) {
+				return;
+			}
+			if ( focusPoints == null ) {
+				return;
+			}
+			DisplayMetrics metrics = context.getResources().getDisplayMetrics();
+			int r = ( int ) (4 * metrics.density);
+			dbMsg += ",r=" + r + "分割？";
+			dbMsg += ",focusPoints=" + focusPoints.length + "件";
+			Double scaleX = 1.0 * mPreviewSize.getWidth() / activeArraySize.width();
+			Double scaleY = 1.0 * mPreviewSize.getHeight() / activeArraySize.height();
+			dbMsg += ",scaleY=" + scaleX + ":" + scaleY;
+			Double scaleXY = scaleX;
+			if ( scaleX < scaleY ) {
+				scaleXY = scaleY;
+			}
+			dbMsg += ">>scale=" + scaleXY;
+
+			int ariaW = ( int ) (activeArraySize.width() * scaleXY)/3;                //追加
+			int ariaH = ( int ) (activeArraySize.height() * scaleXY)/3;                //追加
+			MeteringRectangle[] afRegions = new MeteringRectangle[focusPoints.length];
+			for ( int i = 0 ; i < focusPoints.length ; i++ ) {
+				dbMsg += "(" + i + ")[" + focusPoints[i].x + "×" + focusPoints[i].y + "]";
+				int centerX = ( int ) (focusPoints[i].x / scaleXY);            //( int ) (activeArraySize.width() * focusPoints[i].x);
+				int centerY = ( int ) (focusPoints[i].y / scaleXY);        // ( int ) (activeArraySize.height() * focusPoints[i].y);
+				dbMsg += ",>center(" + centerX + "," + centerY + ")";
+				int rectLeft = centerX - ariaW;                        //Math.max(activeArraySize.bottom , centerX - r);
+				int rectTop = centerY - ariaH;                        //Math.max(activeArraySize.top , centerY - r);
+				int rectRight = centerX + ariaW;                        //Math.min(centerX + r , activeArraySize.right);
+				int rectBottom = centerY + ariaH;                        //Math.min(centerY + r , activeArraySize.bottom);
+				dbMsg += ",rect(" + rectLeft + "," + rectTop + ")～(" + rectRight + "×" + rectBottom + ")";
+				Rect p = new Rect(rectTop , rectLeft , rectRight , rectBottom);
+				afRegions[i] = new MeteringRectangle(p , MeteringRectangle.METERING_WEIGHT_MAX);
+
+			}
+			dbMsg += ",afRegions=" + afRegions.length + "件";
+
+			// 状態初期化
+			fState = STATE_WAITING_LOCK_FUCUS;
+			mSameAFStateCount = 0;
+			mPreAFState = -1;
+			try {
+				CaptureRequest.Builder captureBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+				if ( null != surface ) {                                     //   if (null != mPreviewSurface) {
+					captureBuilder.addTarget(surface);
+					dbMsg += ",addTarget";
+				}
+				captureBuilder.set(CaptureRequest.CONTROL_AF_MODE , CaptureRequest.CONTROL_AF_MODE_AUTO);
+				if ( 0 < afRegions.length ) {
+					captureBuilder.set(CaptureRequest.CONTROL_AF_REGIONS , afRegions);
+					dbMsg += ",CONTROL_AF_REGIONS";
+				}
+				captureBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER , CameraMetadata.CONTROL_AF_TRIGGER_START);  //lockFocus()はここからスタート
+				mCaptureSession.setRepeatingRequest(captureBuilder.build() , mAFListener , null);//mBackgroundHandler   /
+				//Attempt to invoke virtual method 'int android.hardware.camera2.CameraCaptureSession.
+				// setRepeatingRequest(android.hardware.camera2.CaptureRequest,
+				// android.hardware.camera2.CameraCaptureSession$CaptureCallback, android.os.Handler)' on a null object reference
+			} catch (CameraAccessException er) {
+				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+			}
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
 
 //	mTextureView.setOnTouchListener(new View.OnTouchListener() {
 //
@@ -1914,7 +1924,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			captureBuilder.addTarget(mImageReader.getSurface());  // キャプチャ結果をImageReaderに渡す
 
 			// オートフォーカス// Use the same AE and AF modes as the preview.
-			captureBuilder.set(CaptureRequest.CONTROL_AF_MODE , CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+//			captureBuilder.set(CaptureRequest.CONTROL_AF_MODE , CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
 			setAutoFlash(captureBuilder);
 			int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
 			dbMsg += ",端末の回転角=" + rotation;
