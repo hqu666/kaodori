@@ -97,7 +97,7 @@ public class OCVFaceRecognitionVeiw extends View {
 			int dHight = bitmap.getHeight();
 			dbMsg += "[" + dWidth + "×" + dHight + "]" + degrees + "dig";
 			int byteCount = bitmap.getByteCount();
-			dbMsg += "" + byteCount + "バイト";
+			dbMsg += "," + byteCount + "バイト";
 //			Bitmap bitmap = decode(data , previewWidth , previewHeight , degrees);
 //			if ( bitmap != null ) {
 			dbMsg += ",bitmap=" + bitmap.getByteCount();
@@ -125,6 +125,8 @@ public class OCVFaceRecognitionVeiw extends View {
 			dbMsg += ",faces=" + faces.size();
 			if ( 0 < faces.size() ) {
 				invalidate();
+			}    else{
+				isCompletion = true;
 			}
 			//onDrawへ
 //			}
@@ -158,7 +160,7 @@ public class OCVFaceRecognitionVeiw extends View {
 			dbMsg += "[" + width + "×" + height + "]faces=" + faces.size();
 
 			for ( RectF face : faces ) {
-				dbMsg += ",face(" + face.left + "," + face.top + ")～（" + face.right + "," + face.bottom + "）";
+				dbMsg += "\nface(" + face.left + "," + face.top + ")～（" + face.right + "," + face.bottom + "）";
 				RectF r = new RectF(width * face.left , height * face.top , width * face.right , height * face.bottom);
 				dbMsg += ",r(" + r.left + "," + r.top + ")～（" + r.right + "," + r.bottom + "）";
 				canvas.drawRect(r , paint);

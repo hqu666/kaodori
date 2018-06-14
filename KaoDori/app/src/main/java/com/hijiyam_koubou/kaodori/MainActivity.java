@@ -906,8 +906,10 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		String dbMsg = "";
 		try {
 //			mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER , CameraMetadata.CONTROL_AF_TRIGGER_START);            // This is how to tell the camera to lock focus.
-
 //			 ImageViewへ静止画を送るためのCaptureRequestを作る 	http://woshidan.hatenadiary.jp/entry/2017/09/10/022510
+//			mImageReader.close();
+//			mImageReader = null;
+			
 			CaptureRequest.Builder mCopyPreviewRequestBuilder = null;                    // 静止画を送ってもらうためのリクエストのビルダーですよ
 			try {
 				dbMsg += ",createCaptureRequest";
@@ -1131,8 +1133,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			final String TAG = "MCC.onCaptureCompleted[MA]";
 			String dbMsg = "";
 			try {
-				dbMsg += ",CaptureRequest=" + request.toString();    //CaptureRequest=android.hardware.camera2.CaptureRequest@ed0bb9ae,TotalCaptureResult=android.hardware.camera2
-				dbMsg += ",TotalCaptureResult=" + result.toString();   // TotalCaptureResult@17e91b3
+				dbMsg += ",CaptureRequest=" + request.getKeys().size()+"件";    //CaptureRequest=android.hardware.camera2.CaptureRequest@ed0bb9ae,TotalCaptureResult=android.hardware.camera2
+				dbMsg += ",TotalCaptureResult=" + result.getRequest().getKeys().size()+"件";   // TotalCaptureResult@17e91b3
 				process(result);
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
@@ -1503,6 +1505,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 							mCaptureSession = cameraCaptureSession;        // When the session is ready, we start displaying the preview.
 							dbMsg += ",getId=" + mCaptureSession.getDevice().getId();
 							try {
+								PointF[] focusPoints = {new PointF(mPreviewSize.getWidth() / 2 , mPreviewSize.getHeight() / 2)};
+								dbMsg += ",focusPoints(" + focusPoints[0].x + "," + focusPoints[0].y + ")";
+								startAutoFocus(focusPoints , MainActivity.this);
 //								mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE , CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
 								// オートフォーカスを設定する// Auto focus should be continuous for camera preview.
 								setAutoFlash(mPreviewRequestBuilder);        // Flash is automatically enabled when necessary.
@@ -1510,9 +1515,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
 								mCaptureSession.setRepeatingRequest(mPreviewRequest , mCaptureCallback , mBackgroundHandler);
 								//(7)RepeatSession作成 カメラプレビューを表示する
 								//APIL21;このキャプチャセッションで、イメージのキャプチャを無限に繰り返すように要求:ここの他は unlockFocus()
-								PointF[] focusPoints = {new PointF(mPreviewSize.getWidth() / 2 , mPreviewSize.getHeight() / 2)};
-								dbMsg += ",focusPoints(" + focusPoints[0].x + "," + focusPoints[0].y + ")";
-								startAutoFocus(focusPoints , MainActivity.this);
 							} catch (CameraAccessException er) {
 								myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 							}
@@ -1535,11 +1537,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				}
 			} , null);
 			dbMsg += ",mPreviewRequestBuilder=" + mPreviewRequestBuilder.toString();
-
-//			DisplayMetrics metrics = MainActivity.this.getResources().getDisplayMetrics();
-//			int r = ( int ) (4 * metrics.density);
-
-
 			myLog(TAG , dbMsg);
 		} catch (CameraAccessException e) {
 			e.printStackTrace();
@@ -1759,10 +1756,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					dbMsg += ",CONTROL_AF_REGIONS";
 				}
 				captureBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER , CameraMetadata.CONTROL_AF_TRIGGER_START);  //lockFocus()はここからスタート
-				mCaptureSession.setRepeatingRequest(captureBuilder.build() , mAFListener , null);//mBackgroundHandler   /
-				//Attempt to invoke virtual method 'int android.hardware.camera2.CameraCaptureSession.
-				// setRepeatingRequest(android.hardware.camera2.CaptureRequest,
-				// android.hardware.camera2.CameraCaptureSession$CaptureCallback, android.os.Handler)' on a null object reference
+				mCaptureSession.setRepeatingRequest(captureBuilder.build() , mAFListener , mBackgroundHandler);//mBackgroundHandler   /
 			} catch (CameraAccessException er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 			}
@@ -1771,75 +1765,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}
-
-//	mTextureView.setOnTouchListener(new View.OnTouchListener() {
-//
-//		@Override
-//		public boolean onTouch(View v, MotionEvent event) {
-//			switch (event.getAction() & MotionEvent.ACTION_MASK) {
-//				case MotionEvent.ACTION_DOWN:
-//
-//					Rect rect = cameraCharacteristics
-//										.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
-//					Size size = cameraCharacteristics
-//										.get(CameraCharacteristics.SENSOR_INFO_PIXEL_ARRAY_SIZE);
-//					int areaSize = 200;
-//					int right = rect.right;
-//					int bottom = rect.bottom;
-//					int viewWidth = mTextureView.getWidth();
-//					int viewHeight = mTextureView.getHeight();
-//					int ll,
-//							rr;
-//					Rect newRect;
-//					int centerX = (int) event.getX();
-//					int centerY = (int) event.getY();
-//					ll = ((centerX * right) - areaSize) / viewWidth;
-//					rr = ((centerY * bottom) - areaSize) / viewHeight;
-//
-//					int focusLeft =  clamp(ll, 0, right);
-//					int focusBottom = clamp(rr, 0, bottom);
-//
-//					newRect = new Rect(focusLeft, focusBottom, focusLeft
-//																	   + areaSize, focusBottom + areaSize);
-//					MeteringRectangle meteringRectangle = new MeteringRectangle(
-//							newRect, 500);
-//					MeteringRectangle[] meteringRectangleArr = { meteringRectangle };
-//
-//
-//					System.out.println("metering rectARR" + meteringRectangleArr);
-//
-//					mPreviewCaptureRequestBuilder.set(
-//							CaptureRequest.CONTROL_AF_TRIGGER,
-//							CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
-//
-//					mPreviewCaptureRequestBuilder.set(
-//							CaptureRequest.CONTROL_AF_REGIONS,
-//							meteringRectangleArr);
-//
-//					mPreviewCaptureRequestBuilder.set(
-//							CaptureRequest.CONTROL_AF_TRIGGER,
-//							CameraMetadata.CONTROL_AF_TRIGGER_START);
-//
-//					try {
-//						mCameraCaptureSession.setRepeatingRequest(
-//								mPreviewCaptureRequest,
-//								mSessionCaptureCallback,
-//								mBackgroundHandler);
-//					} catch (CameraAccessException e) {
-//						// TODO Auto-generated catch block
-//						e.printStackTrace();
-//					}
-//
-//
-//					break;
-//			}
-//
-//			return true;
-//
-//		}
-//	});
-//}
-
 	///撮影操作////////////////////////////////////////////////////////////////フォーカス設定////
 
 	/**
