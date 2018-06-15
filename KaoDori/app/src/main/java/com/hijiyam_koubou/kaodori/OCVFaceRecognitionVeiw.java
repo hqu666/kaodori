@@ -41,8 +41,21 @@ public class OCVFaceRecognitionVeiw extends View {
 	private MatOfRect objects;
 	private List< RectF > faces = new ArrayList< RectF >();
 	private int degrees;
+	private int viewLeft;
+	private int viewTop;
 	private int viewWidth;
 	private int viewHight;
+	private Double viewAspect;
+	private static final int COLOR_CHOICES[] = {
+			Color.WHITE,
+			Color.GREEN,
+			Color.MAGENTA,
+			Color.BLUE,
+			Color.CYAN,
+			Color.RED,
+			Color.YELLOW
+	};
+
 	/**
 	 * 書き換え終了
 	 */
@@ -72,6 +85,7 @@ public class OCVFaceRecognitionVeiw extends View {
 			objects = new MatOfRect();
 
 			isCompletion = true;
+
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -98,6 +112,11 @@ public class OCVFaceRecognitionVeiw extends View {
 			dbMsg += "[" + dWidth + "×" + dHight + "]" + degrees + "dig";
 			int byteCount = bitmap.getByteCount();
 			dbMsg += "," + byteCount + "バイト";
+			Double dAspect = 1.0 * dWidth / dHight;
+			dbMsg += ",dAspect=" + dAspect + "(" + viewAspect + ")";
+			Double scaleX = 1.0 *  viewWidth/dWidth;
+			Double scaleY = 1.0 *  viewHight/dHight;
+			dbMsg += ",scale=" + scaleX + ":" + scaleY;
 //			Bitmap bitmap = decode(data , previewWidth , previewHeight , degrees);
 //			if ( bitmap != null ) {
 			dbMsg += ",bitmap=" + bitmap.getByteCount();
@@ -107,25 +126,24 @@ public class OCVFaceRecognitionVeiw extends View {
 				dHight = tmp;
 			}
 			if ( image == null ) {
-				image = new Mat(dHight , dWidth , CvType.CV_8U , new Scalar(4));
+				image = new Mat(dHight , dWidth , CvType.CV_8U , new Scalar(4));     //1バイトのチャンネル0　、
 			}
-			Utils.bitmapToMat(bitmap , image);                                    //openCV
-			dbMsg += ",image=" + image.size();
-			detector.detectMultiScale(image , objects);
-			;                        //openCV
+			Utils.bitmapToMat(bitmap , image);                                    //openCV；MAT形式に変換
+			dbMsg += ",MATimage=" + image.size();
+			detector.detectMultiScale(image , objects);                       //openCV
 			dbMsg += ",objects=" + objects.size();
 			faces.clear();
 			for ( org.opencv.core.Rect rect : objects.toArray() ) {
-				float left = ( float ) (1.0 * rect.x / dWidth);
-				float top = ( float ) (1.0 * rect.y / dHight);
-				float right = left + ( float ) (1.0 * rect.width / dWidth);
-				float bottom = top + ( float ) (1.0 * rect.height / dHight);
+				float left = ( float ) (1/dAspect * rect.x / dWidth);
+				float top = ( float ) (dAspect * rect.y / dHight);
+				float right = left + ( float ) (1/dAspect * rect.width / dWidth);
+				float bottom = top + ( float ) (dAspect * rect.height / dHight);
 				faces.add(new RectF(left , top , right , bottom));
 			}
 			dbMsg += ",faces=" + faces.size();
 			if ( 0 < faces.size() ) {
 				invalidate();
-			}    else{
+			} else {
 				isCompletion = true;
 			}
 			//onDrawへ
@@ -150,20 +168,38 @@ public class OCVFaceRecognitionVeiw extends View {
 		final String TAG = "onDraw[OCVFR]";
 		String dbMsg = "";
 		try {
-			Paint paint = new Paint();
-			paint.setColor(Color.GREEN);
-			paint.setStyle(Paint.Style.STROKE);
-			paint.setStrokeWidth(4);
+			int mCurrentColorIndex = 0;
 
-			int width = getWidth();
+			int carentColor = Color.GREEN;
+
+			int width = getWidth();              // canvas.getWidth()と同じ
 			int height = getHeight();
-			dbMsg += "[" + width + "×" + height + "]faces=" + faces.size();
-
+			dbMsg += "canvas[" + width + "×" + height + "]faces=" + faces.size();
+			int fCount = 0;
 			for ( RectF face : faces ) {
-				dbMsg += "\nface(" + face.left + "," + face.top + ")～（" + face.right + "," + face.bottom + "）";
-				RectF r = new RectF(width * face.left , height * face.top , width * face.right , height * face.bottom);
-				dbMsg += ",r(" + r.left + "," + r.top + ")～（" + r.right + "," + r.bottom + "）";
+				fCount++;
+				dbMsg +="\n"+ fCount + "(" + face.left + "," + face.top + ")～（" + face.right + "," + face.bottom + "）";
+				 mCurrentColorIndex = (mCurrentColorIndex + 1) % COLOR_CHOICES.length;
+				final int selectedColor = COLOR_CHOICES[mCurrentColorIndex];
+				Paint paint = new Paint();
+				paint.setColor(selectedColor);
+				paint.setStyle(Paint.Style.STROKE);
+				paint.setStrokeWidth(4);
+
+				float fLeft = width * face.left;
+				float fTop = height * face.top;
+				float fRight = width * face.right;
+				float fBottom = height * face.bottom;
+				RectF r = new RectF(fLeft , fTop , fRight , fBottom);
+				dbMsg += ",r(" + r.left + "," + r.top + ")～（" + r.right + "," + r.bottom + "）carentColor="+ carentColor;
 				canvas.drawRect(r , paint);
+				paint.setTextSize(32);
+				if(faces.size() <2){
+					canvas.drawText( fLeft+" , " + fTop, width * face.left+8, height * face.top +40, paint);
+					canvas.drawText( fRight+" , " + fBottom, fLeft+200, fBottom -32, paint);
+				}else{
+					canvas.drawText(fCount+"", width * face.left+8, height * face.top +40, paint);
+				}
 			}
 			isCompletion = true;
 			dbMsg += ",isCompletion=" + isCompletion;
@@ -260,8 +296,13 @@ public class OCVFaceRecognitionVeiw extends View {
 			faces.clear();
 //			for ( org.opencv.core.Rect rect : objects.toArray() ) {
 			ViewGroup.MarginLayoutParams layoutParams = ( ViewGroup.MarginLayoutParams ) taregetView.getLayoutParams();
-			dbMsg += ",layoutParams(" + layoutParams.leftMargin + "," + layoutParams.topMargin + ")[" + layoutParams.width + "×" + layoutParams.height + "]";
-			float left = 0;//layoutParams.leftMargin;                // float ) (1.0 * rect.x / _width);
+			viewLeft = layoutParams.leftMargin;
+			viewTop = layoutParams.topMargin;
+			viewWidth = layoutParams.width;
+			viewHight = layoutParams.height;
+			viewAspect = 1.0 * viewWidth / viewHight;
+			dbMsg += ",layoutParams(" + viewLeft + "," + viewTop + ")[" + viewWidth + "×" + viewHight + "]Aspect=" + viewAspect;
+			float left = 0;//viewLeft;                // float ) (1.0 * rect.x / _width);
 //			if ( 0 < left ) {
 //				left = ( float ) (1.0 * left /  layoutParams.width);     //?2
 //			}
@@ -269,13 +310,13 @@ public class OCVFaceRecognitionVeiw extends View {
 //			if ( 0 < top ) {
 //				top = ( float ) (1.0 * top / layoutParams.height);
 //			}
-			float right = left + layoutParams.width;            //( float ) (1.0 * rect.width / _width);
+			float right = left + viewHight;            //( float ) (1.0 * rect.width / _width);
 			if ( 0 < right ) {
-				right = ( float ) (1.0 * right /  layoutParams.width);
+				right = ( float ) (1.0 * right / viewHight);
 			}
-			float bottom = top + layoutParams.height;            // top + ( float ) (1.0 * rect.height / _hight);
+			float bottom = top + viewHight;            // top + ( float ) (1.0 * rect.height / _hight);
 			if ( 0 < bottom ) {
-				bottom = ( float ) (1.0 * bottom / layoutParams.height);
+				bottom = ( float ) (1.0 * bottom / viewHight);
 			}
 			dbMsg += ">>(" + left + "," + top + ")～(" + right + "," + bottom + "）";
 

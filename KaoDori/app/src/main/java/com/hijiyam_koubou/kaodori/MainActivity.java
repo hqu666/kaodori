@@ -773,7 +773,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	 * An {@link ImageReader} that handles still image capture.
 	 */
 	private ImageReader mImageReader;
-
+	private int mMaxImages  =1;									//読込み枚数
 	/**
 	 * This is the output file for our picture.
 	 */
@@ -1250,7 +1250,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					// For still image captures, we use the largest available size.
 					Size largest = Collections.max(Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)) , ( Comparator< ? super Size > ) new CompareSizesByArea());
 					dbMsg += "m,largest[" + largest.getWidth() + "×" + largest.getHeight() + "]";
-					mImageReader = ImageReader.newInstance(largest.getWidth() , largest.getHeight() , ImageFormat.JPEG , /*maxImages*/2);
+					mImageReader = ImageReader.newInstance(largest.getWidth() , largest.getHeight() , ImageFormat.JPEG , mMaxImages);
 					mImageReader.setOnImageAvailableListener(mOnImageAvailableListener , mBackgroundHandler);
 //					mImageReader.setOnImageAvailableListener(mOnPreviwListener , mBackgroundHandler);            //プレビューの画像取得
 
@@ -2036,12 +2036,12 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				dbMsg += ",capture";
 //				mCaptureSession.stopRepeating();          //プレビューの更新を止める
 ////				mCaptureSession.abortCaptures();            //Repeating requestsも止まる。
-//				int retInt = mCaptureSession.capture(copyPreviewRequest , mCaptureCallback , mBackgroundHandler);
+				int retInt = mCaptureSession.capture(copyPreviewRequest , mCaptureCallback , mBackgroundHandler);
 				// (プレビュー時にセッションは開いたままで、)追加で静止画送ってくれリクエストを送る
-				List<CaptureRequest> requestList = new ArrayList<CaptureRequest>();
-				// キャプチャーの指示一覧を作成
-				requestList.add(mCopyPreviewRequestBuilder.build());	//	requestList.add(captureBuilder.build());
-				int retInt = mCaptureSession.captureBurst(requestList, mCaptureCallback, mBackgroundHandler); 				// 登録した指示通りに連写で撮影
+//				List<CaptureRequest> requestList = new ArrayList<CaptureRequest>();
+//				// キャプチャーの指示一覧を作成
+//				requestList.add(mCopyPreviewRequestBuilder.build());	//	requestList.add(captureBuilder.build());
+//				int retInt = mCaptureSession.captureBurst(requestList, mCaptureCallback, mBackgroundHandler); 				// 登録した指示通りに連写で撮影
 				/**
 				 * キャプチャ方法４通り
 				 * • CameraCaptureSession#captureBurst() 　　　　　　・・・撮影条件を変えながら複数枚撮影する
@@ -2087,6 +2087,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				//							if ( mCaptureSession != null ) {  //回転時クラッシュ；CAMERA_DISCONNECTED (2): checkPidStatus:1493: The camera device has been disconnected
 				int retInt = mCaptureSession.setRepeatingRequest(mPreviewRequest , mCaptureCallback , mBackgroundHandler);    //プレビュ再開
 				dbMsg += ",プレビュ再開=" + retInt;
+				isPrevieSending = false;
+
 //				} else {
 //					createCameraPreviewSession();
 //				}
@@ -2116,7 +2118,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				mImage.close();
 
 
-				isPrevieSending = false;
 
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
