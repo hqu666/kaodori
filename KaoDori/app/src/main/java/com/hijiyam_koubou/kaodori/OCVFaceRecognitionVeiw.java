@@ -6,6 +6,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.util.AttributeSet;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -46,15 +47,7 @@ public class OCVFaceRecognitionVeiw extends View {
 	private int viewWidth;
 	private int viewHight;
 	private Double viewAspect;
-	private static final int COLOR_CHOICES[] = {
-			Color.WHITE,
-			Color.GREEN,
-			Color.MAGENTA,
-			Color.BLUE,
-			Color.CYAN,
-			Color.RED,
-			Color.YELLOW
-	};
+	private static final int COLOR_CHOICES[] = {Color.WHITE , Color.GREEN , Color.MAGENTA , Color.BLUE , Color.CYAN , Color.RED , Color.YELLOW};
 
 	/**
 	 * 書き換え終了
@@ -62,30 +55,58 @@ public class OCVFaceRecognitionVeiw extends View {
 	private boolean isCompletion = true;
 
 
-	public OCVFaceRecognitionVeiw(Context context , long haarcascadesLastModified) {
+	public OCVFaceRecognitionVeiw(Context context) {
 		super(context);
 		final String TAG = "OCVFaceRecognitionVeiw[OCVFR]";
+		String dbMsg = "class読込み";
+		try {
+//			constractCommon( context);
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+	public OCVFaceRecognitionVeiw(Context context , AttributeSet attrs) {
+		super(context , attrs);
+		final String TAG = "OCVFaceRecognitionVeiw[OCVFR]";
+		String dbMsg = "view組み込み";
+		try {
+//			constractCommon( context);
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+//	public OCVFaceRecognitionVeiw(Context context, AttributeSet attrs, int defStyle) {
+//		super(context, attrs, defStyle);
+//		time = 0;
+//		df = new SimpleDateFormat("HH:mm:ss");
+//	}
+
+	public void constractCommon(Context context , long haarcascadesLastModified) {
+		final String TAG = "constractCommon[OCVFR]";
 		String dbMsg = "";
 		try {
 			this.context = context;
-//			this.VG = VG;
+			if ( detector == null ) {
+				try {
+					copyAssets("haarcascades" , haarcascadesLastModified);                    // assetsの内容を /data/data/*/files/ にコピーします。
+				} catch (IOException er) {
+					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+				}
+				String filename = context.getFilesDir().getAbsolutePath() + "/haarcascades/haarcascade_frontalface_alt.xml";
+				dbMsg += "filename=" + filename;       //filename=/data/user/0/com.hijiyam_koubou.kaodori/files/haarcascades/haarcascade_frontalface_alt.xml
+				File rFile = new File(filename);
+				dbMsg += ";exists=" + rFile.exists();
+				detector = new CascadeClassifier(filename);
+				objects = new MatOfRect();
 
-			try {
-				copyAssets("haarcascades" , haarcascadesLastModified);                    // assetsの内容を /data/data/*/files/ にコピーします。
-			} catch (IOException er) {
-				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+				isCompletion = true;
+			} else {
+				dbMsg += "detector!=null";
 			}
-			String filename = context.getFilesDir().getAbsolutePath() + "/haarcascades/haarcascade_frontalface_alt.xml";
-			dbMsg = "filename=" + filename;       //filename=/data/user/0/com.hijiyam_koubou.kaodori/files/haarcascades/haarcascade_frontalface_alt.xml
-			File rFile = new File(filename);
-			dbMsg += ";exists=" + rFile.exists();
-			myLog(TAG , dbMsg);
-
-			detector = new CascadeClassifier(filename);
-			objects = new MatOfRect();
-
-			isCompletion = true;
-
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -114,8 +135,8 @@ public class OCVFaceRecognitionVeiw extends View {
 			dbMsg += "," + byteCount + "バイト";
 			Double dAspect = 1.0 * dWidth / dHight;
 			dbMsg += ",dAspect=" + dAspect + "(" + viewAspect + ")";
-			Double scaleX = 1.0 *  viewWidth/dWidth;
-			Double scaleY = 1.0 *  viewHight/dHight;
+			Double scaleX = 1.0 * viewWidth / dWidth;
+			Double scaleY = 1.0 * viewHight / dHight;
 			dbMsg += ",scale=" + scaleX + ":" + scaleY;
 //			Bitmap bitmap = decode(data , previewWidth , previewHeight , degrees);
 //			if ( bitmap != null ) {
@@ -134,9 +155,9 @@ public class OCVFaceRecognitionVeiw extends View {
 			dbMsg += ",objects=" + objects.size();
 			faces.clear();
 			for ( org.opencv.core.Rect rect : objects.toArray() ) {
-				float left = ( float ) (1/dAspect * rect.x / dWidth);
+				float left = ( float ) (1 / dAspect * rect.x / dWidth);
 				float top = ( float ) (dAspect * rect.y / dHight);
-				float right = left + ( float ) (1/dAspect * rect.width / dWidth);
+				float right = left + ( float ) (1 / dAspect * rect.width / dWidth);
 				float bottom = top + ( float ) (dAspect * rect.height / dHight);
 				faces.add(new RectF(left , top , right , bottom));
 			}
@@ -178,8 +199,8 @@ public class OCVFaceRecognitionVeiw extends View {
 			int fCount = 0;
 			for ( RectF face : faces ) {
 				fCount++;
-				dbMsg +="\n"+ fCount + "(" + face.left + "," + face.top + ")～（" + face.right + "," + face.bottom + "）";
-				 mCurrentColorIndex = (mCurrentColorIndex + 1) % COLOR_CHOICES.length;
+				dbMsg += "\n" + fCount + "(" + face.left + "," + face.top + ")～（" + face.right + "," + face.bottom + "）";
+				mCurrentColorIndex = (mCurrentColorIndex + 1) % COLOR_CHOICES.length;
 				final int selectedColor = COLOR_CHOICES[mCurrentColorIndex];
 				Paint paint = new Paint();
 				paint.setColor(selectedColor);
@@ -191,14 +212,14 @@ public class OCVFaceRecognitionVeiw extends View {
 				float fRight = width * face.right;
 				float fBottom = height * face.bottom;
 				RectF r = new RectF(fLeft , fTop , fRight , fBottom);
-				dbMsg += ",r(" + r.left + "," + r.top + ")～（" + r.right + "," + r.bottom + "）carentColor="+ carentColor;
+				dbMsg += ",r(" + r.left + "," + r.top + ")～（" + r.right + "," + r.bottom + "）carentColor=" + carentColor;
 				canvas.drawRect(r , paint);
 				paint.setTextSize(32);
-				if(faces.size() <2){
-					canvas.drawText( fLeft+" , " + fTop, width * face.left+8, height * face.top +40, paint);
-					canvas.drawText( fRight+" , " + fBottom, fLeft+200, fBottom -32, paint);
-				}else{
-					canvas.drawText(fCount+"", width * face.left+8, height * face.top +40, paint);
+				if ( faces.size() < 2 ) {
+					canvas.drawText(fLeft + " , " + fTop , width * face.left + 8 , height * face.top + 40 , paint);
+					canvas.drawText(fRight + " , " + fBottom , fLeft + 200 , fBottom - 32 , paint);
+				} else {
+					canvas.drawText(fCount + "" , width * face.left + 8 , height * face.top + 40 , paint);
 				}
 			}
 			isCompletion = true;

@@ -24,7 +24,8 @@
 		<!--android:resizeableActivity="true" MultiWindowを有効にする		-->
 		<!--android:allowBackup="true"	バックアップサービスを利-->
 		<!--android:supportsRtl="true"	アプリケーションが右から左へのレイアウト（RTL）をサポートするか 右から左方向へ文字を書く、アラビア語、ヘブライ語、ペルシャ語などへ対応するための属-->
-		<activity android:name=".MainActivity">
+		<activity android:name=".MainActivity"
+			>
 			<intent-filter>
 				<action android:name="android.intent.action.MAIN"/>
 				<category android:name="android.intent.category.LAUNCHER"/>
