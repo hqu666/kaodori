@@ -10,7 +10,7 @@
 	<com.hijiyam_koubou.kaodori.AutoFitTextureView
 		android:id="@+id/ma_aft"
 		android:layout_width="match_parent"
-		android:layout_height="wrap_content"
+		android:layout_height="match_parent"
 		android:layout_alignParentBottom="false"
 		android:layout_alignParentStart="false"
 		android:layout_alignParentTop="false"
@@ -26,10 +26,11 @@
 		android:layout_alignParentTop="false"
 		android:layout_gravity="center"
 		android:orientation="horizontal">
+
 		<com.hijiyam_koubou.kaodori.OCVFaceRecognitionVeiw
 			android:id="@+id/ma_effect_view"
 			android:layout_width="match_parent"
-			android:layout_height="wrap_content"
+			android:layout_height="match_parent"
 			android:layout_weight="1"
 			android:gravity="center"
 			android:orientation="vertical"/>

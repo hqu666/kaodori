@@ -41,12 +41,13 @@ public class OCVFaceRecognitionVeiw extends View {
 	private CascadeClassifier detector;
 	private MatOfRect objects;
 	private List< RectF > faces = new ArrayList< RectF >();
-	private int degrees;
+	//	private int degrees;
 	private int viewLeft;
 	private int viewTop;
 	private int viewWidth;
 	private int viewHight;
 	private Double viewAspect;
+	private String filename;
 	private static final int COLOR_CHOICES[] = {Color.WHITE , Color.GREEN , Color.MAGENTA , Color.BLUE , Color.CYAN , Color.RED , Color.YELLOW};
 
 	/**
@@ -60,7 +61,9 @@ public class OCVFaceRecognitionVeiw extends View {
 		final String TAG = "OCVFaceRecognitionVeiw[OCVFR]";
 		String dbMsg = "class読込み";
 		try {
-//			constractCommon( context);
+			detector = null;
+			objects = null;
+			constractCommon(context);
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -72,7 +75,9 @@ public class OCVFaceRecognitionVeiw extends View {
 		final String TAG = "OCVFaceRecognitionVeiw[OCVFR]";
 		String dbMsg = "view組み込み";
 		try {
-//			constractCommon( context);
+			detector = null;
+			objects = null;
+			constractCommon(context);
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -85,42 +90,115 @@ public class OCVFaceRecognitionVeiw extends View {
 //		df = new SimpleDateFormat("HH:mm:ss");
 //	}
 
-	public void constractCommon(Context context , long haarcascadesLastModified) {
+	public void constractCommon(Context context) {
 		final String TAG = "constractCommon[OCVFR]";
 		String dbMsg = "";
 		try {
 			this.context = context;
 			if ( detector == null ) {
-				try {
-					copyAssets("haarcascades" , haarcascadesLastModified);                    // assetsの内容を /data/data/*/files/ にコピーします。
-				} catch (IOException er) {
-					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-				}
-				String filename = context.getFilesDir().getAbsolutePath() + "/haarcascades/haarcascade_frontalface_alt.xml";
+				filename = context.getFilesDir().getAbsolutePath() + "/haarcascades/haarcascade_frontalface_alt.xml";
 				dbMsg += "filename=" + filename;       //filename=/data/user/0/com.hijiyam_koubou.kaodori/files/haarcascades/haarcascade_frontalface_alt.xml
 				File rFile = new File(filename);
 				dbMsg += ";exists=" + rFile.exists();
 				detector = new CascadeClassifier(filename);
-				objects = new MatOfRect();
-
-				isCompletion = true;
+				dbMsg += "detector生成";
 			} else {
-				dbMsg += "detector!=null";
+				dbMsg += "detector既存";
 			}
+			objects = new MatOfRect();
+			isCompletion = true;
+			// 			setCondition();     この時点ではレイアウトが拾えない
+			faces.clear();
+			faces.add(new RectF(0 , 0 , 1 , 1));            //APIL1
+			invalidate();                                                //onDrawへ
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}
 
+	////////////////////////////////////////////////////////////////
+	@Override
+	protected void onVisibilityChanged(View changedView , int visibility) {
+		super.onVisibilityChanged(changedView , visibility);
+		final String TAG = "onVisibilityChanged[OCVFR]";
+		String dbMsg = "開始";
+		try {
+			dbMsg = "visibility=" + visibility;     //	読み込まれた時に一度呼ばれて0
+			dbMsg += ",changedView=" + changedView.getId() + "/this;" + this.getId();
+// setCondition();    ここから呼んでも0,0のまま
+//			if (visibility == View.VISIBLE) //onResume called
+//    else // onPause() called
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+	@Override
+	public void onWindowFocusChanged(boolean hasWindowFocus) {
+		super.onWindowFocusChanged(hasWindowFocus);
+		final String TAG = "onWindowFocusChanged[OCVFR]";
+		String dbMsg = "開始";
+		try {
+			dbMsg += ",hasWindowFocus=" + hasWindowFocus;  //読み込み時true ,破棄時false
+			if ( hasWindowFocus ) {
+				//				 setCondition();
+			}
+			//			if (hasWindowFocus) //onresume() called   else // onPause() called
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+	@Override
+	protected void onDetachedFromWindow() {
+		super.onDetachedFromWindow();
+		final String TAG = "onDetachedFromWindow[OCVFR]";
+		String dbMsg = "開始";
+		try {
+			// onDestroy() called
+			myLog(TAG , dbMsg);        //拾えず
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+	@Override
+	protected void onAttachedToWindow() {
+		super.onAttachedToWindow();
+		final String TAG = "onAttachedToWindow[OCVFR]";
+		String dbMsg = "開始";
+		try {
+			// onCreate() called
+			myLog(TAG , dbMsg);   //拾えず
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 	/**
 	 * Bitmapデータを受け取り認証処理を開始する
 	 */
-	public void readFrameRGB(Bitmap bitmap) {        //, Camera camera      /   , int previewWidth , int previewHeight
+	public void readFrameRGB(Bitmap bitmap , int degrees) {        //, Camera camera      /   , int previewWidth , int previewHeight
 		final String TAG = "readFrameRGB[OCVFR]";
 		String dbMsg = "";
 		try {
 			isCompletion = false;
+			if ( detector == null ) {
+				dbMsg += "filename=" + filename;       //filename=/data/user/0/com.hijiyam_koubou.kaodori/files/haarcascades/haarcascade_frontalface_alt.xml
+				File rFile = new File(filename);
+				dbMsg += ";exists=" + rFile.exists();
+				detector = new CascadeClassifier(filename);
+				dbMsg += ";detector作成";
+			}
+			if ( objects == null ) {
+				objects = new MatOfRect();
+				dbMsg += ";object作成";
+			}
+
 //			int dWidth = bitmapOrg.getWidth();
 //			int dHight = bitmapOrg.getHeight();
 //			dbMsg += ",bitmap[" + dWidth + "×" + dHight + "]";
@@ -141,6 +219,7 @@ public class OCVFaceRecognitionVeiw extends View {
 //			Bitmap bitmap = decode(data , previewWidth , previewHeight , degrees);
 //			if ( bitmap != null ) {
 			dbMsg += ",bitmap=" + bitmap.getByteCount();
+			dbMsg += ",degrees=" + degrees ;
 			if ( degrees == 90 ) {
 				int tmp = dWidth;
 				dWidth = dHight;
@@ -155,10 +234,16 @@ public class OCVFaceRecognitionVeiw extends View {
 			dbMsg += ",objects=" + objects.size();
 			faces.clear();
 			for ( org.opencv.core.Rect rect : objects.toArray() ) {
-				float left = ( float ) (1 / dAspect * rect.x / dWidth);
-				float top = ( float ) (dAspect * rect.y / dHight);
-				float right = left + ( float ) (1 / dAspect * rect.width / dWidth);
-				float bottom = top + ( float ) (dAspect * rect.height / dHight);
+				float left = ( float ) (1 / dAspect * rect.x / dWidth);             			     //
+				float top = ( float ) (dAspect * rect.y / dHight);             			      //
+				float right = left + ( float ) (1 / dAspect* rect.width / dWidth);  			//
+				float bottom = top + ( float ) (dAspect* rect.height / dHight);			//
+
+//				float left = ( float ) (1.0 * rect.x / dWidth);                             //1 / dAspect
+//				float top = ( float ) (1.0 * rect.y / dHight);                              //dAspect
+//				float right = left + ( float ) (1.0 * rect.width / dWidth);            //1 / dAspect
+//				float bottom = top + ( float ) (1.0 * rect.height / dHight);            //dAspect
+
 				faces.add(new RectF(left , top , right , bottom));
 			}
 			dbMsg += ",faces=" + faces.size();
@@ -217,7 +302,11 @@ public class OCVFaceRecognitionVeiw extends View {
 				paint.setTextSize(32);
 				if ( faces.size() < 2 ) {
 					canvas.drawText(fLeft + " , " + fTop , width * face.left + 8 , height * face.top + 40 , paint);
-					canvas.drawText(fRight + " , " + fBottom , fLeft + 200 , fBottom - 32 , paint);
+					float sRight = fRight-250;
+					if ( fRight < sRight ) {
+						sRight = fLeft + (fRight-fLeft)/2;
+					}
+					canvas.drawText(fRight + " , " + fBottom , sRight , fBottom - 32 , paint);
 				} else {
 					canvas.drawText(fCount + "" , width * face.left + 8 , height * face.top + 40 , paint);
 				}
@@ -232,64 +321,12 @@ public class OCVFaceRecognitionVeiw extends View {
 	}
 
 
-	/**
-	 * assetsの内容を /data/data/.../files/ にコピーします。
-	 */
-	private void copyAssets(String dir , long haarcascadesLastModified) throws IOException {
-		final String TAG = "copyAssets[OCVFR}";
-		String dbMsg = "";
-		try {
-			dbMsg = "dir=" + dir;
-//			MainActivity MA = new MainActivity();
-
-			dbMsg += ",認証ファイル最終更新日=" + haarcascadesLastModified;
-			byte[] buf = new byte[8192];
-			int size;
-			boolean isCopy = false;    //初回使用時なと、強制的にコピーする
-			File dst = new File(getContext().getApplicationContext().getFilesDir() , dir);
-			if ( !dst.exists() ) {
-				dst.mkdirs();
-				dst.setReadable(true , false);
-				dst.setWritable(true , false);
-				dst.setExecutable(true , false);
-				dbMsg += ">>作成";
-				isCopy = true;
-			}
-			int readedCount = dst.list().length;
-			dbMsg += ",読込み済み=" + readedCount + "件";
-			if ( readedCount < 10 ) {
-				isCopy = true;
-			}
-			for ( String filename : getContext().getApplicationContext().getAssets().list(dir) ) {
-				File file = new File(dst , filename);
-				Long lastModified = file.lastModified();
-				if ( isCopy || haarcascadesLastModified < lastModified ) {    //無ければ
-					dbMsg += "," + filename + ";" + lastModified;
-					haarcascadesLastModified = lastModified;
-					OutputStream out = new FileOutputStream(file);
-					InputStream in = getContext().getApplicationContext().getAssets().open(dir + "/" + filename);
-					while ( (size = in.read(buf)) >= 0 ) {
-						if ( size > 0 ) {
-							out.write(buf , 0 , size);
-						}
-					}
-					in.close();
-					out.close();
-					file.setReadable(true , false);
-					file.setWritable(true , false);
-					file.setExecutable(true , false);
-					dbMsg += ">>コピー";
-				}
-			}
-			myLog(TAG , dbMsg);
-		} catch (Exception er) {
-			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-		}
-	}
-
 	//////////////////////////////////////////////////////////////////////////////顔検出///
 
-	public void setCondition(int _degrees) {
+	/**
+	 * 実装直後に呼び出しサイズ調整
+	 */
+	public void setCondition() {
 		final String TAG = "setCondition[OCVFR]";
 		String dbMsg = "";
 		try {
@@ -299,6 +336,7 @@ public class OCVFaceRecognitionVeiw extends View {
 //			int height = getHeight();
 //			dbMsg += "[" + width + "×" + height + "]" ;
 			View taregetView = ( View ) this;              //親ビューでサイズを変更する
+
 //			if(! taregetView.isFocused()){
 //				dbMsg += "isFocused=false";
 //				taregetView.setFocusable(true);
@@ -323,30 +361,40 @@ public class OCVFaceRecognitionVeiw extends View {
 			viewHight = layoutParams.height;
 			viewAspect = 1.0 * viewWidth / viewHight;
 			dbMsg += ",layoutParams(" + viewLeft + "," + viewTop + ")[" + viewWidth + "×" + viewHight + "]Aspect=" + viewAspect;
+			if ( viewAspect < 1 ) {
+				dbMsg += ";縦";                    //[1080×1440]Aspect=0.75
+			} else {
+				dbMsg += ";横";                    //[1440×1080]Aspect=1.3333333333333333
+			}
 			float left = 0;//viewLeft;                // float ) (1.0 * rect.x / _width);
+			dbMsg += ">描画>(" + left;
+
 //			if ( 0 < left ) {
 //				left = ( float ) (1.0 * left /  layoutParams.width);     //?2
 //			}
 			float top = 0;//layoutParams.topMargin;                    // float ) (1.0 * rect.y / _hight);
+			dbMsg += "," + top;
 //			if ( 0 < top ) {
 //				top = ( float ) (1.0 * top / layoutParams.height);
 //			}
-			float right = left + viewHight;            //( float ) (1.0 * rect.width / _width);
+			float right = left + viewWidth;            //( float ) (1.0 * rect.width / _width);
+			dbMsg += ")～(" + right;
+//			if ( 0 < top ) {
 			if ( 0 < right ) {
-				right = ( float ) (1.0 * right / viewHight);
+				right = ( float ) (1.0 * right / viewWidth);
 			}
 			float bottom = top + viewHight;            // top + ( float ) (1.0 * rect.height / _hight);
+			dbMsg += "," + bottom + "）";
 			if ( 0 < bottom ) {
 				bottom = ( float ) (1.0 * bottom / viewHight);
 			}
-			dbMsg += ">>(" + left + "," + top + ")～(" + right + "," + bottom + "）";
+			dbMsg += ">比率>(" + left + "," + top + ")～(" + right + "," + bottom + "）";
 
 			faces.add(new RectF(left , top , right , bottom));            //APIL1
 //			}
 			dbMsg += ",faces=" + faces.size();
 			invalidate();                                                //onDrawへ
 
-			degrees = _degrees;
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
