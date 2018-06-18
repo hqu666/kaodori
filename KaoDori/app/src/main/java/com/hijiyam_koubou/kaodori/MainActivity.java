@@ -49,6 +49,7 @@ import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.KeyEvent;
+import android.view.MenuItem;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
@@ -442,8 +443,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					dbMsg += "=ma_func_bt";
 					Activity activity = MainActivity.this;            //getActivity();
 					if ( null != activity ) {
-						Intent settingsIntent = new Intent(activity , MyPreferencesActivty.class);
-						startActivityForResult(settingsIntent , REQUEST_PREF);                    //    startActivity( settingsIntent );
+						showMenuDialog();
+//						Intent settingsIntent = new Intent(activity , MyPreferencesActivty.class);
+//						startActivityForResult(settingsIntent , REQUEST_PREF);                    //    startActivity( settingsIntent );
 
 //					new AlertDialog.Builder(activity).setMessage(R.string.intro_message).setPositiveButton(android.R.string.ok , null).show();
 					}
@@ -470,6 +472,86 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}
+
+	CharSequence[] menuItems;
+	public void showMenuDialog() {
+		final String TAG = "showMenuDialog[MA}";
+		String dbMsg = "";
+		try {
+//			List menuItems = new ArrayList();
+//			menuItems.add(getResources().getString(R.string.mm_effect_face_recgnition));
+//			menuItems.add(getResources().getString(R.string.mm_setting_titol));
+//			menuItems.add(getResources().getString(R.string.mm_quit_titol));
+		 menuItems = new CharSequence[]{getResources().getString(R.string.mm_effect_face_recgnition) , getResources().getString(R.string.mm_setting_titol) , getResources().getString(R.string.mm_quit_titol)};
+			AlertDialog.Builder listDlg = new AlertDialog.Builder(this);
+//			listDlg.setTitle("タイトル");
+			listDlg.setItems(menuItems , new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog , int which) {
+					// リスト選択時の処理
+					// which は、選択されたアイテムのインデックス
+					CharSequence selctItem = menuItems[which];
+					myMenuSelected( selctItem) ;
+				}
+			});
+			listDlg.create().show();            // 表示
+
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+	public void myMenuSelected(CharSequence selctItem) {
+		final String TAG = "myMenuSelected[MA}";
+		String dbMsg = "";                    //表記が返る
+		try {
+//			dbMsg += ",selectNo=" + selectNo;
+//			CharSequence selctItem = menuItems[selectNo];
+			dbMsg += ",selctItem=" + selctItem;
+			myLog(TAG , dbMsg);
+			if(selctItem.equals( getResources().getString(R.string.mm_quit_titol))) {
+				callQuit();
+			}else if(selctItem.equals( getResources().getString(R.string.mm_setting_titol))){
+					Intent settingsIntent = new Intent(MainActivity.this , MyPreferencesActivty.class);
+					startActivity( settingsIntent );      //startActivityForResult(settingsIntent , REQUEST_PREF);
+ 			}else if(selctItem.equals( getResources().getString(R.string.mm_effect_face_recgnition))){
+
+			}
+//			switch ( itemId ) {
+//				case R.id.mm_googlec2:
+//					dbMsg += ";" + getResources().getString(R.string.googlc2);
+////					Intent mIntent = new Intent(FdActivity.this , MainActivity.class);
+////					startActivity( mIntent );
+//					break;
+//				case R.id.mm_c1surfas:
+////					dbMsg += ";" + getResources().getString(R.string.c1surfas);
+////					activityMain.removeAllViews();
+////					c2SufaceView = null;
+////					mySurfaceView = new C1SurfaceView(this , dispDegrees);        //orgは90°固定だった
+////					activityMain.addView(mySurfaceView);
+//					break;
+//				case R.id.mm_c2sarfece:
+//					dbMsg += ";" + getResources().getString(R.string.c2sarfece);
+////					activityMain.removeAllViews();
+////					mySurfaceView = null;
+////					c2SufaceView = new C2SurfaceView(this , getDisplayOrientation() , writeFolder);            //camera2でSurfaceのプレビュークラス
+////					activityMain.addView(c2SufaceView);
+//					break;
+//				case R.id.mm_prefarence:
+//					dbMsg += ";" + getResources().getString(R.string.mm_setting_titol);
+//					Intent settingsIntent = new Intent(MainActivity.this , MyPreferencesActivty.class);
+//					startActivityForResult(settingsIntent , REQUEST_PREF);                    //    startActivity( settingsIntent );
+//					break;
+//				case R.id.mm_quit:
+//					dbMsg += ";" + getResources().getString(R.string.mm_quit_titol);
+//					callQuit();
+//					break;
+//			}
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + "で" + er.toString());
+		}
+	}
+
 
 	//アプリケーション動作////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
