@@ -245,12 +245,13 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				dbMsg += ",mBackgroundThread=" + mBackgroundThread.isAlive();
 			}
 			if ( mTextureView != null ) {
+				dbMsg += ",isAvailable=" + mTextureView.isAvailable();
 				if ( mTextureView.isAvailable() ) {                //orgでは既にプレビューが機能していたら    openCamera
 					int TVWIdht = mTextureView.getWidth();
 					int TVHight = mTextureView.getHeight();
 					dbMsg += "[" + TVWIdht + "×" + TVHight + "]";
-//			openCamera(TVWIdht , TVHight);         					//org このタイミングで起動出来ず onSurfaceTextureAvailable　へ
-				} else {                                            //org レビューが機能していなければリスナー設定
+					openCamera(TVWIdht , TVHight);                  //org このタイミングで起動出来ず onSurfaceTextureAvailable　へ
+				} else {                                            //org プレビューが機能していなければリスナー設定
 					mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
 				}
 			} else {
@@ -276,9 +277,10 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		String dbMsg = "";
 		try {
 			dbMsg += "isReWriteNow=" + isReWriteNow;
-			isReWriteNow = true;                        //書き換え発生
-			dbMsg += ">>" + isReWriteNow;
-			laterDestroy();
+			if(! isReWriteNow){
+				laterDestroy();
+				dbMsg += ">>" + isReWriteNow;
+			}
 
 //			 closeCamera();                   //orgではここで破棄
 //			stopBackgroundThread();            //prg
@@ -296,9 +298,10 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		String dbMsg = "";
 		try {
 			dbMsg += "isReWriteNow=" + isReWriteNow;
-			isReWriteNow = true;                        //書き換え発生
-			dbMsg += ">>" + isReWriteNow;
-			laterDestroy();
+			if(! isReWriteNow){
+				laterDestroy();
+				dbMsg += ">>" + isReWriteNow;
+			}
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -312,9 +315,10 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		String dbMsg = "";
 		try {
 			dbMsg += "isReWriteNow=" + isReWriteNow;
-			isReWriteNow = true;                        //書き換え発生
-			dbMsg += ">>" + isReWriteNow;
-			laterDestroy();
+			if(! isReWriteNow){
+				laterDestroy();
+				dbMsg += ">>" + isReWriteNow;
+			}
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -547,7 +551,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 								CharSequence selctItem = menuItems[which];
 								myMenuSelected(selctItem);
 								carentDlog.dismiss();
-						//		carentDlog.hide();				//表示しないだけで生成はされている
+								//		carentDlog.hide();				//表示しないだけで生成はされている
 							}
 						});
 
@@ -702,6 +706,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				stopBackgroundThread();
 				dbMsg += ">>" + mCameraDevice;
 			}
+			isReWriteNow = true;                        //書き換え発生
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -1368,7 +1373,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	 */
 	public int mSensorOrientation;
 	public int fpsCount = 0;
-	public int fpsLimi = 30;
+	public int fpsLimi = 15;
 
 	/**
 	 * JPEG捕獲に関連したそのハンドル・イベント。
@@ -1404,21 +1409,21 @@ public class MainActivity extends Activity implements View.OnClickListener {
 									dbMsg += ",isPrevieSending=" + isPrevieSending;
 									if ( !isPrevieSending ) {
 										dbMsg += ",completion=" + OCVFRV.getCompletion();
-										if ( OCVFRV.getCompletion() ) {    //onDrawが終了するまでfalseが返る
+										if ( OCVFRV.getCompletion() && fpsLimi < fpsCount ) {    //onDrawが終了するまでfalseが返る
 											isPrevieSending = true;
 											copyPreview();
 											fpsCount = 0;
 										}
 									} else {
-										dbMsg = "";
+										dbMsg = "";    //余計なコメントを出さない
 									}
 								} else {
 									dbMsg += ",OCVFRV = null>>view追加";
 									setEffectView();
 								}
 							}
-						} else {
-							removetEffectView();
+						} else {                            //顔検出中で無ければ
+							removetEffectView();            //viewを破棄
 						}
 						break;
 					}
@@ -1775,28 +1780,28 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			try {
 				dbMsg += "mCaptureSession=" + mCaptureSession;
 				mCameraOpenCloseLock.acquire();
-				dbMsg = "";
-				if ( null != mCameraDevice ) {
-					mCameraDevice.close();
-					mCameraDevice = null;
-					dbMsg += ",mCameraDevice 破棄";
-				}
-				if ( null != mCaptureSession ) {
+				if ( null != mCaptureSession ) {         //org①
+					mCaptureSession.stopRepeating();    //追加
+					mCaptureSession.abortCaptures();    //追加
 					mCaptureSession.close();
 					mCaptureSession = null;
 					dbMsg += ",mCaptureSession 破棄";
 				}
-
-				if ( null != mImageReader ) {
+				if ( null != mCameraDevice ) {          //org②
+					mCameraDevice.close();
+					mCameraDevice = null;
+					dbMsg += ",mCameraDevice 破棄";
+				}
+				if ( null != mImageReader ) {                  //org
 					mImageReader.close();         // ImageReaderに関連するすべてのリソースを解放
 					mImageReader = null;
 					dbMsg += ",mImageReader 破棄";
 				}
-				if ( surface != null ) {
-					surface.release();
-					surface = null;
-					dbMsg += ",surface 破棄";
-				}
+//				if ( surface != null ) {
+//					surface.release();
+//					surface = null;
+//					dbMsg += ",surface 破棄";
+//				}
 				if ( mSound != null ) {
 					mSound.release();
 					mSound = null;
@@ -1964,7 +1969,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			RectF bufferRect = new RectF(0 , 0 , mPreviewSize.getHeight() , mPreviewSize.getWidth());
 			float centerX = viewRect.centerX();
 			float centerY = viewRect.centerY();
-			dbMsg += ",center(" + centerY + "," + centerY + ")";
+			dbMsg += ",center(" + centerX + "," + centerY + ")";
 			if ( Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation ) {
 				bufferRect.offset(centerX - bufferRect.centerX() , centerY - bufferRect.centerY());
 				matrix.setRectToRect(viewRect , bufferRect , Matrix.ScaleToFit.FILL);
@@ -1974,7 +1979,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			} else if ( Surface.ROTATION_180 == rotation ) {
 				matrix.postRotate(180 , centerX , centerY);
 			}
+			dbMsg += ",isAvailable=" + mTextureView.isAvailable();
 			mTextureView.setTransform(matrix);
+//			dbMsg += ">>"+ mTextureView.isAvailable() ;
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -2275,7 +2282,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			if ( isRumbling ) {                                //シャッター音の鳴動
 				mSound.play(MediaActionSound.SHUTTER_CLICK);            // 撮影音を鳴らす
 			}
-			mCaptureSession.stopRepeating();          //現在のプレビューを停止します。
+			mCaptureSession.stopRepeating();          //現在のプレビューを停止；setRepeatingRequest または いずれかで進行中の繰り返しキャプチャをキャンセルします 。
 			mCaptureSession.abortCaptures();            //Repeating requestsも止まる。
 			mCaptureSession.capture(captureBuilder.build() , CaptureCallback , null);  // 撮影する。終了コールバックはメソッド内
 			myLog(TAG , dbMsg);
@@ -2442,51 +2449,48 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		final String TAG = "copyPreview[MA]";
 		String dbMsg = "";
 		try {
-			if ( isReWriteNow ) {                                    // //onResume～onPause以外
-				dbMsg += "書き換え中 ";
-				return;                  //Fragmentなら  isDetached  とgetActivity
-			}
-			if ( mCameraDevice == null ) {
-				dbMsg += "mCameraDevice = null ";
-				return;                  //Fragmentなら  isDetached  とgetActivity
-			}
-			///6/18	この時点でViewとカメラがまだ存在しているか
-			if ( mCaptureSession != null ) {
-				mCaptureSession.stopRepeating();          //プレビューの更新を止める
-//				mCaptureSession.abortCaptures();            //Repeating requestsも止まる。
-				dbMsg += "stopRepeating";
-			} else {
-				dbMsg += "mCaptureSession = null ";
-				return;
-			}
-			CaptureRequest.Builder mCopyPreviewRequestBuilder = null;                    // 静止画を送ってもらうためのリクエストのビルダーですよ
-			try {
-				dbMsg += ",createCaptureRequest;mCameraDevice=" + mCameraDevice;
-				mCopyPreviewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);   //静止画像キャプチャに適した要求を作成
-			} catch (CameraAccessException er) {
-				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-			}
-			mCopyPreviewRequestBuilder.addTarget(mImageReader.getSurface());                        // 送り先はImageReaderにしてね
-			CaptureRequest copyPreviewRequest = mCopyPreviewRequestBuilder.build();
-			try {
-				dbMsg += ",capture";
-//				mCaptureSession.stopRepeating();          //プレビューの更新を止める
-////				mCaptureSession.abortCaptures();            //Repeating requestsも止まる。
-				int retInt = mCaptureSession.capture(copyPreviewRequest , mCaptureCallback , mBackgroundHandler);
-				// (プレビュー時にセッションは開いたままで、)追加で静止画送ってくれリクエストを送る
+			if ( !isReWriteNow ) {                                    // //onResume～onPause以外
+				if ( mCameraDevice != null ) {
+					if ( mCaptureSession != null ) {
+						mCaptureSession.stopRepeating();          //プレビューの更新を止める
+						mCaptureSession.abortCaptures();            //Repeating requestsも止まる。☆これを加えると300>>200フレームに間隔短縮
+						dbMsg += "stopRepeating";
+						CaptureRequest.Builder mCopyPreviewRequestBuilder = null;                    // 静止画を送ってもらうためのリクエストのビルダーですよ
+						try {
+							dbMsg += ",createCaptureRequest;mCameraDevice=" + mCameraDevice;
+							mCopyPreviewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);   //静止画像キャプチャに適した要求を作成
+						} catch (CameraAccessException er) {
+							myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+						}
+						mCopyPreviewRequestBuilder.addTarget(mImageReader.getSurface());                        // 送り先はImageReaderにしてね
+						CaptureRequest copyPreviewRequest = mCopyPreviewRequestBuilder.build();
+						try {
+							dbMsg += ",capture";
+							int retInt = mCaptureSession.capture(copyPreviewRequest , mCaptureCallback , mBackgroundHandler);
+							// (プレビュー時にセッションは開いたままで、)追加で静止画送ってくれリクエストを送る
 //				List<CaptureRequest> requestList = new ArrayList<CaptureRequest>();
 //				// キャプチャーの指示一覧を作成
 //				requestList.add(mCopyPreviewRequestBuilder.build());	//	requestList.add(captureBuilder.build());
 //				int retInt = mCaptureSession.captureBurst(requestList, mCaptureCallback, mBackgroundHandler); 				// 登録した指示通りに連写で撮影
-				/**
-				 * キャプチャ方法４通り
-				 * • CameraCaptureSession#captureBurst() 　　　　　　・・・撮影条件を変えながら複数枚撮影する
-				 * • CameraCaptureSession#setRepeatingRequest() 　　　　　　・・・同一条件で連続撮影する (Preview 用 )
-				 * */
-				dbMsg += ",retInt=" + retInt;    //unique capture sequence IDが戻される
-			} catch (CameraAccessException er) {
-				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+							/**
+							 * キャプチャ方法４通り
+							 * • CameraCaptureSession#captureBurst() 　　　　　　・・・撮影条件を変えながら複数枚撮影する
+							 * • CameraCaptureSession#setRepeatingRequest() 　　　　　　・・・同一条件で連続撮影する (Preview 用 )
+							 * */
+							dbMsg += ",retInt=" + retInt;    //unique capture sequence IDが戻される
+						} catch (CameraAccessException er) {
+							myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+						}
+					} else {
+						dbMsg += "mCaptureSession = null ";
+					}
+				} else {
+					dbMsg += "mCameraDevice = null ";
+				}
+			} else {
+				dbMsg += "書き換え中 ";
 			}
+
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
