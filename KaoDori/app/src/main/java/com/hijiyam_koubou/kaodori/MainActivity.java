@@ -16,6 +16,7 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Point;
@@ -23,6 +24,7 @@ import android.graphics.PointF;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
+import android.graphics.drawable.BitmapDrawable;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -277,7 +279,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		String dbMsg = "";
 		try {
 			dbMsg += "isReWriteNow=" + isReWriteNow;
-			if(! isReWriteNow){
+			if ( !isReWriteNow ) {
 				laterDestroy();
 				dbMsg += ">>" + isReWriteNow;
 			}
@@ -298,7 +300,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		String dbMsg = "";
 		try {
 			dbMsg += "isReWriteNow=" + isReWriteNow;
-			if(! isReWriteNow){
+			if ( !isReWriteNow ) {
 				laterDestroy();
 				dbMsg += ">>" + isReWriteNow;
 			}
@@ -315,7 +317,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		String dbMsg = "";
 		try {
 			dbMsg += "isReWriteNow=" + isReWriteNow;
-			if(! isReWriteNow){
+			if ( !isReWriteNow ) {
 				laterDestroy();
 				dbMsg += ">>" + isReWriteNow;
 			}
@@ -928,6 +930,105 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			}
 		}
 	}
+
+	private void sendPreviewBitMap(Bitmap shotBitmap) {
+		final String TAG = "sendPreviewBitMap[MA]";
+		String dbMsg = "";
+		try {
+			dbMsg += ",顔検出実行中=" + isFaceRecognition;
+			if ( isFaceRecognition ) {               // ;                 //
+//				dbMsg += "isReWriteNow=" + isReWriteNow;
+//				if ( !isReWriteNow ) {                                    // //書き換え終了(onResume～onPause)
+				if ( OCVFRV != null ) {
+					fpsCount++;
+					dbMsg += "(" + fpsCount + "/" + fpsLimi + ")";          //実測 8回で送信
+//					dbMsg += ",isPrevieSending=" + isPrevieSending;
+//					if ( !isPrevieSending ) {
+					dbMsg += ",completion=" + OCVFRV.getCompletion();
+					if ( OCVFRV.getCompletion() ) {    //onDrawが終了するまでfalseが返る     && fpsLimi < fpsCount
+						fpsCount = 0;
+//						isPrevieSending = true;
+						dbMsg += ",bitmap[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]";
+						int byteCount = shotBitmap.getByteCount();
+						dbMsg += "" + byteCount + "バイト";
+						mSensorOrientation = getOrientation(DISP_DEGREES);
+						dbMsg += ",camera=" + mSensorOrientation + "dig";
+						OCVFRV.readFrameRGB(shotBitmap , mSensorOrientation);
+//						}
+					} else {
+						dbMsg = "";    //余計なコメントを出さない
+					}
+				} else {
+					dbMsg += ",OCVFRV = null>>view追加";
+					setEffectView();
+				}
+//				}
+			} else {                            //顔検出中で無ければ
+				removetEffectView();            //viewを破棄
+			}
+			if ( !dbMsg.equals("") ) {
+				myLog(TAG , dbMsg);
+			}
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+
+	/**
+	 * assetsの内容を /data/data/.../files/ にコピーします。
+	 */
+	private void copyAssets(String dir , long haarcascadesLastModified) throws IOException {
+		final String TAG = "copyAssets[MA}";
+		String dbMsg = "";
+		try {
+			dbMsg = "dir=" + dir;
+//			MainActivity MA = new MainActivity();
+
+			dbMsg += ",認証ファイル最終更新日=" + haarcascadesLastModified;
+			byte[] buf = new byte[8192];
+			int size;
+			boolean isCopy = false;    //初回使用時なと、強制的にコピーする
+			File dst = new File(getApplicationContext().getFilesDir() , dir);
+			if ( !dst.exists() ) {
+				dst.mkdirs();
+				dst.setReadable(true , false);
+				dst.setWritable(true , false);
+				dst.setExecutable(true , false);
+				dbMsg += ">>作成";
+				isCopy = true;
+			}
+			int readedCount = dst.list().length;
+			dbMsg += ",読込み済み=" + readedCount + "件";
+			if ( readedCount < 10 ) {
+				isCopy = true;
+			}
+			for ( String filename : getApplicationContext().getAssets().list(dir) ) {
+				File file = new File(dst , filename);
+				Long lastModified = file.lastModified();
+				if ( isCopy || haarcascadesLastModified < lastModified ) {    //無ければ
+					dbMsg += "," + filename + ";" + lastModified;
+					haarcascadesLastModified = lastModified;
+					OutputStream out = new FileOutputStream(file);
+					InputStream in = getApplicationContext().getAssets().open(dir + "/" + filename);
+					while ( (size = in.read(buf)) >= 0 ) {
+						if ( size > 0 ) {
+							out.write(buf , 0 , size);
+						}
+					}
+					in.close();
+					out.close();
+					file.setReadable(true , false);
+					file.setWritable(true , false);
+					file.setExecutable(true , false);
+					dbMsg += ">>コピー";
+				}
+			}
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
 	//プレビュー////////////////////////////////////////////////////////////////////////////////////エフェクト//
 	/**
 	 * {@link TextureView.SurfaceTextureListener} handles several lifecycle events on a
@@ -991,18 +1092,27 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			try {
 				dbMsg = "onSurfaceTextureUpdated";
 // Surface surface = new Surface(texture);  //までは出来る
+////				Bitmap bmp = ((BitmapDrawable )texture.getDrawable()).getBitmap();
+////				surface.
+////				synchronized (mCaptureSync) {                //http://serenegiant.com/blog/?p=2074&page=3
+////					if ( mReqesutCaptureStillImage ) {
+////						mReqesutCaptureStillImage = false;
+////						if ( mTempBitmap == null ) {
+////							mTempBitmap = getBitmap();
+////						} else {
+////							getBitmap(mTempBitmap);
+////							mCaptureSync.notifyAll();
+////						}
+////					}
+////				}
 
-//				surface.
-//				synchronized (mCaptureSync) {
-//					if (mReqesutCaptureStillImage) {
-//						mReqesutCaptureStillImage = false;
-//						if (mTempBitmap == null)
-//							mTempBitmap = getBitmap(mPreviewSize.getWidth(),mPreviewSize.getHeight());
-//						else
-//							getBitmap(mTempBitmap);
-//						mCaptureSync.notifyAll();
-//					}
-//				}
+				Bitmap shotBitmap = mTextureView.getBitmap();
+				if ( shotBitmap != null ) {
+					dbMsg += ",bitmap[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]";
+					int byteCount = shotBitmap.getByteCount();
+					dbMsg += "" + byteCount + "バイト";
+					sendPreviewBitMap(shotBitmap);
+				}
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -1176,8 +1286,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					dbMsg += ",rImage;Timestamp=" + rImage.getTimestamp();
 					dbMsg += ",isPhotography=" + isPhotography;   //撮影時も falseになっている
 					if ( !isPhotography ) {     //撮影中で無ければ
-						SendPreview SP = new SendPreview(rImage);
-						mBackgroundHandler.post(SP);
+//						SendPreview SP = new SendPreview(rImage);
+//						mBackgroundHandler.post(SP);
 						dbMsg += "プレビュー取得";
 					} else {
 						dbMsg += ",静止画撮影処理；writeFolder=" + writeFolder;
@@ -1411,7 +1521,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 										dbMsg += ",completion=" + OCVFRV.getCompletion();
 										if ( OCVFRV.getCompletion() && fpsLimi < fpsCount ) {    //onDrawが終了するまでfalseが返る
 											isPrevieSending = true;
-											copyPreview();
+//											copyPreview();
 											fpsCount = 0;
 										}
 									} else {
@@ -1419,7 +1529,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 									}
 								} else {
 									dbMsg += ",OCVFRV = null>>view追加";
-									setEffectView();
+//									setEffectView();
 								}
 							}
 						} else {                            //顔検出中で無ければ
@@ -1496,7 +1606,14 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				dbMsg += ",CaptureRequest=" + request.getKeys().size() + "件";    //CaptureRequest=android.hardware.camera2.CaptureRequest@ed0bb9ae,TotalCaptureResult=android.hardware.camera2
 				dbMsg += ",TotalCaptureResult=" + result.getRequest().getKeys().size() + "件";   // TotalCaptureResult@17e91b3
 				process(result);
-				myLog(TAG , dbMsg);
+
+//				Bitmap shotBitmap = mTextureView.getBitmap();
+//				dbMsg += ",bitmap[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]";
+//				int byteCount = shotBitmap.getByteCount();
+//				dbMsg += "" + byteCount + "バイト";
+//				sendPreviewbitMap( shotBitmap);
+//
+//				myLog(TAG , dbMsg);
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 			}
@@ -2576,62 +2693,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 			}
-		}
-	}
-
-
-	/**
-	 * assetsの内容を /data/data/.../files/ にコピーします。
-	 */
-	private void copyAssets(String dir , long haarcascadesLastModified) throws IOException {
-		final String TAG = "copyAssets[MA}";
-		String dbMsg = "";
-		try {
-			dbMsg = "dir=" + dir;
-//			MainActivity MA = new MainActivity();
-
-			dbMsg += ",認証ファイル最終更新日=" + haarcascadesLastModified;
-			byte[] buf = new byte[8192];
-			int size;
-			boolean isCopy = false;    //初回使用時なと、強制的にコピーする
-			File dst = new File(getApplicationContext().getFilesDir() , dir);
-			if ( !dst.exists() ) {
-				dst.mkdirs();
-				dst.setReadable(true , false);
-				dst.setWritable(true , false);
-				dst.setExecutable(true , false);
-				dbMsg += ">>作成";
-				isCopy = true;
-			}
-			int readedCount = dst.list().length;
-			dbMsg += ",読込み済み=" + readedCount + "件";
-			if ( readedCount < 10 ) {
-				isCopy = true;
-			}
-			for ( String filename : getApplicationContext().getAssets().list(dir) ) {
-				File file = new File(dst , filename);
-				Long lastModified = file.lastModified();
-				if ( isCopy || haarcascadesLastModified < lastModified ) {    //無ければ
-					dbMsg += "," + filename + ";" + lastModified;
-					haarcascadesLastModified = lastModified;
-					OutputStream out = new FileOutputStream(file);
-					InputStream in = getApplicationContext().getAssets().open(dir + "/" + filename);
-					while ( (size = in.read(buf)) >= 0 ) {
-						if ( size > 0 ) {
-							out.write(buf , 0 , size);
-						}
-					}
-					in.close();
-					out.close();
-					file.setReadable(true , false);
-					file.setWritable(true , false);
-					file.setExecutable(true , false);
-					dbMsg += ">>コピー";
-				}
-			}
-			myLog(TAG , dbMsg);
-		} catch (Exception er) {
-			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}
 
