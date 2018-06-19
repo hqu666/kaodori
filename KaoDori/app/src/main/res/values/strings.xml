@@ -5,16 +5,18 @@
 	<string name="up_scale">保存時の枠拡大</string>
 	<string name="haarcascades_last_modified">最新の顔認証プロファイル</string>
 
+	<string name="mm_phot">撮影設定</string>
+	<string name="mm_phot_array_size">解像度</string>
+	<string name="mm_phot_flash">オートフラッシュ</string>
+	<string name="mm_phot_rumbling">シャッター音</string>
 
-	<!--<string-array name="mm_bace">-->
-		<!--<item>-->
-			 	<string name="mm_effect_face_recgnition">顔検出</string>
-		<!--</item>-->
-		<!--<item>-->
-			 	<string name="mm_effect_face_array_size">解像度</string>
-		<!--</item>-->
-		<!--<item>-->
-			<string name="mm_setting_titol">設定</string>
+	<string name="mm_effect">エフェクト</string>
+	<string name="mm_effect_face_recgnition">顔検出</string>
+	<string name="mm_effect_chase_focus">追跡フォーカス</string>
+	<string name="mm_effect_preview_tv">高速プレビュ－</string>
+	<string name="mm_effect_preview_sufece">省電力プレビュ－</string>
+
+	<string name="mm_setting_titol">設定</string>
 		<!--</item>-->
 		<!--<item>-->
 			<string name="mm_quit_titol">終了</string>

@@ -105,7 +105,10 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	public long haarcascadesLastModified = 0;
 	public boolean isReWriteNow = true;                        //リソース書き換え中
 	public boolean isPrevieSending = false;     //プレビュー画面処理中
+	public boolean isAutoFlash = false;                        //オートフラッシュ
 	public boolean isRumbling = false;                        //シャッター音の鳴動
+	public boolean isFaceRecognition = false;                 //顔検出実行中
+	public boolean isChaseFocus = false;                 //追跡フォーカス
 
 	/**
 	 * このアプリケーションの設定ファイル読出し
@@ -135,6 +138,10 @@ public class MainActivity extends Activity implements View.OnClickListener {
 //			dbMsg += ",isReadPref=" + isReadPref;
 			MyPreferenceFragment prefs = new MyPreferenceFragment();
 			prefs.readPref(this);
+			isFaceRecognition = prefs.isFaceRecognition;
+			dbMsg += ",顔検出実行中=" + isFaceRecognition;
+			isChaseFocus = prefs.isChaseFocus;
+			dbMsg += ",追跡フォーカス=" + isChaseFocus;
 			writeFolder = prefs.write_folder;
 			dbMsg += "," + getResources().getString(R.string.write_folder) + "=" + writeFolder;
 			if ( prefs.up_scale != null ) {
@@ -198,7 +205,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			setContentView(R.layout.activity_main);
 			mTextureView = ( AutoFitTextureView ) findViewById(R.id.ma_aft);
 			ma_effect_fl = ( FrameLayout ) findViewById(R.id.ma_effect_fl);        //OpenCVの呼び込み枠       ViewGroup
-			OCVFRV = ( OCVFaceRecognitionVeiw ) findViewById(R.id.ma_effect_view);        //顔検出View
+//			OCVFRV = ( OCVFaceRecognitionVeiw ) findViewById(R.id.ma_effect_view);        //顔検出View
 
 			ma_shot_bt = ( ImageButton ) findViewById(R.id.ma_shot_bt);      //キャプチャーボタン
 			ma_func_bt = ( ImageButton ) findViewById(R.id.ma_func_bt);      //設定ボタン
@@ -216,7 +223,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			setViewState();
 			dbMsg += ",haarcascadesLastModified=" + haarcascadesLastModified;
 //			OCVFRV.constractCommon(this , haarcascadesLastModified);            //顔検出のセットアップ
-			copyAssets("haarcascades" , haarcascadesLastModified);                    // assetsの内容を /data/data/*/files/ にコピーします。
+//			copyAssets("haarcascades" , haarcascadesLastModified);                    // assetsの内容を /data/data/*/files/ にコピーします。
 
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
@@ -241,7 +248,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				if ( mTextureView.isAvailable() ) {                //orgでは既にプレビューが機能していたら    openCamera
 					int TVWIdht = mTextureView.getWidth();
 					int TVHight = mTextureView.getHeight();
-					dbMsg = "[" + TVWIdht + "×" + TVHight + "]";
+					dbMsg += "[" + TVWIdht + "×" + TVHight + "]";
 //			openCamera(TVWIdht , TVHight);         					//org このタイミングで起動出来ず onSurfaceTextureAvailable　へ
 				} else {                                            //org レビューが機能していなければリスナー設定
 					mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
@@ -443,7 +450,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					dbMsg += "=ma_func_bt";
 					Activity activity = MainActivity.this;            //getActivity();
 					if ( null != activity ) {
-						showMenuDialog();
+						showMenuDialog(0);
 //						Intent settingsIntent = new Intent(activity , MyPreferencesActivty.class);
 //						startActivityForResult(settingsIntent , REQUEST_PREF);                    //    startActivity( settingsIntent );
 
@@ -473,8 +480,33 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		}
 	}
 
-	CharSequence[] menuItems;
-	public void showMenuDialog() {
+	@Override
+	protected void onActivityResult(final int requestCode , final int resultCode , final Intent data) {
+		final String TAG = "onActivityResult";
+		String dbMsg = "requestCode=" + requestCode + ",resultCode=" + resultCode;
+		try {
+			switch ( requestCode ) {
+				case REQUEST_PREF:                                //Prefarensからの戻り
+					readPref();
+					break;
+			}
+
+
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+		myLog(TAG , dbMsg);
+	}
+
+	//メニュー機構////////////////////////////////////////////////////////////////////////
+	public AlertDialog carentDlog;
+	public CharSequence[] menuItems;
+	public boolean[] menuItemChecks;
+
+	/**
+	 * メニューをリストダイアログで表示する
+	 */
+	public void showMenuDialog(int menuTipe) {
 		final String TAG = "showMenuDialog[MA}";
 		String dbMsg = "";
 		try {
@@ -482,18 +514,46 @@ public class MainActivity extends Activity implements View.OnClickListener {
 //			menuItems.add(getResources().getString(R.string.mm_effect_face_recgnition));
 //			menuItems.add(getResources().getString(R.string.mm_setting_titol));
 //			menuItems.add(getResources().getString(R.string.mm_quit_titol));
-		 menuItems = new CharSequence[]{getResources().getString(R.string.mm_effect_face_recgnition) , getResources().getString(R.string.mm_setting_titol) , getResources().getString(R.string.mm_quit_titol)};
 			AlertDialog.Builder listDlg = new AlertDialog.Builder(this);
+
 //			listDlg.setTitle("タイトル");
-			listDlg.setItems(menuItems , new DialogInterface.OnClickListener() {
-				public void onClick(DialogInterface dialog , int which) {
-					// リスト選択時の処理
-					// which は、選択されたアイテムのインデックス
-					CharSequence selctItem = menuItems[which];
-					myMenuSelected( selctItem) ;
-				}
-			});
-			listDlg.create().show();            // 表示
+
+			if ( menuTipe == 0 ) {          //ルートメニュー
+				menuItems = new CharSequence[]{getResources().getString(R.string.mm_phot) , getResources().getString(R.string.mm_effect) , getResources().getString(R.string.mm_setting_titol) , getResources().getString(R.string.mm_quit_titol)};
+			} else if ( menuTipe == 1 ) {          //撮影設定
+				menuItems = new CharSequence[]{getResources().getString(R.string.mm_phot_array_size) , getResources().getString(R.string.mm_phot_flash) , getResources().getString(R.string.mm_phot_rumbling)};
+				menuItemChecks = new boolean[]{false , isAutoFlash , isRumbling};      //オートフラッシュ、シャッター音の鳴動
+			} else if ( menuTipe == 2 ) {          //エフェクト
+				menuItems = new CharSequence[]{getResources().getString(R.string.mm_effect_face_recgnition) , getResources().getString(R.string.mm_effect_chase_focus) , getResources().getString(R.string.mm_effect_preview_tv)};
+				menuItemChecks = new boolean[]{isFaceRecognition , isChaseFocus , false};      //顔検出 ,追跡フォーカス
+			}
+
+			if ( menuTipe == 0 ) {          //ルートメニュー
+				listDlg.setItems(menuItems , new DialogInterface.OnClickListener() {
+					public void onClick(DialogInterface dialog , int which) {
+						// リスト選択時の処理
+						// which は、選択されたアイテムのインデックス
+						CharSequence selctItem = menuItems[which];
+						myMenuSelected(selctItem);
+					}
+				});
+			} else {
+				listDlg.setMultiChoiceItems(    //☆xチェックボックス付きではタップしても消えない       //setMultiChoiceItems
+						menuItems , menuItemChecks , new DialogInterface.OnMultiChoiceClickListener() {
+							public void onClick(DialogInterface dialog , int which , boolean flag) {
+								// 項目選択時の処理
+								// i は、選択されたアイテムのインデックス
+								// flag は、チェック状態
+								CharSequence selctItem = menuItems[which];
+								myMenuSelected(selctItem);
+								carentDlog.dismiss();
+						//		carentDlog.hide();				//表示しないだけで生成はされている
+							}
+						});
+
+			}
+			carentDlog = listDlg.create();  //内容設定をしてから
+			carentDlog.show();            // 表示
 
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
@@ -501,22 +561,63 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		}
 	}
 
+	/**
+	 * 面託されたメニューの文字列を照合して実行
+	 */
 	public void myMenuSelected(CharSequence selctItem) {
 		final String TAG = "myMenuSelected[MA}";
 		String dbMsg = "";                    //表記が返る
 		try {
+			String titolStr = "作成中です";
+			String mggStr = "次回リリースまでお待ちください。";
 //			dbMsg += ",selectNo=" + selectNo;
 //			CharSequence selctItem = menuItems[selectNo];
 			dbMsg += ",selctItem=" + selctItem;
-			myLog(TAG , dbMsg);
-			if(selctItem.equals( getResources().getString(R.string.mm_quit_titol))) {
+			if ( selctItem.equals(getResources().getString(R.string.mm_quit_titol)) ) {
 				callQuit();
-			}else if(selctItem.equals( getResources().getString(R.string.mm_setting_titol))){
-					Intent settingsIntent = new Intent(MainActivity.this , MyPreferencesActivty.class);
-					startActivity( settingsIntent );      //startActivityForResult(settingsIntent , REQUEST_PREF);
- 			}else if(selctItem.equals( getResources().getString(R.string.mm_effect_face_recgnition))){
-
+			} else if ( selctItem.equals(getResources().getString(R.string.mm_setting_titol)) ) {
+				Intent settingsIntent = new Intent(MainActivity.this , MyPreferencesActivty.class);
+				startActivityForResult(settingsIntent , REQUEST_PREF);  //startActivity(settingsIntent);      //
+			} else if ( selctItem.equals(getResources().getString(R.string.mm_effect)) ) {
+				showMenuDialog(2);
+			} else if ( selctItem.equals(getResources().getString(R.string.mm_effect_face_recgnition)) ) {
+				dbMsg += ",isFaceRecognition=" + isFaceRecognition;
+				isFaceRecognition = !isFaceRecognition;                 //顔検出実行中
+				dbMsg += ">>" + isFaceRecognition;
+				myEditor.putBoolean("is_face_recognition_key" , isFaceRecognition);
+				dbMsg += ",更新";
+				myEditor.commit();
+				dbMsg += "完了";
+			} else if ( selctItem.equals(getResources().getString(R.string.mm_effect_chase_focus)) ) {
+				dbMsg += ",isChaseFocus=" + isChaseFocus;
+				isChaseFocus = !isChaseFocus;
+				dbMsg += ">>" + isChaseFocus;
+				myEditor.putBoolean("is_chase_focus_key" , isChaseFocus);
+				dbMsg += ",更新";
+				myEditor.commit();
+				dbMsg += "完了";
+				messageShow(titolStr , mggStr);
+			} else if ( selctItem.equals(getResources().getString(R.string.mm_effect_preview_tv)) ) {
+				messageShow(titolStr , mggStr);
+			} else if ( selctItem.equals(getResources().getString(R.string.mm_effect_preview_sufece)) ) {
+				messageShow(titolStr , mggStr);
+			} else if ( selctItem.equals(getResources().getString(R.string.mm_phot)) ) {
+				showMenuDialog(1);
+			} else if ( selctItem.equals(getResources().getString(R.string.mm_phot_array_size)) ) {
+				messageShow(titolStr , mggStr);
+			} else if ( selctItem.equals(getResources().getString(R.string.mm_phot_flash)) ) {
+				dbMsg += ",isAutoFlash=" + isAutoFlash;
+				isAutoFlash = !isAutoFlash;
+				dbMsg += ">>" + isAutoFlash;
+				messageShow(titolStr , mggStr);
+			} else if ( selctItem.equals(getResources().getString(R.string.mm_phot_rumbling)) ) {
+				dbMsg += ",isRumbling=" + isRumbling;
+				isRumbling = !isRumbling;
+				dbMsg += ">>" + isRumbling;
+				messageShow(titolStr , mggStr);
 			}
+			myLog(TAG , dbMsg);
+
 //			switch ( itemId ) {
 //				case R.id.mm_googlec2:
 //					dbMsg += ";" + getResources().getString(R.string.googlc2);
@@ -553,7 +654,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	}
 
 
-	//アプリケーション動作////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//アプリケーション動作//////////////////////////////////////////////////////////////////////////メニュー機構//////
 
 	/**
 	 * プレビューの幅と角度を更新する
@@ -589,19 +690,17 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		final String TAG = "laterDestroy[MA}";
 		String dbMsg = "";
 		try {
+			if ( OCVFRV != null ) {
+				dbMsg += ",ma_effect_flに" + ma_effect_fl.getChildCount() + "件";
+				OCVFRV.canvasRecycle();
+				ma_effect_fl.removeView(OCVFRV);
+				dbMsg += ">>" + ma_effect_fl.getChildCount();
+			}
 			dbMsg += ",mCameraDevice=" + mCameraDevice;
 			if ( mCameraDevice != null ) {
-
 				closeCamera();
 				stopBackgroundThread();
 				dbMsg += ">>" + mCameraDevice;
-			}
-			if ( OCVFRV != null ) {
-				dbMsg = "ma_effect_fl=" + ma_effect_fl.getChildCount() + "件";
-				OCVFRV.canvasRecycle();
-//				ma_effect_fl.removeAllViews();
-//				ma_effect_fl.removeView(OCVFRV);
-				dbMsg += ">>" + ma_effect_fl.getChildCount() + "件";
 			}
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
@@ -632,6 +731,49 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	//エフェクト////////////////////////////////////////////////////////////////////////////////////アプリケーション動作//
 
 	/**
+	 * 追加したエフェクトviewの削除
+	 */
+	public void removetEffectView() {
+		final String TAG = "removetEffectView[MA}";
+		String dbMsg = "";
+		try {
+			dbMsg += ",顔検出実行中" + isFaceRecognition;
+			if ( !isFaceRecognition ) {                      //顔検出実行中でなければ
+				if ( ma_effect_fl != null ) {
+					if ( OCVFRV != null ) {
+						OCVFRV.canvasRecycle();
+						new Thread(new Runnable() {                    //MainActivity.this.runOnUiThread
+							@Override
+							public void run() {
+								final String TAG = "removetEffectView.run[MA]";
+								String dbMsg = "";
+								try {
+									dbMsg += ",ChildCount=" + ma_effect_fl.getChildCount();
+									ma_effect_fl.removeView(OCVFRV);
+									dbMsg += ">>" + ma_effect_fl.getChildCount();
+									OCVFRV = null;
+									myLog(TAG , dbMsg);
+								} catch (Exception er) {
+									myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+								}
+							}
+						}).start();
+					}
+				}
+//				if(mCaptureSession != null){
+//					mCaptureSession.abortCaptures();	//現在保留中で進行中のすべてのキャプチャをできるだけ速く破棄
+////					if ( Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ) {
+////						Surface rSurface = mCaptureSession.getInputSurface();
+////					}
+//					mCaptureSession .stopRepeating();
+//				}
+			}
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+	/**
 	 * OpenCV用カスタムビューの追加
 	 * processで  mState = STATE_PREVIEW:    OCVFRV = null の時
 	 */
@@ -640,17 +782,14 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		String dbMsg = "開始";
 		try {
 			if ( ma_effect_fl != null ) {
+				dbMsg += ",OCVFRV=" + OCVFRV;
 				if ( OCVFRV == null ) {
+					copyAssets("haarcascades" , haarcascadesLastModified);                    // assetsの内容を /data/data/*/files/ にコピーします。
+					OCVFRV = new OCVFaceRecognitionVeiw(MainActivity.this);            //顔検出View
+					new EffectAddTask().execute(OCVFRV);
 
-//						OCVFRV = new OCVFaceRecognitionVeiw(MainActivity.this , haarcascadesLastModified);            //顔検出View
-//					} else {
-//						dbMsg += ",作成済み";
-//					}
-//					new EffectAddTask().execute(OCVFRV);
-
-
-//					//		shotBitmap = _shotBitmap;
-//					// 別スレッドを実行
+////					//		shotBitmap = _shotBitmap;
+////					// 別スレッドを実行
 //					//new Thread(new Runnable() { なら回転時にクラッシュしない
 //					new Thread(new Runnable() {                    //MainActivity.this.runOnUiThread
 //						@Override
@@ -660,10 +799,10 @@ public class MainActivity extends Activity implements View.OnClickListener {
 //							try {
 //								int cCount = ma_effect_fl.getChildCount();
 //								dbMsg += ",getChildCount=" + cCount;
-//								if ( cCount ==0 ) {
+//								if ( cCount == 0 ) {
 //									dbMsg += ",PREVIEW[" + PREVIEW_WIDTH + "×" + PREVIEW_HEIGHT + "]";  //表示サイズに変更する必要有り
 //									if ( OCVFRV == null ) {
-//										OCVFRV = new OCVFaceRecognitionVeiw(MainActivity.this , haarcascadesLastModified);            //顔検出View
+//										OCVFRV = new OCVFaceRecognitionVeiw(MainActivity.this);            //顔検出View
 //									} else {
 //										dbMsg += ",作成済み";
 //									}
@@ -745,10 +884,10 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		 * delivers it the parameters given to AsyncTask.execute()
 		 */
 		protected View doInBackground(View... pram) {
-			final String TAG = "doInBackground[MA]";
+			final String TAG = "EffectAddTask.DIB[MA]";
 			String dbMsg = "";
+			View rView = pram[0];
 			try {
-				View rView = pram[0];
 				int cCount = ma_effect_fl.getChildCount();
 				dbMsg += ",getChildCount=" + cCount;
 				if ( cCount == 0 ) {
@@ -762,7 +901,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 			}
-			return pram[0];
+			return rView;
 		}
 
 		/**
@@ -770,12 +909,14 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		 * the result from doInBackground()
 		 */
 		protected void onPostExecute(View result) {       //doInBackgroundの  returnを受け取る
-			final String TAG = "onPostExecute[MA]";
+			final String TAG = "EffectAddTask.ope[MA]";
 			String dbMsg = "";
 			try {
 				dbMsg += "ChildCount=" + ma_effect_fl.getChildCount();
 				ma_effect_fl.addView(result);
 				dbMsg += ">>" + ma_effect_fl.getChildCount();
+				setEffectViewSize();
+
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -867,6 +1008,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	///カメラ/////////////////////////////////////////////////////////////////////////////////プレビュー//////
 	/**
 	 * A {@link CameraCaptureSession } for camera preview.
+	 * createCameraPreviewSessionのonConfiguredで取得
 	 */
 	private CameraCaptureSession mCaptureSession;
 	private CameraDevice mCameraDevice;            // A reference to the opened {@link CameraDevice}.
@@ -923,7 +1065,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	/**
 	 * 使用しているカメラの現状
 	 * The current state of camera state for taking pictures.
-	 * @see #mCaptureCallback
+	 * @see #
 	 */
 	private int mState = STATE_PREVIEW;
 	/**
@@ -1029,7 +1171,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					dbMsg += ",rImage;Timestamp=" + rImage.getTimestamp();
 					dbMsg += ",isPhotography=" + isPhotography;   //撮影時も falseになっている
 					if ( !isPhotography ) {     //撮影中で無ければ
-
 						SendPreview SP = new SendPreview(rImage);
 						mBackgroundHandler.post(SP);
 						dbMsg += "プレビュー取得";
@@ -1232,6 +1373,15 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	/**
 	 * JPEG捕獲に関連したそのハンドル・イベント。
 	 * A {@link CameraCaptureSession.CaptureCallback} that handles events related to JPEG capture.
+	 * <p>
+	 * createCameraPreviewSessionのonConfiguredで	CONTROL_AF_MODE_CONTINUOUS_PICTURE
+	 * lockFocus()で 								CameraMetadata.CONTROL_AF_TRIGGER_START
+	 * unlockFocus()で  							CameraMetadata.CONTROL_AF_TRIGGER_CANCEL				mState = STATE_PREVIEW;
+	 * mCaptureSession.setRepeatingRequest(mPreviewRequest , mCaptureCallback , mBackgroundHandler); 	 // プレビューに戻る
+	 * runPrecaptureSequenceで						CaptureRequest.CONTROL_AE_PRECAPTURE_TRIGGER_START		mState = STATE_WAITING_PRECAPTURE;
+	 * 追加
+	 * copyPreview()で CameraDevice.TEMPLATE_STILL_CAPTURE
+	 * SendPreview.runで mCaptureSession.setRepeatingRequest(mPreviewRequest , mCaptureCallback , mBackgroundHandler);    //プレビュ再開
 	 */
 	private CameraCaptureSession.CaptureCallback mCaptureCallback = new CameraCaptureSession.CaptureCallback() {
 		private void process(CaptureResult result) {
@@ -1244,36 +1394,35 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				dbMsg += "mState=" + mState;
 				switch ( mState ) {
 					case STATE_PREVIEW: {                //0 ＜＜初期値とunlockFocus() 、We have nothing to do when the camera preview is working normally.
-						dbMsg += "isReWriteNow=" + isReWriteNow;
-						if ( !isReWriteNow ) {                                    // //書き換え終了(onResume～onPause)
-							if ( OCVFRV != null ) {
-								fpsCount++;
-								dbMsg += "(" + fpsCount + "/" + fpsLimi + ")";          //実測 8回で送信
-								dbMsg += ",isPrevieSending=" + isPrevieSending;
-								if ( !isPrevieSending ) {
-									dbMsg += ",completion=" + OCVFRV.getCompletion();
-									if ( OCVFRV.getCompletion() ) {    //onDrawが終了するまでfalseが返る
-										isPrevieSending = true;
-										copyPreview();
-										fpsCount = 0;
+						dbMsg += ",顔検出実行中=" + isFaceRecognition;
+						if ( isFaceRecognition ) {               // ;                 //
+							dbMsg += "isReWriteNow=" + isReWriteNow;
+							if ( !isReWriteNow ) {                                    // //書き換え終了(onResume～onPause)
+								if ( OCVFRV != null ) {
+									fpsCount++;
+									dbMsg += "(" + fpsCount + "/" + fpsLimi + ")";          //実測 8回で送信
+									dbMsg += ",isPrevieSending=" + isPrevieSending;
+									if ( !isPrevieSending ) {
+										dbMsg += ",completion=" + OCVFRV.getCompletion();
+										if ( OCVFRV.getCompletion() ) {    //onDrawが終了するまでfalseが返る
+											isPrevieSending = true;
+											copyPreview();
+											fpsCount = 0;
+										}
+									} else {
+										dbMsg = "";
 									}
 								} else {
-									dbMsg = "";
+									dbMsg += ",OCVFRV = null>>view追加";
+									setEffectView();
 								}
-							} else {
-								dbMsg += ",OCVFRV = null ";
-//										setEffectView();
 							}
+						} else {
+							removetEffectView();
 						}
 						break;
 					}
 					case STATE_WAITING_LOCK: {        //1<<lockFocus()から
-						/**
-						 *  lockFocus() で
-						 mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER , CameraMetadata.CONTROL_AF_TRIGGER_START);            // This is how to tell the camera to lock focus.
-						 mState = STATE_WAITING_LOCK;            // Tell #mCaptureCallback to wait for the lock.
-						 mCaptureSession.capture(mPreviewRequestBuilder.build() , mCaptureCallback , mBackgroundHandler);
-						 */
 						Integer afState = result.get(CaptureResult.CONTROL_AF_STATE);
 						dbMsg += ",afState=" + afState;
 						if ( afState == null ) {
@@ -2128,7 +2277,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			}
 			mCaptureSession.stopRepeating();          //現在のプレビューを停止します。
 			mCaptureSession.abortCaptures();            //Repeating requestsも止まる。
-			mCaptureSession.capture(captureBuilder.build() , CaptureCallback , null);  // 撮影する
+			mCaptureSession.capture(captureBuilder.build() , CaptureCallback , null);  // 撮影する。終了コールバックはメソッド内
 			myLog(TAG , dbMsg);
 		} catch (CameraAccessException er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -2380,6 +2529,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				}
 
 				if ( mCaptureSession != null ) {  //回転時クラッシュ；CAMERA_DISCONNECTED (2): checkPidStatus:1493: The camera device has been disconnected
+					dbMsg += ",mPreviewRequest=" + mPreviewRequest;
+					dbMsg += ",mCaptureCallback=" + mCaptureCallback;
+					dbMsg += ",mBackgroundHandler=" + mBackgroundHandler;
 					int retInt = mCaptureSession.setRepeatingRequest(mPreviewRequest , mCaptureCallback , mBackgroundHandler);    //プレビュ再開
 					dbMsg += ",プレビュ再開=" + retInt;
 					isPrevieSending = false;

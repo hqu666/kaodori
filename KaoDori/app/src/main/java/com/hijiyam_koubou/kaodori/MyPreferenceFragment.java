@@ -5,6 +5,7 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.preference.CheckBoxPreference;
 import android.preference.EditTextPreference;
 import android.preference.ListPreference;
 import android.preference.Preference;
@@ -28,10 +29,14 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 	public Context context;
 	public static SharedPreferences sharedPref;
 	public SharedPreferences.Editor myEditor;
+	public CheckBoxPreference is_face_recognition_key;                 //顔検出実行中
+	public CheckBoxPreference is_chase_focus_key ;                 //追跡フォーカス
 	public EditTextPreference write_folder_key;                    //書込みルートフォルダ
 	public EditTextPreference up_scale_key;                        //顔から何割増しの枠で保存するか
 	public EditTextPreference haarcascades_last_modified_key;            //顔認証プロファイルの最新更新日
 
+	public boolean isFaceRecognition = false;                 //顔検出実行中
+	public boolean isChaseFocus = false;                 //追跡フォーカス
 	public String write_folder="";            //書込みルートフォルダ
 	public String up_scale = "1.2";            //顔から何割増しの枠で保存するか
 	public String haarcascades_last_modified = "0";
@@ -67,6 +72,9 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 		}
 	}
 
+	/**
+	 * 初期表示
+	 * */
 	@Override
 	public void onActivityCreated(Bundle savedInstanceState) {
 		super.onActivityCreated(savedInstanceState);
@@ -75,6 +83,19 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 		try {
 			sps = this.getPreferenceScreen();            //☆PreferenceFragmentなら必要  .
 			dbMsg = dbMsg + ",sps=" + sps;
+
+			is_face_recognition_key = ( CheckBoxPreference ) sps.findPreference("is_face_recognition_key");        //顔検出実行中
+			dbMsg = dbMsg + ",顔検出実行中=" + isFaceRecognition;
+			if ( findPreference("is_face_recognition_key") != null ) {
+				is_face_recognition_key.setChecked(isFaceRecognition);
+			}
+
+			is_chase_focus_key = ( CheckBoxPreference ) sps.findPreference("is_chase_focus_key");        //追跡フォーカス
+			dbMsg = dbMsg + ",追跡フォーカス=" + isChaseFocus;
+			if ( findPreference("is_face_recognition_key") != null ) {
+				is_chase_focus_key.setChecked(isChaseFocus);
+			}
+
 			write_folder_key = ( EditTextPreference ) sps.findPreference("service_id_key");        //書込みルートフォルダ
 			dbMsg = dbMsg + ",書込みルートフォルダ=" + write_folder;
 			if ( findPreference("write_folder_key") != null ) {
@@ -279,6 +300,13 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 					//		}
 					//	}
 					//}
+				} else if ( item instanceof CheckBoxPreference ) {
+					CheckBoxPreference pref = ( CheckBoxPreference ) item;
+					String key = pref.getKey();
+					boolean pVal = pref.isChecked();
+					dbMsg += ";" + key + ";" + pVal;
+					pref.setSummaryOn("現在 On");      					// CheckBox が On の時のサマリーを設定
+					pref.setSummaryOff("現在 Off");      					// CheckBox が Off の時のサマリーを設定
 				} else if ( item instanceof ListPreference ) {
 					ListPreference pref = ( ListPreference ) item;
 					String key = pref.getKey();
@@ -411,7 +439,13 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 			for ( String key : keys.keySet() ) {
 				i++;
 				dbMsg +=  "\n" + i + "/" + keys.size() + ")" + key;// + "は" + rStr;
-				if ( key.equals("write_folder_key") ) {
+				if ( key.equals("is_face_recognition_key") ) {
+					isFaceRecognition = sharedPref.getBoolean(key , isFaceRecognition);
+					dbMsg += ",顔検出実行中=" + isFaceRecognition;
+				}else if ( key.equals("is_chase_focus_key") ) {
+					isChaseFocus = sharedPref.getBoolean(key , isChaseFocus);
+					dbMsg +=  ",追跡フォーカス=" + isChaseFocus;
+				}else if ( key.equals("write_folder_key") ) {
 					write_folder = sharedPref.getString(key , write_folder);
 					dbMsg +=  ",書込みルートフォルダ=" + write_folder;
 				} else if ( key.equals("up_scale_key") ) {

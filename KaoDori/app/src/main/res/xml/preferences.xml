@@ -1,6 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:tools="http://schemas.android.com/tools"
 				  xmlns:android="http://schemas.android.com/apk/res/android">
+	<CheckBoxPreference
+		android:defaultValue="false"
+		android:key="is_face_recognition_key"
+		android:title="@string/mm_effect_face_recgnition"/>
+	<CheckBoxPreference
+		android:defaultValue="false"
+		android:key="is_chase_focus_key"
+		android:title="@string/mm_effect_chase_focus"/>
+
 	<EditTextPreference
 		android:defaultValue="12345native"
 		android:inputType="text"

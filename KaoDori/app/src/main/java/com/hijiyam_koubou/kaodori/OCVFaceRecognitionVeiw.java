@@ -247,13 +247,13 @@ public class OCVFaceRecognitionVeiw extends View {
 				faces.add(new RectF(left , top , right , bottom));
 			}
 			dbMsg += ",faces=" + faces.size();
-			if ( 0 < faces.size() ) {
-				invalidate();
-			} else {
-				isCompletion = true;
+			if ( 0 == faces.size() ) {                            //顔が検出できない時は
+				faces.clear();
+				faces.add(new RectF(0 , 0 , 1 , 1));            //プレビュー全体選択
 			}
-			//onDrawへ
-//			}
+			invalidate();			//onDrawへ
+			isCompletion = true;
+
 			bitmap.recycle();
 			//	 data=3110400[1920×1080]0dig,bitmap=8294400,image=1920x1080,objects=1x0,faces=0
 			//I/onPreviewFrame[Surface]: data=3110400{1920×1080]
