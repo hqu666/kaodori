@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
@@ -225,16 +226,25 @@ public class OCVFaceRecognitionVeiw extends View {
 //			if ( bitmap != null ) {
 			dbMsg += ",bitmap=" + bitmap.getByteCount();
 			dbMsg += ",degrees=" + degrees;
+			double correctionH = dAspect;
+			double correctionV =  1.0;
 			if ( degrees == 90 || degrees == 270 ) {                    //270追加
 				dbMsg += ";縦";
-				int tmp = dWidth;                         //入れ替えてMatにしないとpectが狂う
+				int tmp = dWidth;                         //入れ替えてMatにしないとaspectが狂う
 				dWidth = dHight;
 				dHight = tmp;
+				 correctionH = 1 / dAspect;
+				 correctionV =  dAspect;
 				dbMsg += ">>[" + dWidth + "×" + dHight + "]";
+			}else{
+				dbMsg += ";横";
+				Matrix mat = new Matrix();
+				mat.postRotate(270);   				// 回転マトリックス作成（90度回転）
+				bitmap = Bitmap.createBitmap(bitmap, 0, 0, dWidth, dHight, mat, true);
+				dbMsg += "[" +  bitmap.getWidth() + "×" + bitmap.getHeight() + "]" + bitmap.getByteCount() + "バイト";
+//				imageMat = new Mat(dWidth , dHight , CvType.CV_8U , new Scalar(4));     //1バイトのチャンネル0　、
 			}
-//			if ( imageMat == null ) {
 			imageMat = new Mat(dHight , dWidth , CvType.CV_8U , new Scalar(4));     //1バイトのチャンネル0　、
-//			}
 			Utils.bitmapToMat(bitmap , imageMat);                                    //openCV； 画像データを変換（BitmapのMatファイル変換
 			dbMsg += ",imageMat=" + imageMat.size() + ",elemSize=" + imageMat.elemSize();
 			detector.detectMultiScale(imageMat , objects);                       //openCV；カスケード分類器に画像データを与え顔認識
@@ -253,10 +263,10 @@ public class OCVFaceRecognitionVeiw extends View {
 //				 top = ( float ) (dAspect *top);                              //
 //				 right = left + ( float ) (1 / dAspect * right);            //
 //				 bottom = top + ( float ) (dAspect * bottom);            //
-				float left = ( float ) (1 / dAspect * rect.x / dWidth);                             //
-				float top = ( float ) (dAspect * rect.y / dHight);                              //
-				float right = left + ( float ) (1 / dAspect * rect.width / dWidth);            //
-				float bottom = top + ( float ) (dAspect * rect.height / dHight);            //
+				float left = ( float ) (correctionH * rect.x / dWidth);                             //
+				float top = ( float ) (correctionV * rect.y / dHight);                              //
+				float right = left + ( float ) (correctionH* rect.width / dWidth);            //
+				float bottom = top + ( float ) (correctionV * rect.height / dHight);            //
 
 				faces.add(new RectF(left , top , right , bottom));
 				retArray.add(rRect);
