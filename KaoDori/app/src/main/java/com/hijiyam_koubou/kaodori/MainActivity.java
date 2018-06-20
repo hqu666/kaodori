@@ -19,6 +19,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
+import android.graphics.NinePatch;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.graphics.Rect;
@@ -844,7 +845,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		final String TAG = "setEffectViewSize[MA}";
 		String dbMsg = "";
 		try {
-			MainActivity.this.runOnUiThread(new Runnable() {
+			new Thread(new Runnable() {
+				//			MainActivity.this.runOnUiThread(new Runnable() {    でクラッシュ
 				@Override
 				public void run() {
 					final String TAG = "setEffectViewSize.run[MA]";
@@ -879,7 +881,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 						myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 					}
 				}
-			});
+			}).start();
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
@@ -902,7 +904,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(PREVIEW_WIDTH , PREVIEW_HEIGHT);
 					rView.setLayoutParams(layoutParams);
 // ma_effect_fl.addView(rView);   //ここで追加できない
-//					setEffectViewSize();
 				}
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
@@ -931,7 +932,11 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		}
 	}
 
-	private void sendPreviewBitMap(Bitmap shotBitmap) {
+	/**
+	 * 受け取ったIDのViewからBitmapを抽出しエフェクトビューへ送る。
+	 * エフェクトビューが無ければ作成して、動作指定が無くなった時点でViewを破棄する
+	 * */
+	public void sendPreviewBitMap( int targetViewID) {
 		final String TAG = "sendPreviewBitMap[MA]";
 		String dbMsg = "";
 		try {
@@ -942,19 +947,41 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				if ( OCVFRV != null ) {
 					fpsCount++;
 					dbMsg += "(" + fpsCount + "/" + fpsLimi + ")";          //実測 8回で送信
-//					dbMsg += ",isPrevieSending=" + isPrevieSending;
-//					if ( !isPrevieSending ) {
 					dbMsg += ",completion=" + OCVFRV.getCompletion();
 					if ( OCVFRV.getCompletion() ) {    //onDrawが終了するまでfalseが返る     && fpsLimi < fpsCount
 						fpsCount = 0;
-//						isPrevieSending = true;
-						dbMsg += ",bitmap[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]";
-						int byteCount = shotBitmap.getByteCount();
-						dbMsg += "" + byteCount + "バイト";
-						mSensorOrientation = getOrientation(DISP_DEGREES);
-						dbMsg += ",camera=" + mSensorOrientation + "dig";
-						OCVFRV.readFrameRGB(shotBitmap , mSensorOrientation);
-//						}
+						shotBitmap =((TextureView)findViewById( targetViewID)).getBitmap();
+						if ( shotBitmap != null ) {
+							dbMsg += ",bitmap[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]";
+							int byteCount = shotBitmap.getByteCount();
+							dbMsg += "" + byteCount + "バイト";
+							mSensorOrientation = getOrientation(DISP_DEGREES);
+							dbMsg += ",camera=" + mSensorOrientation + "dig";
+//							EffectSendData ESD= new EffectSendData();
+//							ESD.sendBitmap = shotBitmap;
+//							ESD.sensorOrientation =  mSensorOrientation;
+//							new EffectSendTask().execute(ESD);
+
+							//	MainActivity.this.runOnUiThread(new Runnable() {   だとプレビューに干渉
+// 	new Thread(new Runnable() {   だと縦持ちで縦にプレビューが引き延ばされる
+//								//   	だと重複生成とクラッシュ発生
+//								@Override
+//								public void run() {
+//									final String TAG = "sendPreviewBitMap.run[MA]";
+//									String dbMsg = "";
+//									try {
+							List<Rect> retArray = OCVFRV.readFrameRGB(shotBitmap , mSensorOrientation);
+							dbMsg += ",=" + retArray.size() + "人検出";
+
+//										myLog(TAG , dbMsg);
+//									} catch (Exception er) {
+//										myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+//									}
+//								}
+//							}).start();
+						}else{
+							dbMsg += ",shotBitmap = null" ;
+						}
 					} else {
 						dbMsg = "";    //余計なコメントを出さない
 					}
@@ -962,7 +989,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					dbMsg += ",OCVFRV = null>>view追加";
 					setEffectView();
 				}
-//				}
 			} else {                            //顔検出中で無ければ
 				removetEffectView();            //viewを破棄
 			}
@@ -971,6 +997,48 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			}
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+	private class EffectSendData{
+		Bitmap sendBitmap;
+		int sensorOrientation;
+	}
+
+	private class EffectSendTask extends AsyncTask< EffectSendData, Void, EffectSendData > {
+		/**
+		 * The system calls this to perform work in a worker thread and
+		 * delivers it the parameters given to AsyncTask.execute()
+		 */
+		protected EffectSendData doInBackground(EffectSendData... pram) {
+			final String TAG = "EffectSendTask.DIB[MA]";
+			String dbMsg = "";
+			try {
+				Bitmap shotBitmap =pram[0].sendBitmap;
+				dbMsg += ",bitmap[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]"+ shotBitmap.getByteCount();
+				int mSensorOrientation =pram[0].sensorOrientation;
+				dbMsg += ",camera=" + mSensorOrientation + "dig";
+				OCVFRV.readFrameRGB(shotBitmap , mSensorOrientation);
+				myLog(TAG , dbMsg);
+			} catch (Exception er) {
+				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+			}
+			return pram[0];
+		}
+
+		/**
+		 * The system calls this to perform work in the UI thread and delivers
+		 * the result from doInBackground()
+		 */
+		protected void onPostExecute(EffectSendData result) {       //doInBackgroundの  returnを受け取る
+			final String TAG = "EffectAddTask.ope[MA]";
+			String dbMsg = "";
+			try {
+
+				myLog(TAG , dbMsg);
+			} catch (Exception er) {
+				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+			}
 		}
 	}
 
@@ -1106,13 +1174,14 @@ public class MainActivity extends Activity implements View.OnClickListener {
 ////					}
 ////				}
 
-				Bitmap shotBitmap = mTextureView.getBitmap();
-				if ( shotBitmap != null ) {
-					dbMsg += ",bitmap[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]";
-					int byteCount = shotBitmap.getByteCount();
-					dbMsg += "" + byteCount + "バイト";
-					sendPreviewBitMap(shotBitmap);
-				}
+//				Bitmap shotBitmap = mTextureView.getBitmap();
+//				if ( shotBitmap != null ) {
+//					dbMsg += ",bitmap[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]";
+//					int byteCount = shotBitmap.getByteCount();
+//					dbMsg += "" + byteCount + "バイト";
+
+// sendPreviewBitMap(mTextureView.getId());		//ここで送るとプレビューに干渉   /
+//				}
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -1509,32 +1578,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				dbMsg += "mState=" + mState;
 				switch ( mState ) {
 					case STATE_PREVIEW: {                //0 ＜＜初期値とunlockFocus() 、We have nothing to do when the camera preview is working normally.
-						dbMsg += ",顔検出実行中=" + isFaceRecognition;
-						if ( isFaceRecognition ) {               // ;                 //
-							dbMsg += "isReWriteNow=" + isReWriteNow;
-							if ( !isReWriteNow ) {                                    // //書き換え終了(onResume～onPause)
-								if ( OCVFRV != null ) {
-									fpsCount++;
-									dbMsg += "(" + fpsCount + "/" + fpsLimi + ")";          //実測 8回で送信
-									dbMsg += ",isPrevieSending=" + isPrevieSending;
-									if ( !isPrevieSending ) {
-										dbMsg += ",completion=" + OCVFRV.getCompletion();
-										if ( OCVFRV.getCompletion() && fpsLimi < fpsCount ) {    //onDrawが終了するまでfalseが返る
-											isPrevieSending = true;
-//											copyPreview();
-											fpsCount = 0;
-										}
-									} else {
-										dbMsg = "";    //余計なコメントを出さない
-									}
-								} else {
-									dbMsg += ",OCVFRV = null>>view追加";
-//									setEffectView();
-								}
-							}
-						} else {                            //顔検出中で無ければ
-							removetEffectView();            //viewを破棄
-						}
+						sendPreviewBitMap(mTextureView.getId());     //ここから送ると回転動作にストレス発生
+						dbMsg = "";    //余計なコメントを出さない
 						break;
 					}
 					case STATE_WAITING_LOCK: {        //1<<lockFocus()から

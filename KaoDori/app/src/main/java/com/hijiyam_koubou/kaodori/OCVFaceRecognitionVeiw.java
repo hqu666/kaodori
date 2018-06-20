@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.view.SurfaceHolder;
@@ -182,9 +183,10 @@ public class OCVFaceRecognitionVeiw extends View {
 	/**
 	 * Bitmapデータを受け取り認証処理を開始する
 	 */
-	public void readFrameRGB(Bitmap bitmap , int degrees) {        //, Camera camera      /   , int previewWidth , int previewHeight
+	public List<Rect>  readFrameRGB(Bitmap bitmap , int degrees) {        //, Camera camera      /   , int previewWidth , int previewHeight
 		final String TAG = "readFrameRGB[OCVFR]";
 		String dbMsg = "";
+		List<Rect> retArray = new ArrayList();
 		try {
 			isCompletion = false;
 			if ( detector == null ) {
@@ -219,7 +221,7 @@ public class OCVFaceRecognitionVeiw extends View {
 //			Bitmap bitmap = decode(data , previewWidth , previewHeight , degrees);
 //			if ( bitmap != null ) {
 			dbMsg += ",bitmap=" + bitmap.getByteCount();
-			dbMsg += ",degrees=" + degrees ;
+			dbMsg += ",degrees=" + degrees;
 			if ( degrees == 90 ) {
 				int tmp = dWidth;
 				dWidth = dHight;
@@ -234,35 +236,40 @@ public class OCVFaceRecognitionVeiw extends View {
 			dbMsg += ",objects=" + objects.size();
 			faces.clear();
 			for ( org.opencv.core.Rect rect : objects.toArray() ) {
-				float left = ( float ) (1 / dAspect * rect.x / dWidth);             			     //
-				float top = ( float ) (dAspect * rect.y / dHight);             			      //
-				float right = left + ( float ) (1 / dAspect* rect.width / dWidth);  			//
-				float bottom = top + ( float ) (dAspect* rect.height / dHight);			//
+				Rect rRect = new Rect(rect.x,rect.y,rect.width,rect.height);
 
 //				float left = ( float ) (1.0 * rect.x / dWidth);                             //1 / dAspect
 //				float top = ( float ) (1.0 * rect.y / dHight);                              //dAspect
 //				float right = left + ( float ) (1.0 * rect.width / dWidth);            //1 / dAspect
 //				float bottom = top + ( float ) (1.0 * rect.height / dHight);            //dAspect
+//
+//
+//				 left = ( float ) (1 / dAspect * left);                             //
+//				 top = ( float ) (dAspect *top);                              //
+//				 right = left + ( float ) (1 / dAspect * right);            //
+//				 bottom = top + ( float ) (dAspect * bottom);            //
+				float left = ( float ) (1 / dAspect * rect.x / dWidth);                             //
+				float top = ( float ) (dAspect * rect.y / dHight);                              //
+				float right = left + ( float ) (1 / dAspect * rect.width / dWidth);            //
+				float bottom = top + ( float ) (dAspect * rect.height / dHight);            //
 
 				faces.add(new RectF(left , top , right , bottom));
+				retArray .add(rRect);
 			}
 			dbMsg += ",faces=" + faces.size();
 			if ( 0 == faces.size() ) {                            //顔が検出できない時は
 				faces.clear();
 				faces.add(new RectF(0 , 0 , 1 , 1));            //プレビュー全体選択
 			}
-			invalidate();			//onDrawへ
-			isCompletion = true;
-
+			invalidate();            //onDrawへ
 			bitmap.recycle();
-			//	 data=3110400[1920×1080]0dig,bitmap=8294400,image=1920x1080,objects=1x0,faces=0
-			//I/onPreviewFrame[Surface]: data=3110400{1920×1080]
 
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 			isCompletion = true;
 		}
+		return retArray;
 	}
 
 	/**
@@ -275,9 +282,7 @@ public class OCVFaceRecognitionVeiw extends View {
 		String dbMsg = "";
 		try {
 			int mCurrentColorIndex = 0;
-
 			int carentColor = Color.GREEN;
-
 			int width = getWidth();              // canvas.getWidth()と同じ
 			int height = getHeight();
 			dbMsg += "canvas[" + width + "×" + height + "]faces=" + faces.size();
@@ -302,9 +307,9 @@ public class OCVFaceRecognitionVeiw extends View {
 				paint.setTextSize(32);
 				if ( faces.size() < 2 ) {
 					canvas.drawText(fLeft + " , " + fTop , width * face.left + 8 , height * face.top + 40 , paint);
-					float sRight = fRight-250;
+					float sRight = fRight - 250;
 					if ( fRight < sRight ) {
-						sRight = fLeft + (fRight-fLeft)/2;
+						sRight = fLeft + (fRight - fLeft) / 2;
 					}
 					canvas.drawText(fRight + " , " + fBottom , sRight , fBottom - 32 , paint);
 				} else {
