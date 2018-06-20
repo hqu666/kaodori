@@ -38,7 +38,7 @@ public class OCVFaceRecognitionVeiw extends View {
 	//	private ViewGroup VG;   					//読み込まれる土台
 	private int[] rgb;
 	private Bitmap bitmap;
-	private Mat image;
+	private Mat imageMat;
 	private CascadeClassifier detector;
 	private MatOfRect objects;
 	private List< RectF > faces = new ArrayList< RectF >();
@@ -118,7 +118,7 @@ public class OCVFaceRecognitionVeiw extends View {
 		}
 	}
 
-	////////////////////////////////////////////////////////////////
+	//ViewのLifeCycle ////////////////////////////////////////////////////////////
 	@Override
 	protected void onVisibilityChanged(View changedView , int visibility) {
 		super.onVisibilityChanged(changedView , visibility);
@@ -178,15 +178,15 @@ public class OCVFaceRecognitionVeiw extends View {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// //////////////////////////////////////////////////////////ViewのLifeCycle//
 
 	/**
 	 * Bitmapデータを受け取り認証処理を開始する
 	 */
-	public List<Rect>  readFrameRGB(Bitmap bitmap , int degrees) {        //, Camera camera      /   , int previewWidth , int previewHeight
+	public List< Rect > readFrameRGB(Bitmap bitmap , int degrees) {        //, Camera camera      /   , int previewWidth , int previewHeight
 		final String TAG = "readFrameRGB[OCVFR]";
 		String dbMsg = "";
-		List<Rect> retArray = new ArrayList();
+		List< Rect > retArray = new ArrayList();
 		try {
 			isCompletion = false;
 			if ( detector == null ) {
@@ -200,7 +200,9 @@ public class OCVFaceRecognitionVeiw extends View {
 				objects = new MatOfRect();
 				dbMsg += ";object作成";
 			}
-
+			if ( viewAspect == null ) {
+				setCondition();
+			}
 //			int dWidth = bitmapOrg.getWidth();
 //			int dHight = bitmapOrg.getHeight();
 //			dbMsg += ",bitmap[" + dWidth + "×" + dHight + "]";
@@ -211,6 +213,7 @@ public class OCVFaceRecognitionVeiw extends View {
 			int dWidth = bitmap.getWidth();
 			int dHight = bitmap.getHeight();
 			dbMsg += "[" + dWidth + "×" + dHight + "]" + degrees + "dig";
+
 			int byteCount = bitmap.getByteCount();
 			dbMsg += "," + byteCount + "バイト";
 			Double dAspect = 1.0 * dWidth / dHight;
@@ -222,21 +225,23 @@ public class OCVFaceRecognitionVeiw extends View {
 //			if ( bitmap != null ) {
 			dbMsg += ",bitmap=" + bitmap.getByteCount();
 			dbMsg += ",degrees=" + degrees;
-			if ( degrees == 90 ) {
-				int tmp = dWidth;
+			if ( degrees == 90 || degrees == 270 ) {                    //270追加
+				dbMsg += ";縦";
+				int tmp = dWidth;                         //入れ替えてMatにしないとpectが狂う
 				dWidth = dHight;
 				dHight = tmp;
+				dbMsg += ">>[" + dWidth + "×" + dHight + "]";
 			}
-			if ( image == null ) {
-				image = new Mat(dHight , dWidth , CvType.CV_8U , new Scalar(4));     //1バイトのチャンネル0　、
-			}
-			Utils.bitmapToMat(bitmap , image);                                    //openCV；MAT形式に変換
-			dbMsg += ",MATimage=" + image.size();
-			detector.detectMultiScale(image , objects);                       //openCV
+//			if ( imageMat == null ) {
+			imageMat = new Mat(dHight , dWidth , CvType.CV_8U , new Scalar(4));     //1バイトのチャンネル0　、
+//			}
+			Utils.bitmapToMat(bitmap , imageMat);                                    //openCV； 画像データを変換（BitmapのMatファイル変換
+			dbMsg += ",imageMat=" + imageMat.size() + ",elemSize=" + imageMat.elemSize();
+			detector.detectMultiScale(imageMat , objects);                       //openCV；カスケード分類器に画像データを与え顔認識
 			dbMsg += ",objects=" + objects.size();
 			faces.clear();
 			for ( org.opencv.core.Rect rect : objects.toArray() ) {
-				Rect rRect = new Rect(rect.x,rect.y,rect.width,rect.height);
+				Rect rRect = new Rect(rect.x , rect.y , rect.width , rect.height);//顔の位置（X座標）,顔の位置（Y座標）,顔の横幅,顔の縦幅     /
 
 //				float left = ( float ) (1.0 * rect.x / dWidth);                             //1 / dAspect
 //				float top = ( float ) (1.0 * rect.y / dHight);                              //dAspect
@@ -254,16 +259,21 @@ public class OCVFaceRecognitionVeiw extends View {
 				float bottom = top + ( float ) (dAspect * rect.height / dHight);            //
 
 				faces.add(new RectF(left , top , right , bottom));
-				retArray .add(rRect);
+				retArray.add(rRect);
 			}
 			dbMsg += ",faces=" + faces.size();
 			if ( 0 == faces.size() ) {                            //顔が検出できない時は
-				faces.clear();
+//				faces.clear();
 				faces.add(new RectF(0 , 0 , 1 , 1));            //プレビュー全体選択
 			}
 			invalidate();            //onDrawへ
 			bitmap.recycle();
-
+			if ( imageMat != null ) {
+				imageMat.release();
+				imageMat = null;
+				dbMsg += "imageMat破棄";
+			}
+			;
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -358,7 +368,6 @@ public class OCVFaceRecognitionVeiw extends View {
 ////			taregetView.setMinimumHeight(_hight);
 //			dbMsg += ">>[" + taregetView.getWidth() + "×" + taregetView.getHeight() + "]";
 			faces.clear();
-//			for ( org.opencv.core.Rect rect : objects.toArray() ) {
 			ViewGroup.MarginLayoutParams layoutParams = ( ViewGroup.MarginLayoutParams ) taregetView.getLayoutParams();
 			viewLeft = layoutParams.leftMargin;
 			viewTop = layoutParams.topMargin;
@@ -414,21 +423,25 @@ public class OCVFaceRecognitionVeiw extends View {
 		final String TAG = "canvasRecycle[OCVFR]";
 		String dbMsg = "";
 		try {
-			if ( image != null ) {
-				image.release();
-				image = null;
-				dbMsg += "image破棄";
+			if ( imageMat != null ) {
+				imageMat.release();
+				imageMat = null;
+				dbMsg += "imageMat破棄";
 			}
 			if ( bitmap != null ) {
 				if ( !bitmap.isRecycled() ) {
 					bitmap.recycle();
 				}
 				bitmap = null;
-				dbMsg += "bitmap破棄";
+				dbMsg += ",bitmap破棄";
+			} else {
+				dbMsg += ",既にbitmap破棄";
 			}
 			if ( rgb != null ) {
 				rgb = null;
-				dbMsg += "rgb破棄";
+				dbMsg += ",rgb破棄";
+			} else {
+				dbMsg += "," + "既にrgb破棄";
 			}
 			faces.clear();
 			myLog(TAG , dbMsg);
@@ -453,5 +466,29 @@ public class OCVFaceRecognitionVeiw extends View {
 		UTIL.myErrorLog(TAG , dbMsg);
 	}
 
-
 }
+
+
+/**
+ * Face Detection using Haar Cascades			https://docs.opencv.org/trunk/d7/d8b/tutorial_py_face_detection.html
+ *2017年12月20日		OpenCVを使って顔を検出する					http://bkmts.xsrv.jp/opencv-face/
+ * 2015年11月15日		OpenCVで顔認識など特徴ある領域の検出		https://qiita.com/yokobonbon/items/f7ff24cc449a1fe6ba4b
+  *OpenCV 3.0.0			OpenCV 3.0.0 による顔検出処理				https://yamsat.wordpress.com/2015/09/13/opencv-3-0-0-%E3%81%AB%E3%82%88%E3%82%8B%E9%A1%94%E6%A4%9C%E5%87%BA%E5%87%A6%E7%90%86/
+ * 2012年10月28日		[OpenCV] 顔を検出する						http://google-os.blog.jp/archives/50736832.html
+ *  OpenCV 2.3.1		アンドロイドでOpenCV（お顔検出				http://foonyan.sakura.ne.jp/wisteriahill/opencv_android/index.html
+ *  2012/6/23			目を検出する　ついでに口・鼻も				http://nobotta.dazoo.ne.jp/blog/?p=503
+ *  2012年10月28日		[OpenCV] 目を検出する						http://google-os.blog.jp/archives/50736850.html
+ *ファイルから読込み
+ * 2016-09-13			Opencv3.1で顔検出							http://garapon.hatenablog.com/entry/2016/09/13/Opencv3.1%E3%81%A7%E9%A1%94%E6%A4%9C%E5%87%BA
+ *機械学習
+ * 2016年05月23日		機械学習のためのOpenCV入門					https://qiita.com/icoxfog417/items/53e61496ad980c41a08e
+ * 2012年03月01日		ARに使えるOpenCVで作る画像認識Androidアプリ	http://www.atmarkit.co.jp/ait/articles/1203/01/news159.html
+ * SurfaceView の使用例
+ *  2017-02-10		 	AndroidでOpenCV 3.2を使って顔検出をする		https://blogs.osdn.jp/2017/02/10/opencv.html
+ * Gppgle PlayのFace API
+ * 2016-01-11			Androidで顔検出APIが使えるようになった		https://www.gesource.jp/weblog/?p=7316
+ * Camera.Faceクラス
+ * 2014/04/12			Android で顔認識を試してみた				http://blog.kotemaru.org/2014/04/12/android-face-detection.html
+ *  2012年09月26日		FaceDetectorで Bitmap から顔を検出する		https://dev.classmethod.jp/smartphone/android-tips-15-facedetector/
+ * 2011年11月22日		カメラプレビューで顔検出を行う				https://techbooster.org/android/multimedia/10375/
+ * **/

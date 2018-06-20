@@ -792,10 +792,31 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			if ( ma_effect_fl != null ) {
 				dbMsg += ",OCVFRV=" + OCVFRV;
 				if ( OCVFRV == null ) {
-					copyAssets("haarcascades" , haarcascadesLastModified);                    // assetsの内容を /data/data/*/files/ にコピーします。
+					String filename = getFilesDir().getAbsolutePath() + "/haarcascades/haarcascade_frontalface_alt.xml";
+					dbMsg += "filename=" + filename;       //filename=/data/user/0/com.hijiyam_koubou.kaodori/files/haarcascades/haarcascade_frontalface_alt.xml
+					File rFile = new File(filename);
+					dbMsg += ";exists=" + rFile.exists();
+					if(!  rFile.exists()){
+						copyAssets("haarcascades" , haarcascadesLastModified);                    // assetsの内容を /data/data/*/files/ にコピーします。
+						dbMsg += ">>" + rFile.exists();
+					}
 					OCVFRV = new OCVFaceRecognitionVeiw(MainActivity.this);            //顔検出View
-					new EffectAddTask().execute(OCVFRV);
-
+					EffectAddTask EAT = new EffectAddTask();
+//					EAT.setOnCallBack(new CallBackTask(){
+//
+////						@Override
+//						public void CallBack(View result) {
+//							super.CallBack(result);
+//							// ※１
+//							// resultにはdoInBackgroundの返り値が入ります。
+//							// ここからAsyncTask処理後の処理を記述します。
+//							Log.i("AsyncTaskCallback", "非同期処理が終了しました。");
+//							setEffectViewSize();
+//						}
+//
+//					});
+					EAT.execute(OCVFRV);
+					setEffectViewSize();
 ////					//		shotBitmap = _shotBitmap;
 ////					// 別スレッドを実行
 //					//new Thread(new Runnable() { なら回転時にクラッシュしない
@@ -845,8 +866,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		final String TAG = "setEffectViewSize[MA}";
 		String dbMsg = "";
 		try {
-			new Thread(new Runnable() {
-				//			MainActivity.this.runOnUiThread(new Runnable() {    でクラッシュ
+			new Thread(new Runnable() {                                    					//で　
+				//			MainActivity.this.runOnUiThread(new Runnable() {   // でクラッシュ
 				@Override
 				public void run() {
 					final String TAG = "setEffectViewSize.run[MA]";
@@ -888,6 +909,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	}
 
 	private class EffectAddTask extends AsyncTask< View, Void, View > {
+//		private CallBackTask callbacktask;
 		/**
 		 * The system calls this to perform work in a worker thread and
 		 * delivers it the parameters given to AsyncTask.execute()
@@ -923,15 +945,29 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				dbMsg += "ChildCount=" + ma_effect_fl.getChildCount();
 				ma_effect_fl.addView(result);
 				dbMsg += ">>" + ma_effect_fl.getChildCount();
-				setEffectViewSize();
-
+//				setEffectViewSize();
+//				callbacktask.CallBack(result);
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 			}
 		}
-	}
 
+//		public void setOnCallBack(CallBackTask _cbj) {
+//			callbacktask = _cbj;
+//		}
+//
+//		/**
+//		 * コールバック用のstaticなclass
+//		 */
+//		public static class CallBackTask {         		//
+//			public void CallBack(View result) {
+//			}
+//		}
+	}
+	///エフェクト更新処理//////////////////////////////////////////////////////////////
+	public int fpsCount = 0;
+	public int fpsLimi = 30;
 	/**
 	 * 受け取ったIDのViewからBitmapを抽出しエフェクトビューへ送る。
 	 * エフェクトビューが無ければ作成して、動作指定が無くなった時点でViewを破棄する
@@ -955,6 +991,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 							dbMsg += ",bitmap[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]";
 							int byteCount = shotBitmap.getByteCount();
 							dbMsg += "" + byteCount + "バイト";
+							dbMsg += ",disp=" + DISP_DEGREES + "dig";
 							mSensorOrientation = getOrientation(DISP_DEGREES);
 							dbMsg += ",camera=" + mSensorOrientation + "dig";
 //							EffectSendData ESD= new EffectSendData();
@@ -1041,7 +1078,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			}
 		}
 	}
-
 
 	/**
 	 * assetsの内容を /data/data/.../files/ にコピーします。
@@ -1149,39 +1185,14 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			return true;
 		}
 
-		private final Object mCaptureSync = new Object();
-		private Bitmap mTempBitmap;
-		private boolean mReqesutCaptureStillImage;
-
 		@Override
 		public void onSurfaceTextureUpdated(SurfaceTexture texture) {
 			final String TAG = "onSurfaceTextureUpdated[MA]";
 			String dbMsg = "";
 			try {
-				dbMsg = "onSurfaceTextureUpdated";
-// Surface surface = new Surface(texture);  //までは出来る
-////				Bitmap bmp = ((BitmapDrawable )texture.getDrawable()).getBitmap();
-////				surface.
+// Surface surface = new Surface(texture);  //までは出来る　がBitmap取得の方法不明
 ////				synchronized (mCaptureSync) {                //http://serenegiant.com/blog/?p=2074&page=3
-////					if ( mReqesutCaptureStillImage ) {
-////						mReqesutCaptureStillImage = false;
-////						if ( mTempBitmap == null ) {
-////							mTempBitmap = getBitmap();
-////						} else {
-////							getBitmap(mTempBitmap);
-////							mCaptureSync.notifyAll();
-////						}
-////					}
-////				}
-
-//				Bitmap shotBitmap = mTextureView.getBitmap();
-//				if ( shotBitmap != null ) {
-//					dbMsg += ",bitmap[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]";
-//					int byteCount = shotBitmap.getByteCount();
-//					dbMsg += "" + byteCount + "バイト";
-
-// sendPreviewBitMap(mTextureView.getId());		//ここで送るとプレビューに干渉   /
-//				}
+// sendPreviewBitMap(mTextureView.getId());		//ここで送るとプレビューに干渉
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -1281,6 +1292,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	 * The {@link android.util.Size} of camera preview.
 	 */
 	private Size mPreviewSize;
+	public int mSensorOrientation;
+
 	/**
 	 * {@link CameraDevice.StateCallback} is called when {@link CameraDevice} changes its state.
 	 * manager.openCamera() メソッドで指定
@@ -1550,9 +1563,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	 * カメラの角度
 	 * Orientation of the camera sensor
 	 */
-	public int mSensorOrientation;
-	public int fpsCount = 0;
-	public int fpsLimi = 15;
 
 	/**
 	 * JPEG捕獲に関連したそのハンドル・イベント。
@@ -1675,10 +1685,13 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	private int getOrientation(int rotation) {
 		final String TAG = "getOrientation[MA]";
 		String dbMsg = "";
-		int retInt = 0;
+//		int retInt = 0;
 		try {
-			dbMsg = "rotation=" + rotation;
-			dbMsg += "、mSensorOrientation=" + mSensorOrientation;
+			dbMsg = "Disp=" + rotation;
+			dbMsg += "、camera=" + mSensorOrientation;
+			mSensorOrientation = ORIENTATIONS.get(rotation) % 360;   //			retInt = (ORIENTATIONS.get(rotation) + mSensorOrientation + 270) % 360;
+			dbMsg += ">>=" + mSensorOrientation;
+
 			// Sensor orientation is 90 for most devices, or 270 for some devices (eg. Nexus 5X)
 			// We have to take that into account and rotate JPEG properly.
 			// For devices with orientation of 90, we simply return our mapping from ORIENTATIONS.
@@ -1687,7 +1700,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
-		return (ORIENTATIONS.get(rotation) + mSensorOrientation + 270) % 360;
+		return mSensorOrientation;
 	}
 
 	/**
@@ -2419,9 +2432,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			setAutoFlash(captureBuilder);
 			int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
 			dbMsg += ",端末の回転角=" + rotation;
-			int camLotation = getOrientation(rotation);
-			dbMsg += ",カメラセンサーの方向=" + camLotation;
-			captureBuilder.set(CaptureRequest.JPEG_ORIENTATION , camLotation);        // JPEG画像の方向を設定する。
+			mSensorOrientation = getOrientation(rotation);//int camLotation         /
+			dbMsg += ",カメラセンサーの方向=" + mSensorOrientation;
+			captureBuilder.set(CaptureRequest.JPEG_ORIENTATION , mSensorOrientation);        // JPEG画像の方向を設定する。
 			CameraCaptureSession.CaptureCallback CaptureCallback = new CameraCaptureSession.CaptureCallback() {
 				/**
 				 * 撮影が終わったら、フォーカスのロックを外すためのコールバック
