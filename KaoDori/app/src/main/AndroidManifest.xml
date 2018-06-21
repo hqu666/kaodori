@@ -32,7 +32,8 @@
 			</intent-filter>
 		</activity>
 		<activity android:name=".FdActivity"
-				  android:configChanges="orientation|screenSize">
+				  android:configChanges="orientation|screenSize"
+			>
 			<!-- ★Androidで特定の設定が変更された場合にアクティビティが再生成されるのを防止★ 回転で更新されなくなる
 					orientation		|mcc|	mnc|	locale|		touchscreen|	keyboard|	keyboardHidden|	navigation|fontScale-->
 			<!--<intent-filter>-->

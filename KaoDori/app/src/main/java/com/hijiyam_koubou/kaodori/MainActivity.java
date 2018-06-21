@@ -199,7 +199,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	//Life Cycle// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
+		super.onCreate(savedInstanceState);                 //savedInstanceStateは初回のみ null
 		final String TAG = "onCreate[MA]";
 		String dbMsg = "";
 		try {
@@ -219,10 +219,16 @@ public class MainActivity extends Activity implements View.OnClickListener {
 //			findViewById(R.id.ma_shot_bt).setOnClickListener(this);
 //			findViewById(R.id.ma_func_bt).setOnClickListener(this);
 //			findViewById(R.id.ma_iv).setOnClickListener(this);
-			mFile = new File(writeFolder , "pic.jpg");                 //getActivity().getExternalFilesDir(null)
+			dbMsg += "savedInstanceState="+ savedInstanceState;
+			 if(savedInstanceState != null){      						   //初回起動以外で
+				 if ( OCVFRV != null || mCameraDevice != null ) { 			//再設定が必要なリソースが残っていたら
+					 laterDestroy();										//破棄動作に入る
+				 }
+			 }
+					mFile = new File(writeFolder , "pic.jpg");                 //getActivity().getExternalFilesDir(null)
 			dbMsg += ",mFile=" + mFile.getParent();
 
-			readPref();                    //同期させないとインストール時にパーミッションエラー発生
+			readPref();                    //同期させないとインストール時にパーミッションエラー発生 ?
 			setViewState();
 			dbMsg += ",haarcascadesLastModified=" + haarcascadesLastModified;
 //			OCVFRV.constractCommon(this , haarcascadesLastModified);            //顔検出のセットアップ
@@ -796,7 +802,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					dbMsg += "filename=" + filename;       //filename=/data/user/0/com.hijiyam_koubou.kaodori/files/haarcascades/haarcascade_frontalface_alt.xml
 					File rFile = new File(filename);
 					dbMsg += ";exists=" + rFile.exists();
-					if(!  rFile.exists()){
+					if ( !rFile.exists() ) {
 						copyAssets("haarcascades" , haarcascadesLastModified);                    // assetsの内容を /data/data/*/files/ にコピーします。
 						dbMsg += ">>" + rFile.exists();
 					}
@@ -866,37 +872,42 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		final String TAG = "setEffectViewSize[MA}";
 		String dbMsg = "";
 		try {
-			new Thread(new Runnable() {                                    					//で　
+			new Thread(new Runnable() {                                                        //で　
 				//			MainActivity.this.runOnUiThread(new Runnable() {   // でクラッシュ
 				@Override
 				public void run() {
 					final String TAG = "setEffectViewSize.run[MA]";
 					String dbMsg = "";
 					try {
-						dbMsg += ",ma_effect_fl(" + ma_effect_fl.getLeft() + "," + ma_effect_fl.getTop() + ")[" + ma_effect_fl.getWidth() + "×" + ma_effect_fl.getHeight() + "]";
-						int sLeft = (ma_effect_fl.getWidth() - PREVIEW_WIDTH);
-						if ( 0 < sLeft ) {
-							sLeft = sLeft / 2;
-						}
-						int sTop = (ma_effect_fl.getHeight() - PREVIEW_HEIGHT);
-						if ( 0 < sTop ) {
-							sTop = sTop / 2;
-						}
-						dbMsg += ",shift(" + sLeft + "," + sTop + ")";
-						dbMsg += "、現在[" + OCVFRV.getWidth() + "×" + OCVFRV.getHeight() + "]";
-						ViewGroup.MarginLayoutParams layoutParams = ( ViewGroup.MarginLayoutParams ) OCVFRV.getLayoutParams();
-						dbMsg += ",layoutParams[" + layoutParams.width + "×" + layoutParams.height + "]";
-						layoutParams.leftMargin = sLeft;
-						layoutParams.topMargin = sTop;
-						layoutParams.width = PREVIEW_WIDTH;
-						layoutParams.height = PREVIEW_HEIGHT;
-						OCVFRV.setLayoutParams(layoutParams);
-						OCVFRV.requestLayout();
-						layoutParams = ( ViewGroup.MarginLayoutParams ) OCVFRV.getLayoutParams();
-						dbMsg += ",>layoutParams(" + layoutParams.leftMargin + "×" + layoutParams.topMargin + ")[" + layoutParams.width + "×" + layoutParams.height + "]";
-						dbMsg += ">>OCVFRV(" + OCVFRV.getLeft() + "," + OCVFRV.getTop() + ")[" + OCVFRV.getWidth() + "×" + OCVFRV.getHeight() + "]";
+						if ( OCVFRV != null ) {
+							dbMsg += ",ma_effect_fl(" + ma_effect_fl.getLeft() + "," + ma_effect_fl.getTop() + ")[" + ma_effect_fl.getWidth() + "×" + ma_effect_fl.getHeight() + "]";
+							int sLeft = (ma_effect_fl.getWidth() - PREVIEW_WIDTH);
+							if ( 0 < sLeft ) {
+								sLeft = sLeft / 2;
+							}
+							int sTop = (ma_effect_fl.getHeight() - PREVIEW_HEIGHT);
+							if ( 0 < sTop ) {
+								sTop = sTop / 2;
+							}
+							dbMsg += ",shift(" + sLeft + "," + sTop + ")";
+							dbMsg += "、現在(" + OCVFRV.getScaleX()+ "×" + OCVFRV.getScaleY() + "%)";
+							FrameLayout.LayoutParams layoutParams =(FrameLayout.LayoutParams) OCVFRV.getLayoutParams();// ViewGroup.MarginLayoutParams だとyoutParams.width' on a null object reference
+							dbMsg += ",layoutParams(" + layoutParams.leftMargin + "×" + layoutParams.topMargin + ")[" + layoutParams.width + "×" + layoutParams.height + "]";
+							dbMsg += ",gravity=" + layoutParams.gravity;
+							layoutParams.leftMargin = sLeft;
+							layoutParams.topMargin = sTop;
+							layoutParams.width = PREVIEW_WIDTH;
+							layoutParams.height = PREVIEW_HEIGHT;
+							OCVFRV.setLayoutParams(layoutParams);
+							OCVFRV.requestLayout();
+							layoutParams =(FrameLayout.LayoutParams) OCVFRV.getLayoutParams();
+							dbMsg += ",>>(" + layoutParams.leftMargin + "×" + layoutParams.topMargin + ")[" + layoutParams.width + "×" + layoutParams.height + "]";
+							dbMsg += ">>OCVFRV(" + OCVFRV.getLeft() + "," + OCVFRV.getTop() + ")[" + OCVFRV.getWidth() + "×" + OCVFRV.getHeight() + "]";
 //			dbMsg += ",camera=" + mSensorOrientation + "dig";
-						OCVFRV.setCondition();
+							OCVFRV.setCondition();
+						} else{
+							dbMsg = " OCVFRV = null";
+						}
 						myLog(TAG , dbMsg);
 					} catch (Exception er) {
 						myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -910,6 +921,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 	private class EffectAddTask extends AsyncTask< View, Void, View > {
 //		private CallBackTask callbacktask;
+
 		/**
 		 * The system calls this to perform work in a worker thread and
 		 * delivers it the parameters given to AsyncTask.execute()
@@ -920,10 +932,22 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			View rView = pram[0];
 			try {
 				int cCount = ma_effect_fl.getChildCount();
+				dbMsg += ",ma_effect_fl(" + ma_effect_fl.getLeft() + "," + ma_effect_fl.getTop() + ")[" + ma_effect_fl.getWidth() + "×" + ma_effect_fl.getHeight() + "]";
 				dbMsg += ",getChildCount=" + cCount;
 				if ( cCount == 0 ) {
 					dbMsg += ",PREVIEW[" + PREVIEW_WIDTH + "×" + PREVIEW_HEIGHT + "]";  //表示サイズに変更する必要有り
-					LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(PREVIEW_WIDTH , PREVIEW_HEIGHT);
+					int sLeft = (ma_effect_fl.getWidth() - PREVIEW_WIDTH);
+					if ( 0 < sLeft ) {
+						sLeft = sLeft / 2;
+					}
+					int sTop = (ma_effect_fl.getHeight() - PREVIEW_HEIGHT);
+					if ( 0 < sTop ) {
+						sTop = sTop / 2;
+					}
+					dbMsg += ",shift(" + sLeft + "," + sTop + ")";
+					FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(PREVIEW_WIDTH , PREVIEW_HEIGHT);
+					layoutParams.leftMargin = sLeft;
+					layoutParams.topMargin = sTop;
 					rView.setLayoutParams(layoutParams);
 // ma_effect_fl.addView(rView);   //ここで追加できない
 				}
@@ -945,6 +969,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				dbMsg += "ChildCount=" + ma_effect_fl.getChildCount();
 				ma_effect_fl.addView(result);
 				dbMsg += ">>" + ma_effect_fl.getChildCount();
+				FrameLayout.MarginLayoutParams layoutParams = ( FrameLayout.MarginLayoutParams ) OCVFRV.getLayoutParams();
+				dbMsg += ",layoutParams(" + layoutParams.leftMargin + "," + layoutParams.topMargin + ")[" + layoutParams.width + "×" + layoutParams.height + "]";
 //				setEffectViewSize();
 //				callbacktask.CallBack(result);
 				myLog(TAG , dbMsg);
@@ -965,14 +991,16 @@ public class MainActivity extends Activity implements View.OnClickListener {
 //			}
 //		}
 	}
+
 	///エフェクト更新処理//////////////////////////////////////////////////////////////
 	public int fpsCount = 0;
 	public int fpsLimi = 30;
+
 	/**
 	 * 受け取ったIDのViewからBitmapを抽出しエフェクトビューへ送る。
 	 * エフェクトビューが無ければ作成して、動作指定が無くなった時点でViewを破棄する
-	 * */
-	public void sendPreviewBitMap( int targetViewID) {
+	 */
+	public void sendPreviewBitMap(int targetViewID) {
 		final String TAG = "sendPreviewBitMap[MA]";
 		String dbMsg = "";
 		try {
@@ -986,7 +1014,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					dbMsg += ",completion=" + OCVFRV.getCompletion();
 					if ( OCVFRV.getCompletion() ) {    //onDrawが終了するまでfalseが返る     && fpsLimi < fpsCount
 						fpsCount = 0;
-						shotBitmap =((TextureView)findViewById( targetViewID)).getBitmap();
+						shotBitmap = (( TextureView ) findViewById(targetViewID)).getBitmap();
 						if ( shotBitmap != null ) {
 							dbMsg += ",bitmap[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]";
 							int byteCount = shotBitmap.getByteCount();
@@ -1007,7 +1035,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 //									final String TAG = "sendPreviewBitMap.run[MA]";
 //									String dbMsg = "";
 //									try {
-							List<Rect> retArray = OCVFRV.readFrameRGB(shotBitmap , mSensorOrientation);
+							List< Rect > retArray = OCVFRV.readFrameRGB(shotBitmap , mSensorOrientation);
 							dbMsg += ",=" + retArray.size() + "人検出";
 
 //										myLog(TAG , dbMsg);
@@ -1016,8 +1044,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
 //									}
 //								}
 //							}).start();
-						}else{
-							dbMsg += ",shotBitmap = null" ;
+						} else {
+							dbMsg += ",shotBitmap = null";
 						}
 					} else {
 						dbMsg = "";    //余計なコメントを出さない
@@ -1037,7 +1065,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		}
 	}
 
-	private class EffectSendData{
+	private class EffectSendData {
 		Bitmap sendBitmap;
 		int sensorOrientation;
 	}
@@ -1051,9 +1079,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			final String TAG = "EffectSendTask.DIB[MA]";
 			String dbMsg = "";
 			try {
-				Bitmap shotBitmap =pram[0].sendBitmap;
-				dbMsg += ",bitmap[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]"+ shotBitmap.getByteCount();
-				int mSensorOrientation =pram[0].sensorOrientation;
+				Bitmap shotBitmap = pram[0].sendBitmap;
+				dbMsg += ",bitmap[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]" + shotBitmap.getByteCount();
+				int mSensorOrientation = pram[0].sensorOrientation;
 				dbMsg += ",camera=" + mSensorOrientation + "dig";
 				OCVFRV.readFrameRGB(shotBitmap , mSensorOrientation);
 				myLog(TAG , dbMsg);
