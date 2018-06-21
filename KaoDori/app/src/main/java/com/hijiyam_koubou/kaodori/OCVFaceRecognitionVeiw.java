@@ -44,7 +44,7 @@ public class OCVFaceRecognitionVeiw extends View {
 	private int[] rgb;
 	private Bitmap bitmap;
 	private Mat imageMat;
-	private CascadeClassifier detectorFrontalFaceAlt;                //正面顔全体
+	private CascadeClassifier detectorFrontalFaceAlt;                //標準顔検出
 	private CascadeClassifier detectorEye;                        //目
 	private CascadeClassifier detectorRighteye_2splits;                //右目";
 	private CascadeClassifier detectorLefteye_2splits;                //左目";
@@ -72,7 +72,27 @@ public class OCVFaceRecognitionVeiw extends View {
 	private Double viewAspect;
 	private String filename;
 	private static final int COLOR_CHOICES[] = {Color.WHITE , Color.GREEN , Color.MAGENTA , Color.BLUE , Color.CYAN , Color.RED , Color.YELLOW};
-	public List< pasonInfo > pasonInfoList;
+
+	/**
+	 * 検出情報リスト
+	 */
+	public class pasonInfo {
+		String division;
+		Rect area;
+		String note;
+	}
+
+	/**
+	 * 検出器リスト
+	 */
+	public class detectos {
+		CascadeClassifier detector;
+		String note;
+		List< RectF > faces;
+		ArrayList< android.graphics.Rect > andriodtArray;
+	}
+	public List< detectos > detectionList;			//検出リスト
+	public List< pasonInfo > pasonInfoList;			//個人情報リスト
 	/**
 	 * 書き換え終了
 	 */
@@ -320,39 +340,62 @@ public class OCVFaceRecognitionVeiw extends View {
 			imageMat = new Mat(dHight , dWidth , CvType.CV_8U , new Scalar(4));     //1バイトのチャンネル0　、
 			Utils.bitmapToMat(bitmap , imageMat);                                    //openCV； 画像データを変換（BitmapのMatファイル変換
 			dbMsg += ",imageMat=" + imageMat.size() + ",elemSize=" + imageMat.elemSize();
-			detectorFrontalFaceAlt.detectMultiScale(imageMat , objects);                       //openCV；カスケード分類器に画像データを与え顔認識
-			int detectionCount = objects.toArray().length;
-			dbMsg += ",検出=" + detectionCount + "件";
+
+			detectionList=new ArrayList<detectos>();
+
+			detectos dInfo = new detectos();
+			dInfo.detector = detectorFrontalFaceAlt;
+			dInfo.note = "標準顔検出";
+			dInfo.andriodtArray = new ArrayList< android.graphics.Rect >();
+			dInfo.faces = new ArrayList< RectF >();
+			detectionList.add(dInfo);
+
+			dInfo = new detectos();
+			dInfo.detector = detectorProfileface;
+			dInfo.note = "横顔";
+			dInfo.andriodtArray = new ArrayList< android.graphics.Rect >();
+			dInfo.faces = new ArrayList< RectF >();
+			detectionList.add(dInfo);
+
+			dInfo = new detectos();
+			dInfo.detector = detectorFullbody;
+			dInfo.note = "全身";
+			dInfo.andriodtArray = new ArrayList< android.graphics.Rect >();
+			dInfo.faces = new ArrayList< RectF >();
+			detectionList.add(dInfo);
+
+
+			dInfo = new detectos();
+			dInfo.detector = detectorUpperbody;
+			dInfo.note = "上半身";
+			dInfo.andriodtArray = new ArrayList< android.graphics.Rect >();
+			dInfo.faces = new ArrayList< RectF >();
+			detectionList.add(dInfo);
+			/*
+			*  	private CascadeClassifier detectorFrontalcatface;                //正面か";
+	private CascadeClassifier detectorFrontalcatface_extended;        //正面(拡張)";
+	private CascadeClassifier detectorFrontalface_alt_tree;            //正面の顔高い木";
+	private CascadeClassifier detectorFrontalface_alt2;                //正面顔全体2";
+	private CascadeClassifier detectorFrontalface_default;            //正面デフォルト";
+	private CascadeClassifier detectorLowerbody;                    //下半身";
+	private CascadeClassifier detectorSmile;                        //笑顔";
+	private CascadeClassifier detectorRussian_plate_number;        //ナンバープレート・ロシア";
+	private CascadeClassifier detectorLicence_plate_rus_16stages;    //ナンバープレートRUS";
+			* */
+
 			faces.clear();
-			for ( org.opencv.core.Rect rect : objects.toArray() ) {
-				android.graphics.Rect rRect = new android.graphics.Rect(rect.x , rect.y , rect.width , rect.height);//顔の位置（X座標）,顔の位置（Y座標）,顔の横幅,顔の縦幅     /
-
-//				float left = ( float ) (1.0 * rect.x / dWidth);                             //1 / dAspect
-//				float top = ( float ) (1.0 * rect.y / dHight);                              //dAspect
-//				float right = left + ( float ) (1.0 * rect.width / dWidth);            //1 / dAspect
-//				float bottom = top + ( float ) (1.0 * rect.height / dHight);            //dAspect
-//
-//
-//				 left = ( float ) (1 / dAspect * left);                             //
-//				 top = ( float ) (dAspect *top);                              //
-//				 right = left + ( float ) (1 / dAspect * right);            //
-//				 bottom = top + ( float ) (dAspect * bottom);            //
-				float left = ( float ) (correctionH * rect.x / dWidth);                             //
-				float top = ( float ) (correctionSV * rect.y / dHight);                              //
-				float right = left + ( float ) (correctionH * rect.width / dWidth);            //
-				float bottom = top + ( float ) (correctionV * rect.height / dHight);            //
-
-				faces.add(new RectF(left , top , right , bottom));
-				retArray.add(rRect);
-//				if(detectionCount ==1){
-//					int pX = rect.x ;	//- rect.width ;
-//					int pY =rect.y ;	//+  rect.height;
-//					int pWidth =rect.width;	//*5 ;
-//					int pHight =rect.height;	//*8;
-//					org.opencv.core.Rect wRect = new org.opencv.core.Rect(pX,pY,pWidth,pHight);
-//					detailedPersonFace(imageMat, wRect);
-//				}
+			for ( detectos tInfo : detectionList ) {
+				dbMsg += "," + tInfo.note;
+				tInfo.detector.detectMultiScale(imageMat , objects);
+				int detectionCount = objects.toArray().length;
+				dbMsg += ";=" + detectionCount + "件検出";
+				if ( 0 < detectionCount ) {
+					detectos rInfo=makedetectionList( tInfo ,objects ,dWidth, dHight, correctionH , correctionV , correctionSV )  ;
+					faces.addAll(rInfo.faces);
+					retArray.addAll(rInfo.andriodtArray);
+				}
 			}
+
 			pasonInfoList=new ArrayList<pasonInfo>();
 			dbMsg += ",faces=" + faces.size();
 			if ( 0 == faces.size() ) {                            //顔が検出できない時は
@@ -382,22 +425,53 @@ public class OCVFaceRecognitionVeiw extends View {
 		return retArray;
 	}
 
-	/**
-	 * 検出情報リスト
-	 */
-	public class pasonInfo {
-		String division;
-		Rect area;
-		String note;
+
+	public detectos makedetectionList( detectos retDetectos , MatOfRect moRect ,int dWidth,int dHight,double correctionH ,double correctionV ,double correctionSV ) {
+		final String TAG = "makedetectionList[OCVFR]";
+		String dbMsg = "";
+		try {
+			for ( org.opencv.core.Rect rect : moRect.toArray() ) {
+				dbMsg += "(" + rect.x  + "," + rect.y  + ")[" + rect.width   + "×" + rect.height + "]";
+				android.graphics.Rect rRect = new android.graphics.Rect(rect.x , rect.y , rect.width , rect.height);//顔の位置（X座標）,顔の位置（Y座標）,顔の横幅,顔の縦幅     /
+				retDetectos.andriodtArray.add(rRect);
+				dbMsg += retDetectos.andriodtArray.size()+"件目";
+
+//				float left = ( float ) (1.0 * rect.x / dWidth);                             //1 / dAspect
+//				float top = ( float ) (1.0 * rect.y / dHight);                              //dAspect
+//				float right = left + ( float ) (1.0 * rect.width / dWidth);            //1 / dAspect
+//				float bottom = top + ( float ) (1.0 * rect.height / dHight);            //dAspect
+//
+//
+//				 left = ( float ) (1 / dAspect * left);                             //
+//				 top = ( float ) (dAspect *top);                              //
+//				 right = left + ( float ) (1 / dAspect * right);            //
+//				 bottom = top + ( float ) (dAspect * bottom);            //
+				float left = ( float ) (correctionH * rect.x / dWidth);                             //
+				float top = ( float ) (correctionSV * rect.y / dHight);                              //
+				float right = left + ( float ) (correctionH * rect.width / dWidth);            //
+				float bottom = top + ( float ) (correctionV * rect.height / dHight);            //
+				dbMsg += "(" + left+ "," + top  + ")～(" + right   + "×" +bottom + ")";
+				retDetectos.faces.add(new RectF(left , top , right , bottom));
+				dbMsg += retDetectos.faces.size()+"件目";
+
+//				if(detectionCount ==1){
+//					int pX = rect.x ;	//- rect.width ;
+//					int pY =rect.y ;	//+  rect.height;
+//					int pWidth =rect.width;	//*5 ;
+//					int pHight =rect.height;	//*8;
+//					org.opencv.core.Rect wRect = new org.opencv.core.Rect(pX,pY,pWidth,pHight);
+//					detailedPersonFace(imageMat, wRect);
+//				}
+			}
+//			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+			isCompletion = true;
+		}
+		return retDetectos;
 	}
 
-	/**
-	 * 検出器リスト
-	 */
-	public class detectos {
-		CascadeClassifier detector;
-		String note;
-	}
+
 
 	public List< pasonInfo > detailedPersonFace(Mat pasonMat , org.opencv.core.Rect pRect) {
 		final String TAG = "detailedPersonFace[OCVFR]";
@@ -487,31 +561,6 @@ public class OCVFaceRecognitionVeiw extends View {
 		}
 		return retArray;
 	}
-
-
-	/**
-	 *
-	 *  2012/6/23			目を検出する　ついでに口・鼻も				http://nobotta.dazoo.ne.jp/blog/?p=503
-	 * */
-//	private void fncDetectEye(Mat mat,Mat gray, org.opencv.core.Rect Rct){
-//		String cascade_eye_path=filename = context.getFilesDir().getAbsolutePath() + "/haarcascades/haarcascade_eye.xml";   	//		Environment.getExternalStorageDirectory()+"/DCIM/100ANDRO/haarcascade_eye.xml";
-//		CascadeClassifier cascade_eye = new CascadeClassifier();
-//		cascade_eye.load(cascade_eye_path);
-//
-//		Mat sub = new Mat();
-//		gray.submat(Rct.y, Rct.y + Rct.height, Rct.x, Rct.x + Rct.width).copyTo(sub);     //検索用submat切り出し
-//		List geteyelist = new ArrayList();     //検索結果格納領域
-//		cascade_eye.detectMultiScale(sub, geteyelist, 1.1, 3, Objdetect.CASCADE_SCALE_IMAGE);
-//		//検索処理
-//
-//		for (int i=0; i < geteyelist.size(); i++){     //検索結果表示処理
-//			Rect rct = geteyelist.get(i);
-//			Point center = new Point(Rct.x + rct.x + rct.width / 2 ,Rct.y + rct.y + rct.height / 2);
-//			int radius = rct.width / 2;
-//			Core.circle(mat, center, radius, new Scalar(0,255,255), 2);
-//		}
-//	}
-
 
 	/**
 	 * 　認証枠の書き込み
@@ -739,6 +788,7 @@ public class OCVFaceRecognitionVeiw extends View {
  * OpenCV 3.0.0			OpenCV 3.0.0 による顔検出処理				https://yamsat.wordpress.com/2015/09/13/opencv-3-0-0-%E3%81%AB%E3%82%88%E3%82%8B%E9%A1%94%E6%A4%9C%E5%87%BA%E5%87%A6%E7%90%86/
  * 2012年10月28日		[OpenCV] 顔を検出する						http://google-os.blog.jp/archives/50736832.html
  * OpenCV 2.3.1		アンドロイドでOpenCV（お顔検出				http://foonyan.sakura.ne.jp/wisteriahill/opencv_android/index.html
+ *  2012/6/23			目を検出する　ついでに口・鼻も				http://nobotta.dazoo.ne.jp/blog/?p=503
  * 2012年10月28日		[OpenCV] 目を検出する						http://google-os.blog.jp/archives/50736850.html
  * ファイルから読込み
  * 2016-09-13			Opencv3.1で顔検出							http://garapon.hatenablog.com/entry/2016/09/13/Opencv3.1%E3%81%A7%E9%A1%94%E6%A4%9C%E5%87%BA

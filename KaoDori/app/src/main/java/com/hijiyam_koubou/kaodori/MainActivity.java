@@ -110,7 +110,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	public boolean isPrevieSending = false;     //プレビュー画面処理中
 	public boolean isAutoFlash = false;                        //オートフラッシュ
 	public boolean isRumbling = false;                        //シャッター音の鳴動
-	public boolean isFaceRecognition = false;                 //顔検出実行中
+	public boolean isFaceRecognition = true;                 //顔検出実行中
 	public boolean isChaseFocus = false;                 //追跡フォーカス
 
 	/**

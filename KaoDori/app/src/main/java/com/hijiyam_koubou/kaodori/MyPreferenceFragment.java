@@ -35,7 +35,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 	public EditTextPreference up_scale_key;                        //顔から何割増しの枠で保存するか
 	public EditTextPreference haarcascades_last_modified_key;            //顔認証プロファイルの最新更新日
 
-	public boolean isFaceRecognition = false;                 //顔検出実行中
+	public boolean isFaceRecognition = true;                 //顔検出実行中
 	public boolean isChaseFocus = false;                 //追跡フォーカス
 	public String write_folder="";            //書込みルートフォルダ
 	public String up_scale = "1.2";            //顔から何割増しの枠で保存するか
