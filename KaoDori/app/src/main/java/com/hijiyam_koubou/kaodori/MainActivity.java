@@ -581,7 +581,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			} else if ( menuId == menuID_detector_select ) {          //検出対象選択
 
 				detectosSelect = new LinkedHashMap< CharSequence, Boolean >() ;
-				detectosSelect.clear();
+//				detectosSelect.clear();
 				detectosSelect.put(getResources().getString(R.string.mm_detector_frontal_face_alt) , is_detector_frontal_face_alt);                            //顔検出(標準)</string>
 				detectosSelect.put(getResources().getString(R.string.mm_detector_profileface) , is_detector_profileface);                                    //横顔
 				detectosSelect.put(getResources().getString(R.string.mm_detector_upperbody) , is_detector_upperbody);                                        //上半身
