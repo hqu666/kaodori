@@ -6,6 +6,7 @@
 	<string name="haarcascades_last_modified">最新の顔認証プロファイル</string>
 
 	<string name="mm_phot">撮影設定</string>
+	<string name="mm_phot_sub_main">サブカメラに切り替え</string>
 	<string name="mm_phot_array_size">解像度</string>
 	<string name="mm_phot_flash">オートフラッシュ</string>
 	<string name="mm_phot_rumbling">シャッター音</string>
@@ -16,8 +17,30 @@
 	<string name="mm_effect_preview_tv">高速プレビュ－</string>
 	<string name="mm_effect_preview_sufece">省電力プレビュ－</string>
 
+	<string name="mm_onoff_only">(On/Off項目)</string>
+	<string name="mm_detector_select">検出対象選択</string>
+
+	<string name="mm_detector_frontal_face_alt">顔検出(標準)</string>
+	<string name="mm_detector_eye">目(標準)</string>
+	<string name="mm_detector_righteye_2splits">右目</string>
+	<string name="mm_detector_lefteye_2splits">左目</string>
+	<string name="mm_detector_eyeglasses">眼鏡</string>
+	<string name="mm_detector_frontalcatface">正面のみ？</string>
+	<string name="mm_detector_frontalcatface_extended">正面(拡張)？</string>
+	<string name="mm_detector_frontalface_alt_tree">鼻(正面)？</string>
+	<string name="mm_detector_frontalface_alt2">正面顔全体2？</string>
+	<string name="mm_detector_frontalface_default">正面デフォルト</string>
+	<string name="mm_detector_fullbody">全身</string>
+	<string name="mm_detector_upperbody">上半身</string>
+	<string name="mm_detector_lowerbody">下半身</string>
+	<string name="mm_detector_profileface">横顔</string>
+	<string name="mm_detector_smile">笑顔</string>
+	<string name="mm_detector_russian_plate_number">ナンバープレート・ロシア</string>
+	<string name="mm_detector_ricence_plate_rus_16stages">ナンバープレートRUS</string>
+
+
 	<string name="mm_setting_titol">設定</string>
-		<!--</item>-->
+
 		<!--<item>-->
 			<string name="mm_quit_titol">終了</string>
 		<!--</item>-->

@@ -33,13 +33,58 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 	public CheckBoxPreference is_chase_focus_key ;                 //追跡フォーカス
 	public EditTextPreference write_folder_key;                    //書込みルートフォルダ
 	public EditTextPreference up_scale_key;                        //顔から何割増しの枠で保存するか
-	public EditTextPreference haarcascades_last_modified_key;            //顔認証プロファイルの最新更新日
+	public Preference haarcascades_last_modified_key;            //顔認証プロファイルの最新更新日
 
 	public boolean isFaceRecognition = true;                 //顔検出実行中
 	public boolean isChaseFocus = false;                 //追跡フォーカス
 	public String write_folder="";            //書込みルートフォルダ
 	public String up_scale = "1.2";            //顔から何割増しの枠で保存するか
 	public String haarcascades_last_modified = "0";
+
+	public boolean isSubCamera = false;                        //サブカメラに切り替え
+	public boolean isAutoFlash = false;                        //オートフラッシュ
+	public boolean isRumbling = false;                        //シャッター音の鳴動
+
+	public CheckBoxPreference isSubCamera_key;                 //サブカメラに切り替え
+	public CheckBoxPreference isAutoFlash_key;                 //オートフラッシュ
+	public CheckBoxPreference isRumbling_key;                 //シャッター音の鳴動
+
+
+	public boolean is_detector_frontal_face_alt = true;   //顔検出(標準)
+	public boolean is_detector_profileface = true;               //横顔
+	public boolean is_detector_upperbody = false;                //上半身
+	public boolean is_detector_fullbody = false;                //全身
+	public boolean is_detector_lowerbody = false;                // 下半身
+	public boolean is_detector_eye = true;               //目(標準)
+	public boolean is_detector_righteye_2splits = false; 		//右目
+	public boolean is_detector_lefteye_2splits = false;                //左目
+	public boolean is_detector_eyeglasses = false;                //眼鏡
+	public boolean is_detector_frontalcatface = false;               //正面のみ？
+	public boolean is_detector_frontalcatface_extended = false;                //正面(拡張)？string>
+	public boolean is_detector_frontalface_alt_tree = false;               //正面の顔高い木？
+	public boolean is_detector_frontalface_alt2 = false;                //正面顔全体2
+	public boolean is_detector_frontalface_default = false;                //正面デフォルト
+	public boolean is_detector_smile = false;               //笑顔
+	public boolean is_detector_russian_plate_number = false;                //ナンバープレート・ロシア
+	public boolean is_detector_ricence_plate_rus_16stages = false;     //ナンバープレートRUS
+
+	public CheckBoxPreference is_detector_frontal_face_alt_key;                 //顔検出(標準)
+	public CheckBoxPreference is_detector_profileface_key;                 //横顔
+	public CheckBoxPreference is_detector_upperbody_key;                 //上半身
+	public CheckBoxPreference is_detector_fullbody_key;                 //全身
+	public CheckBoxPreference is_detector_lowerbody_key;                 //下半身
+	public CheckBoxPreference is_detector_eye_key;                 //目(標準)
+	public CheckBoxPreference is_detector_righteye_2splits_key;                 //右目
+	public CheckBoxPreference is_detector_lefteye_2splitss_key;                 //左目
+	public CheckBoxPreference is_detector_eyeglasses_key;                 //眼鏡
+	public CheckBoxPreference is_detector_frontalcatface_key;                 //正面のみ？
+	public CheckBoxPreference is_detector_frontalcatface_extended_key;                 //正面(拡張)？
+	public CheckBoxPreference is_detector_frontalface_alt_tree_key;                 //正面の顔高い木？
+	public CheckBoxPreference is_detector_frontalface_alt2_key;                 //正面顔全体2
+	public CheckBoxPreference is_detector_frontalface_default_key;                 //正面デフォルト
+	public CheckBoxPreference is_detector_smile_key;                 //笑顔
+	public CheckBoxPreference is_detector_russian_plate_number_key;                 //ナンバープレート・ロシア
+	public CheckBoxPreference is_detector_ricence_plate_rus_16stages_key;                 //ナンバープレートRUS
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -84,10 +129,130 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 			sps = this.getPreferenceScreen();            //☆PreferenceFragmentなら必要  .
 			dbMsg = dbMsg + ",sps=" + sps;
 
+			isSubCamera_key = ( CheckBoxPreference ) sps.findPreference("isSubCamera_key");        //サブカメラに切り替え
+			dbMsg = dbMsg + ",顔検出実行中=" + isSubCamera;
+			if ( findPreference("isSubCamera_key") != null ) {
+				isSubCamera_key.setChecked(isSubCamera);
+			}
+
+			isAutoFlash_key = ( CheckBoxPreference ) sps.findPreference("isAutoFlash_key");        //サブカメラに切り替え
+			dbMsg = dbMsg + ",オートフラッシュ=" + isAutoFlash;
+			if ( findPreference("isAutoFlash_key") != null ) {
+				isAutoFlash_key.setChecked(isAutoFlash);
+			}
+
+			isRumbling_key = ( CheckBoxPreference ) sps.findPreference("isRumbling_key");        //サブカメラに切り替え
+			dbMsg = dbMsg + ",シャッター音の鳴動=" + isRumbling;
+			if ( findPreference("isRumbling_key") != null ) {
+				isRumbling_key.setChecked(isRumbling);
+			}
+
 			is_face_recognition_key = ( CheckBoxPreference ) sps.findPreference("is_face_recognition_key");        //顔検出実行中
 			dbMsg = dbMsg + ",顔検出実行中=" + isFaceRecognition;
 			if ( findPreference("is_face_recognition_key") != null ) {
 				is_face_recognition_key.setChecked(isFaceRecognition);
+			}
+
+			is_detector_frontal_face_alt_key = ( CheckBoxPreference ) sps.findPreference("is_detector_frontal_face_alt_key");
+			dbMsg = dbMsg + ",顔検出(標準)=" + is_detector_frontal_face_alt;
+			if ( findPreference("is_detector_frontal_face_alt_key") != null ) {
+				is_detector_frontal_face_alt_key.setChecked(is_detector_frontal_face_alt);
+			}
+
+			is_detector_profileface_key = ( CheckBoxPreference ) sps.findPreference("is_detector_profileface_key");
+			dbMsg = dbMsg + ",横顔=" + is_detector_profileface;
+			if ( findPreference("is_detector_profileface_key") != null ) {
+				is_detector_profileface_key.setChecked(is_detector_profileface);
+			}
+
+			is_detector_upperbody_key = ( CheckBoxPreference ) sps.findPreference("is_detector_upperbody_key");
+			dbMsg = dbMsg + ",上半身=" + is_detector_upperbody;
+			if ( findPreference("is_detector_upperbody_key") != null ) {
+				is_detector_upperbody_key.setChecked(is_detector_upperbody);
+			}
+
+			is_detector_fullbody_key = ( CheckBoxPreference ) sps.findPreference("is_detector_fullbody_key");
+			dbMsg = dbMsg + ",全身=" + is_detector_fullbody;
+			if ( findPreference("is_detector_fullbody_key") != null ) {
+				is_detector_fullbody_key.setChecked(is_detector_fullbody);
+			}
+
+			is_detector_lowerbody_key = ( CheckBoxPreference ) sps.findPreference("is_detector_lowerbody_key");
+			dbMsg = dbMsg + ",下半身=" + is_detector_lowerbody;
+			if ( findPreference("is_detector_lowerbody_key") != null ) {
+				is_detector_lowerbody_key.setChecked(is_detector_lowerbody);
+			}
+
+			is_detector_eye_key = ( CheckBoxPreference ) sps.findPreference("is_detector_eye_key");
+			dbMsg = dbMsg + ",目(標準)=" + is_detector_eye;
+			if ( findPreference("is_detector_eye_key") != null ) {
+				is_detector_eye_key.setChecked(is_detector_eye);
+			}
+
+			is_detector_righteye_2splits_key = ( CheckBoxPreference ) sps.findPreference("is_detector_righteye_2splits_key");
+			dbMsg = dbMsg + ",右目=" + is_detector_righteye_2splits;
+			if ( findPreference("is_detector_righteye_2splits_key") != null ) {
+				is_detector_righteye_2splits_key.setChecked(is_detector_righteye_2splits);
+			}
+
+			is_detector_lefteye_2splitss_key = ( CheckBoxPreference ) sps.findPreference("is_detector_lefteye_2splitss_key");
+			dbMsg = dbMsg + ",左目=" + is_detector_lefteye_2splits;
+			if ( findPreference("is_detector_lefteye_2splitss_key") != null ) {
+				is_detector_lefteye_2splitss_key.setChecked(is_detector_lefteye_2splits);
+			}
+
+			is_detector_eyeglasses_key = ( CheckBoxPreference ) sps.findPreference("is_detector_eyeglasses_key");
+			dbMsg = dbMsg + ",眼鏡=" + is_detector_eyeglasses;
+			if ( findPreference("is_detector_eyeglasses_key") != null ) {
+				is_detector_eyeglasses_key.setChecked(is_detector_eyeglasses);
+			}
+
+			is_detector_frontalcatface_key = ( CheckBoxPreference ) sps.findPreference("is_detector_frontalcatface_key");
+			dbMsg = dbMsg + ",正面のみ？=" + is_detector_frontalcatface;
+			if ( findPreference("is_detector_frontalcatface_key") != null ) {
+				is_detector_frontalcatface_key.setChecked(is_detector_frontalcatface);
+			}
+
+			is_detector_frontalcatface_extended_key = ( CheckBoxPreference ) sps.findPreference("is_detector_frontalcatface_extended_key");
+			dbMsg = dbMsg + ",正面(拡張)？=" + is_detector_frontalcatface_extended;
+			if ( findPreference("is_detector_frontalcatface_extended_key") != null ) {
+				is_detector_frontalcatface_extended_key.setChecked(is_detector_frontalcatface_extended);
+			}
+
+			is_detector_frontalface_alt_tree_key = ( CheckBoxPreference ) sps.findPreference("is_detector_frontalface_alt_tree_key");
+			dbMsg = dbMsg + ",正面の顔高い木？=" + is_detector_frontalface_alt_tree;
+			if ( findPreference("is_detector_frontalface_alt_tree_key") != null ) {
+				is_detector_frontalface_alt_tree_key.setChecked(is_detector_frontalface_alt_tree);
+			}
+
+			is_detector_frontalface_alt2_key = ( CheckBoxPreference ) sps.findPreference("is_detector_frontalface_alt2_key");
+			dbMsg = dbMsg + ",正面顔全体2？=" + is_detector_frontalface_alt2;
+			if ( findPreference("is_detector_frontalface_alt2_key") != null ) {
+				is_detector_frontalface_alt2_key.setChecked(is_detector_frontalface_alt2);
+			}
+
+			is_detector_frontalface_default_key = ( CheckBoxPreference ) sps.findPreference("is_detector_frontalface_default_key");
+			dbMsg = dbMsg + ",正面デフォルト？=" + is_detector_frontalface_default;
+			if ( findPreference("is_detector_frontalface_default_key") != null ) {
+				is_detector_frontalface_default_key.setChecked(is_detector_frontalface_default);
+			}
+
+			is_detector_smile_key = ( CheckBoxPreference ) sps.findPreference("is_detector_smile_key");
+			dbMsg = dbMsg + ",笑顔？=" + is_detector_smile;
+			if ( findPreference("is_detector_smile_key") != null ) {
+				is_detector_smile_key.setChecked(is_detector_smile);
+			}
+
+			is_detector_russian_plate_number_key = ( CheckBoxPreference ) sps.findPreference("is_detector_russian_plate_number_key");
+			dbMsg = dbMsg + ",ナンバープレート・ロシア=" + is_detector_russian_plate_number;
+			if ( findPreference("is_detector_russian_plate_number_key") != null ) {
+				is_detector_russian_plate_number_key.setChecked(is_detector_russian_plate_number);
+			}
+
+			is_detector_ricence_plate_rus_16stages_key = ( CheckBoxPreference ) sps.findPreference("is_detector_ricence_plate_rus_16stages_key");
+			dbMsg = dbMsg + ",ナンバープレートRUS=" + is_detector_ricence_plate_rus_16stages;
+			if ( findPreference("is_detector_ricence_plate_rus_16stages_key") != null ) {
+				is_detector_ricence_plate_rus_16stages_key.setChecked(is_detector_ricence_plate_rus_16stages);
 			}
 
 			is_chase_focus_key = ( CheckBoxPreference ) sps.findPreference("is_chase_focus_key");        //追跡フォーカス
@@ -117,7 +282,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 				haarcascades_last_modified_key.setDefaultValue(haarcascades_last_modified);
 				haarcascades_last_modified_key.setSummary(haarcascades_last_modified);
 			} else {
-				(( EditTextPreference ) findPreference("haarcascades_last_modified_key")).setText(haarcascades_last_modified);
+				(( Preference ) findPreference("haarcascades_last_modified_key")).setSummary(haarcascades_last_modified);
 			}
 			myLog(TAG , dbMsg);
 		} catch (Exception e) {
@@ -442,9 +607,69 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 				if ( key.equals("is_face_recognition_key") ) {
 					isFaceRecognition = sharedPref.getBoolean(key , isFaceRecognition);
 					dbMsg += ",顔検出実行中=" + isFaceRecognition;
+				}else if ( key.equals("is_detector_frontal_face_alt_key") ) {
+					is_detector_frontal_face_alt = sharedPref.getBoolean(key , is_detector_frontal_face_alt);
+					dbMsg +=  ",顔検出(標準)=" + is_detector_frontal_face_alt;
+				}else if ( key.equals("is_detector_profileface_key") ) {
+					is_detector_profileface = sharedPref.getBoolean(key , is_detector_profileface);
+					dbMsg +=  ",横顔=" + is_detector_profileface;
+				}else if ( key.equals("is_detector_upperbody_key") ) {
+					is_detector_upperbody = sharedPref.getBoolean(key , is_detector_upperbody);
+					dbMsg +=  ",上半身=" + is_detector_upperbody;
+				}else if ( key.equals("is_detector_fullbody_key") ) {
+					is_detector_fullbody = sharedPref.getBoolean(key , is_detector_fullbody);
+					dbMsg +=  ",全身=" + is_detector_fullbody;
+				}else if ( key.equals("is_detector_lowerbody_key") ) {
+					is_detector_lowerbody = sharedPref.getBoolean(key , is_detector_lowerbody);
+					dbMsg +=  ",下半身=" + is_detector_lowerbody;
+				}else if ( key.equals("is_detector_eye_key") ) {
+					is_detector_eye = sharedPref.getBoolean(key , is_detector_eye);
+					dbMsg +=  ",目(標準)=" + is_detector_eye;
+				}else if ( key.equals("is_detector_righteye_2splits_key") ) {
+					is_detector_righteye_2splits = sharedPref.getBoolean(key , is_detector_righteye_2splits);
+					dbMsg +=  ",右目=" + is_detector_righteye_2splits;
+				}else if ( key.equals("is_detector_lefteye_2splitss_key") ) {
+					is_detector_lefteye_2splits = sharedPref.getBoolean(key , is_detector_lefteye_2splits);
+					dbMsg +=  ",左目=" + is_detector_lefteye_2splits;
+				}else if ( key.equals("is_detector_eyeglasses_key") ) {
+					is_detector_eyeglasses = sharedPref.getBoolean(key , is_detector_eyeglasses);
+					dbMsg +=  ",眼鏡=" + is_detector_eyeglasses;
+				}else if ( key.equals("is_detector_frontalcatface_key") ) {
+					is_detector_frontalcatface = sharedPref.getBoolean(key , is_detector_frontalcatface);
+					dbMsg +=  ",正面のみ=" + is_detector_frontalcatface;
+				}else if ( key.equals("is_detector_frontalcatface_extended_key") ) {
+					is_detector_frontalcatface_extended = sharedPref.getBoolean(key , is_detector_frontalcatface_extended);
+					dbMsg +=  ",正面(拡張)=" + is_detector_frontalcatface_extended;
+				}else if ( key.equals("is_detector_frontalface_alt_tree_key") ) {
+					is_detector_frontalface_alt_tree = sharedPref.getBoolean(key , is_detector_frontalface_alt_tree);
+					dbMsg +=  ",正面の顔高い木？)=" + is_detector_frontalface_alt_tree;
+				}else if ( key.equals("is_detector_frontalface_alt2_key") ) {
+					is_detector_frontalface_alt2 = sharedPref.getBoolean(key , is_detector_frontalface_alt2);
+					dbMsg +=  ",正面顔全体2=" + is_detector_frontalface_alt2;
+				}else if ( key.equals("is_detector_frontalface_default_key") ) {
+					is_detector_frontalface_default = sharedPref.getBoolean(key , is_detector_frontalface_default);
+					dbMsg +=  ",正面デフォルト=" + is_detector_frontalface_default;
+				}else if ( key.equals("is_detector_smile_key") ) {
+					is_detector_smile = sharedPref.getBoolean(key , is_detector_smile);
+					dbMsg +=  ",笑顔=" + is_detector_smile;
+				}else if ( key.equals("is_detector_russian_plate_number_key") ) {
+					is_detector_russian_plate_number = sharedPref.getBoolean(key , is_detector_russian_plate_number);
+					dbMsg +=  ",ナンバープレート・ロシア=" + is_detector_russian_plate_number;
+				}else if ( key.equals("is_detector_ricence_plate_rus_16stages_key") ) {
+					is_detector_ricence_plate_rus_16stages = sharedPref.getBoolean(key , is_detector_ricence_plate_rus_16stages);
+					dbMsg +=  ",ナンバープレートRUS=" + is_detector_ricence_plate_rus_16stages;
 				}else if ( key.equals("is_chase_focus_key") ) {
 					isChaseFocus = sharedPref.getBoolean(key , isChaseFocus);
 					dbMsg +=  ",追跡フォーカス=" + isChaseFocus;
+				}else if ( key.equals("isSubCamera_key") ) {
+					isSubCamera = sharedPref.getBoolean(key , isSubCamera);
+					dbMsg +=  ",サブカメラに切り替え=" + isSubCamera;
+				}else if ( key.equals("isAutoFlash_key") ) {
+					isAutoFlash = sharedPref.getBoolean(key , isAutoFlash);
+					dbMsg +=  ",オートフラッシュ=" + isAutoFlash;
+				}else if ( key.equals("isRumbling_key") ) {
+					isRumbling = sharedPref.getBoolean(key , isRumbling);
+					dbMsg +=  ",シャッター音の鳴動=" + isRumbling;
 				}else if ( key.equals("write_folder_key") ) {
 					write_folder = sharedPref.getString(key , write_folder);
 					dbMsg +=  ",書込みルートフォルダ=" + write_folder;
@@ -452,7 +677,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 					up_scale = sharedPref.getString(key , up_scale);
 					dbMsg += ",顔から何割増しの枠で保存するか=" + up_scale;
 				} else if ( key.equals("haarcascades_last_modified_key") ) {
-					haarcascades_last_modified = sharedPref.getString(key , "1.2");
+					haarcascades_last_modified = sharedPref.getString(key , haarcascades_last_modified);
 					dbMsg += ",顔認証プロファイルの最新更新日=" + haarcascades_last_modified;
 				}
 			}

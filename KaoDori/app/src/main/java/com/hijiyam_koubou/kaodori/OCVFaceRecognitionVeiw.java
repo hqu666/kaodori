@@ -55,12 +55,31 @@ public class OCVFaceRecognitionVeiw extends View {
 	private CascadeClassifier detectorFrontalface_alt2;                //正面顔全体2";
 	private CascadeClassifier detectorFrontalface_default;            //正面デフォルト";
 	private CascadeClassifier detectorFullbody;                        //全身";
+	private CascadeClassifier detectorUpperbody;                    //上半身";
 	private CascadeClassifier detectorLowerbody;                    //下半身";
 	private CascadeClassifier detectorProfileface;                    //横顔";
 	private CascadeClassifier detectorSmile;                        //笑顔";
-	private CascadeClassifier detectorUpperbody;                    //下半身";
 	private CascadeClassifier detectorRussian_plate_number;        //ナンバープレート・ロシア";
 	private CascadeClassifier detectorLicence_plate_rus_16stages;    //ナンバープレートRUS";
+
+	public boolean is_detector_frontal_face_alt = true;   //顔検出(標準)</string>
+	public boolean is_detector_eye = true;               //目(標準)</string>
+	public boolean is_detector_righteye_2splits = true; 		//右目
+	public boolean is_detector_lefteye_2splits = true;                //左目
+	public boolean is_detector_eyeglasses = true;                //眼鏡
+	public boolean is_detector_frontalcatface = true;               //正面のみ？
+	public boolean is_detector_frontalcatface_extended = true;                //正面(拡張)？string>
+	public boolean is_detector_frontalface_alt_tree = true;               //正面の顔高い木？
+	public boolean is_detector_frontalface_alt2 = true;                //正面顔全体2
+	public boolean is_detector_frontalface_default = true;                //正面デフォルト
+	public boolean is_detector_fullbody = true;                //全身
+	public boolean is_detector_upperbody = true;                //上半身
+	public boolean is_detector_lowerbody = true;                // 下半身
+	public boolean is_detector_profileface = true;               //横顔
+	public boolean is_detector_smile = true;               //笑顔
+	public boolean is_detector_russian_plate_number = true;                //ナンバープレート・ロシア
+	public boolean is_detector_ricence_plate_rus_16stages = true;     //ナンバープレートRUS
+
 
 	private MatOfRect objects;
 	private List< RectF > faces = new ArrayList< RectF >();
@@ -72,6 +91,8 @@ public class OCVFaceRecognitionVeiw extends View {
 	private Double viewAspect;
 	private String filename;
 	private static final int COLOR_CHOICES[] = {Color.WHITE , Color.GREEN , Color.MAGENTA , Color.BLUE , Color.CYAN , Color.RED , Color.YELLOW};
+
+
 
 	/**
 	 * 検出情報リスト
@@ -137,6 +158,25 @@ public class OCVFaceRecognitionVeiw extends View {
 		String dbMsg = "";
 		try {
 			this.context = context;
+			MainActivity MA =new MainActivity();
+			is_detector_frontal_face_alt = MA.is_detector_frontal_face_alt;   //顔検出(標準)</string>
+			is_detector_eye = MA.is_detector_eye;               //目(標準)</string>
+			is_detector_righteye_2splits = MA.is_detector_righteye_2splits; 		//右目
+			is_detector_lefteye_2splits = MA.is_detector_lefteye_2splits;                //左目
+			is_detector_eyeglasses = MA.is_detector_eyeglasses;                //眼鏡
+			is_detector_frontalcatface = MA.is_detector_frontalcatface;               //正面のみ？
+			is_detector_frontalcatface_extended = MA.is_detector_frontalcatface_extended;                //正面(拡張)？string>
+			is_detector_frontalface_alt_tree = MA.is_detector_frontalface_alt_tree;               //正面の顔高い木？
+			is_detector_frontalface_alt2 = MA.is_detector_frontalface_alt2;                //正面顔全体2
+			is_detector_frontalface_default = MA.is_detector_frontalface_default;                //正面デフォルト
+			is_detector_fullbody = MA.is_detector_fullbody;                //全身
+			is_detector_upperbody = MA.is_detector_upperbody;                //上半身
+			is_detector_lowerbody = MA.is_detector_lowerbody;                // 下半身
+			is_detector_profileface = MA.is_detector_profileface;               //横顔
+			is_detector_smile = MA.is_detector_smile;               //笑顔
+			is_detector_russian_plate_number = MA.is_detector_russian_plate_number;                //ナンバープレート・ロシア
+			is_detector_ricence_plate_rus_16stages = MA.is_detector_ricence_plate_rus_16stages;     //ナンバープレートRUS
+
 			if ( detectorFrontalFaceAlt == null ) {
 				filename = context.getFilesDir().getAbsolutePath() + "/haarcascades/haarcascade_frontalface_alt.xml";
 				dbMsg += "filename=" + filename;       //filename=/data/user/0/com.hijiyam_koubou.kaodori/files/haarcascades/haarcascade_frontalface_alt.xml
