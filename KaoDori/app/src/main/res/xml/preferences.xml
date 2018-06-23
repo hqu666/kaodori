@@ -35,8 +35,9 @@
 
 
 		<PreferenceScreen
+			android:enabled="true"
 			android:key="detector_select_key"
-			android:selectable="false"
+			android:selectable="true"
 			android:title="@string/mm_detector_select">
 			<CheckBoxPreference
 				android:defaultValue="false"
@@ -107,7 +108,6 @@
 				android:key="is_detector_ricence_plate_rus_16stages_key"
 				android:title="@string/mm_detector_ricence_plate_rus_16stages"/>
 		</PreferenceScreen>
-
 		<CheckBoxPreference
 			android:defaultValue="false"
 			android:key="is_chase_focus_key"
@@ -118,6 +118,7 @@
 			android:key="isTexturView_key"
 			android:title="@string/mm_effect_preview_tv"/>
 	</PreferenceScreen>
+
 
 	<EditTextPreference
 		android:defaultValue="12345native"
