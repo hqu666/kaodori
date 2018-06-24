@@ -285,7 +285,11 @@ public class OCVFaceRecognitionVeiw extends View {
 					String rDetectorFile = entry.getKey();
 					CascadeClassifier cfs = entry.getValue();
 					dbMsg += "\n(" + setCount + ")";
-					String path = context.getFilesDir().getAbsolutePath() + "/" + rDetectorFile;
+
+
+					String path = context.getApplicationContext().getAssets() + rDetectorFile;
+
+//						String path = context.getFilesDir().getAbsolutePath() + "/" + rDetectorFile;
 					dbMsg += path;
 					File rFile = new File(path);
 					dbMsg += " ,exists=" + rFile.exists();
@@ -580,7 +584,7 @@ public class OCVFaceRecognitionVeiw extends View {
 				}
 			}
 			int dlistSize = detectionList.size();
-			dbMsg += ">>" + dlistSize + "件";
+			dbMsg += ">detect>" + dlistSize + "通り";
 			if ( dlistSize == 0 ) {
 				return null;
 			}
@@ -639,7 +643,6 @@ public class OCVFaceRecognitionVeiw extends View {
 				}
 			}
 
-			pasonInfoList = new ArrayList< pasonInfo >();
 			dbMsg += ",faces=" + faces.size();
 			if ( 0 == faces.size() ) {                            //顔が検出できない時は
 //				faces.clear();
@@ -650,6 +653,7 @@ public class OCVFaceRecognitionVeiw extends View {
 				int pWidth = ( int ) (faces.get(0).right - faces.get(0).left);    //*5 ;
 				int pHight = ( int ) (faces.get(0).bottom - faces.get(0).top);    //*8;
 				org.opencv.core.Rect wRect = new org.opencv.core.Rect(pX , pY , pWidth , pHight);
+				pasonInfoList = new ArrayList< pasonInfo >();
 				pasonInfoList = detailedPersonFace(imageMat , wRect);
 			}
 			invalidate();            //onDrawへ
@@ -961,45 +965,48 @@ public class OCVFaceRecognitionVeiw extends View {
 //			dbMsg += ">>[" + taregetView.getWidth() + "×" + taregetView.getHeight() + "]";
 			faces.clear();
 			ViewGroup.MarginLayoutParams layoutParams = ( ViewGroup.MarginLayoutParams ) taregetView.getLayoutParams();
-			viewLeft = layoutParams.leftMargin;
-			viewTop = layoutParams.topMargin;
-			viewWidth = layoutParams.width;
-			viewHight = layoutParams.height;
-			viewAspect = 1.0 * viewWidth / viewHight;
-			dbMsg += ",layoutParams(" + viewLeft + "," + viewTop + ")[" + viewWidth + "×" + viewHight + "]Aspect=" + viewAspect;
-			if ( viewAspect < 1 ) {
-				dbMsg += ";縦";                    //[1080×1440]Aspect=0.75
-			} else {
-				dbMsg += ";横";                    //[1440×1080]Aspect=1.3333333333333333
-			}
-			float left = 0;//viewLeft;                // float ) (1.0 * rect.x / _width);
-			dbMsg += ">描画>(" + left;
+			if ( layoutParams != null ) {
+
+				viewLeft = layoutParams.leftMargin;
+				viewTop = layoutParams.topMargin;
+				viewWidth = layoutParams.width;
+				viewHight = layoutParams.height;
+				viewAspect = 1.0 * viewWidth / viewHight;
+				dbMsg += ",layoutParams(" + viewLeft + "," + viewTop + ")[" + viewWidth + "×" + viewHight + "]Aspect=" + viewAspect;
+				if ( viewAspect < 1 ) {
+					dbMsg += ";縦";                    //[1080×1440]Aspect=0.75
+				} else {
+					dbMsg += ";横";                    //[1440×1080]Aspect=1.3333333333333333
+				}
+				float left = 0;//viewLeft;                // float ) (1.0 * rect.x / _width);
+				dbMsg += ">描画>(" + left;
 
 //			if ( 0 < left ) {
 //				left = ( float ) (1.0 * left /  layoutParams.width);     //?2
 //			}
-			float top = 0;//layoutParams.topMargin;                    // float ) (1.0 * rect.y / _hight);
-			dbMsg += "," + top;
+				float top = 0;//layoutParams.topMargin;                    // float ) (1.0 * rect.y / _hight);
+				dbMsg += "," + top;
 //			if ( 0 < top ) {
 //				top = ( float ) (1.0 * top / layoutParams.height);
 //			}
-			float right = left + viewWidth;            //( float ) (1.0 * rect.width / _width);
-			dbMsg += ")～(" + right;
+				float right = left + viewWidth;            //( float ) (1.0 * rect.width / _width);
+				dbMsg += ")～(" + right;
 //			if ( 0 < top ) {
-			if ( 0 < right ) {
-				right = ( float ) (1.0 * right / viewWidth);
-			}
-			float bottom = top + viewHight;            // top + ( float ) (1.0 * rect.height / _hight);
-			dbMsg += "," + bottom + "）";
-			if ( 0 < bottom ) {
-				bottom = ( float ) (1.0 * bottom / viewHight);
-			}
-			dbMsg += ">比率>(" + left + "," + top + ")～(" + right + "," + bottom + "）";
+				if ( 0 < right ) {
+					right = ( float ) (1.0 * right / viewWidth);
+				}
+				float bottom = top + viewHight;            // top + ( float ) (1.0 * rect.height / _hight);
+				dbMsg += "," + bottom + "）";
+				if ( 0 < bottom ) {
+					bottom = ( float ) (1.0 * bottom / viewHight);
+				}
+				dbMsg += ">比率>(" + left + "," + top + ")～(" + right + "," + bottom + "）";
 
-			faces.add(new RectF(left , top , right , bottom));            //APIL1
+				faces.add(new RectF(left , top , right , bottom));            //APIL1
 //			}
-			dbMsg += ",faces=" + faces.size();
-			invalidate();                                                //onDrawへ
+				dbMsg += ",faces=" + faces.size();
+				invalidate();                                                //onDrawへ
+			}
 
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {

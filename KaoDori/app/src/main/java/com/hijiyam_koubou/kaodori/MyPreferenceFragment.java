@@ -30,7 +30,26 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 	public static SharedPreferences sharedPref;
 	public SharedPreferences.Editor myEditor;
 	public CheckBoxPreference is_face_recognition_key;                 //顔検出実行中
-	public CheckBoxPreference is_chase_focus_key ;                 //追跡フォーカス
+
+	public CheckBoxPreference is_detector_frontal_face_alt_key;                 //顔検出(標準)
+	public CheckBoxPreference is_detector_profileface_key;                 //横顔
+	public CheckBoxPreference is_detector_upperbody_key;                 //上半身
+	public CheckBoxPreference is_detector_fullbody_key;                 //全身
+	public CheckBoxPreference is_detector_lowerbody_key;                 //下半身
+	public CheckBoxPreference is_detector_eye_key;                 //目(標準)
+	public CheckBoxPreference is_detector_righteye_2splits_key;                 //右目
+	public CheckBoxPreference is_detector_lefteye_2splitss_key;                 //左目
+	public CheckBoxPreference is_detector_eyeglasses_key;                 //眼鏡
+	public CheckBoxPreference is_detector_frontalcatface_key;                 //正面のみ？
+	public CheckBoxPreference is_detector_frontalcatface_extended_key;                 //正面(拡張)？
+	public CheckBoxPreference is_detector_frontalface_alt_tree_key;                 //正面の顔高い木？
+	public CheckBoxPreference is_detector_frontalface_alt2_key;                 //正面顔全体2
+	public CheckBoxPreference is_detector_frontalface_default_key;                 //正面デフォルト
+	public CheckBoxPreference is_detector_smile_key;                 //笑顔
+	public CheckBoxPreference is_detector_russian_plate_number_key;                 //ナンバープレート・ロシア
+	public CheckBoxPreference is_detector_ricence_plate_rus_16stages_key;                 //ナンバープレートRUS
+
+	 	 	public CheckBoxPreference is_chase_focus_key ;                 //追跡フォーカス
 	public EditTextPreference write_folder_key;                    //書込みルートフォルダ
 	public EditTextPreference up_scale_key;                        //顔から何割増しの枠で保存するか
 	public Preference haarcascades_last_modified_key;            //顔認証プロファイルの最新更新日
@@ -68,23 +87,6 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 	public boolean is_detector_russian_plate_number = false;                //ナンバープレート・ロシア
 	public boolean is_detector_ricence_plate_rus_16stages = false;     //ナンバープレートRUS
 
-	public CheckBoxPreference is_detector_frontal_face_alt_key;                 //顔検出(標準)
-	public CheckBoxPreference is_detector_profileface_key;                 //横顔
-	public CheckBoxPreference is_detector_upperbody_key;                 //上半身
-	public CheckBoxPreference is_detector_fullbody_key;                 //全身
-	public CheckBoxPreference is_detector_lowerbody_key;                 //下半身
-	public CheckBoxPreference is_detector_eye_key;                 //目(標準)
-	public CheckBoxPreference is_detector_righteye_2splits_key;                 //右目
-	public CheckBoxPreference is_detector_lefteye_2splitss_key;                 //左目
-	public CheckBoxPreference is_detector_eyeglasses_key;                 //眼鏡
-	public CheckBoxPreference is_detector_frontalcatface_key;                 //正面のみ？
-	public CheckBoxPreference is_detector_frontalcatface_extended_key;                 //正面(拡張)？
-	public CheckBoxPreference is_detector_frontalface_alt_tree_key;                 //正面の顔高い木？
-	public CheckBoxPreference is_detector_frontalface_alt2_key;                 //正面顔全体2
-	public CheckBoxPreference is_detector_frontalface_default_key;                 //正面デフォルト
-	public CheckBoxPreference is_detector_smile_key;                 //笑顔
-	public CheckBoxPreference is_detector_russian_plate_number_key;                 //ナンバープレート・ロシア
-	public CheckBoxPreference is_detector_ricence_plate_rus_16stages_key;                 //ナンバープレートRUS
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {

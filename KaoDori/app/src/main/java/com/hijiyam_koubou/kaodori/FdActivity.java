@@ -125,11 +125,11 @@ public class FdActivity extends Activity {
 			fda_setting_bt = ( ImageButton ) findViewById(R.id.fda_setting_bt);      //設定ボタン
 			registerForContextMenu(activityMain);
 			
-			try {
-				copyAssets("haarcascades");                    // assetsの内容を /data/data/*/files/ にコピーします。
-			} catch (IOException er) {
-				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-			}
+//			try {
+//				copyAssets("haarcascades");                    // assetsの内容を /data/data/*/files/ にコピーします。
+//			} catch (IOException er) {
+//				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+//			}
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);

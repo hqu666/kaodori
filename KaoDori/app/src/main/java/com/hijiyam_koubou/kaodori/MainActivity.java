@@ -89,7 +89,9 @@ import java.util.TimeZone;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-public class MainActivity extends Activity implements View.OnClickListener {
+public
+class
+MainActivity extends Activity implements View.OnClickListener,View.OnLongClickListener {
 	static {
 		System.loadLibrary("opencv_java3");  // OpenCV使用クラスに必須
 	}
@@ -103,6 +105,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 	public ImageButton ma_shot_bt;      //キャプチャーボタン
 	public ImageButton ma_func_bt;      //設定ボタン
+	public ImageButton 	ma_detecter_bt;      //検出ボタン
 	public static ImageView ma_iv;                    //撮影結果
 
 	public static SharedPreferences sharedPref;
@@ -120,7 +123,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	public boolean isChaseFocus = false;                 //追跡フォーカス
 	public boolean isTexturView = false;                 //高速プレビュー
 
-	public 	Map	< CharSequence, Boolean > detectosSelect;
+	public Map< CharSequence, Boolean > detectosSelect;
 	public boolean is_detector_frontal_face_alt = true;   //顔検出(標準)</string>
 	public boolean is_detector_profileface = true;               //横顔
 	public boolean is_detector_upperbody = true;                //上半身
@@ -275,10 +278,16 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 			ma_shot_bt = ( ImageButton ) findViewById(R.id.ma_shot_bt);      //キャプチャーボタン
 			ma_func_bt = ( ImageButton ) findViewById(R.id.ma_func_bt);      //設定ボタン
+			ma_detecter_bt = ( ImageButton ) findViewById(R.id.ma_detecter_bt);      //検出ボタン
 			ma_iv = ( ImageView ) findViewById(R.id.ma_iv);                    //撮影結果
 			ma_shot_bt.setOnClickListener(this);
 			ma_func_bt.setOnClickListener(this);
+			ma_detecter_bt.setOnClickListener(this);
 			ma_iv.setOnClickListener(this);
+			ma_shot_bt.setOnLongClickListener(this);
+			ma_func_bt.setOnLongClickListener(this);
+			ma_detecter_bt.setOnLongClickListener(this);
+			ma_iv.setOnLongClickListener(this);
 //			findViewById(R.id.ma_shot_bt).setOnClickListener(this);
 //			findViewById(R.id.ma_func_bt).setOnClickListener(this);
 //			findViewById(R.id.ma_iv).setOnClickListener(this);
@@ -336,7 +345,11 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				mSound = new MediaActionSound();                //撮影音をロードする
 				mSound.load(MediaActionSound.SHUTTER_CLICK);
 			}
-
+			if ( isFaceRecognition ) {
+				ma_detecter_bt.setImageResource(android.R.drawable.star_on);
+			}else{
+				ma_detecter_bt.setImageResource(android.R.drawable.star_off);
+			}
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -534,6 +547,12 @@ public class MainActivity extends Activity implements View.OnClickListener {
 					}
 					break;
 				}
+				case R.id.ma_detecter_bt: {
+					dbMsg += "=ma_detecter_bt";
+					detecterBTClick();
+					break;
+				}
+
 				case R.id.ma_iv: {
 					dbMsg += "=ma_iv";
 					Activity activity = MainActivity.this;            //getActivity();
@@ -556,6 +575,49 @@ public class MainActivity extends Activity implements View.OnClickListener {
 		}
 	}
 
+
+	@Override
+	public boolean onLongClick(View view) {
+		final String TAG = "onLongClick[MA]";
+		String dbMsg = "";
+		try {
+			String titolStr = "作成中です";
+			String mggStr = "次回リリースまでお待ちください。";
+			dbMsg += ",getId=" + view.getId();
+			switch ( view.getId() ) {
+				case R.id.ma_shot_bt: {
+					dbMsg += "=ma_shot_bt";
+					messageShow(titolStr , mggStr);
+					break;
+				}
+				case R.id.ma_func_bt: {
+					dbMsg += "=ma_func_bt";
+					Activity activity = MainActivity.this;            //getActivity();
+					if ( null != activity ) {
+						Intent settingsIntent = new Intent(MainActivity.this , MyPreferencesActivty.class);
+						startActivityForResult(settingsIntent , REQUEST_PREF);  //startActivity(settingsIntent);      //
+					}
+					break;
+				}
+				case R.id.ma_detecter_bt: {
+					dbMsg += "=ma_detecter_bt";
+					showMenuDialog(menuID_detector_select);
+					break;
+				}
+
+				case R.id.ma_iv: {
+					dbMsg += "=ma_iv";
+					messageShow(titolStr , mggStr);
+				}
+				break;
+			}
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+		return false;
+	}
+
 	@Override
 	protected void onActivityResult(final int requestCode , final int resultCode , final Intent data) {
 		final String TAG = "onActivityResult";
@@ -564,10 +626,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			switch ( requestCode ) {
 				case REQUEST_PREF:                                //Prefarensからの戻り
 					laterDestroy();
-					Intent intent = new Intent();
-					intent.setClass(this , this.getClass());
-					this.startActivity(intent);
-					this.finish();
+					reStart();
 //					readPref();
 					break;
 			}
@@ -590,6 +649,53 @@ public class MainActivity extends Activity implements View.OnClickListener {
 	static int menuID_effect_onnoff = menuID_effect + 1;
 	static int menuID_detector_select = menuID_effect_onnoff + 1;
 
+	public void detectersPref() {
+		final String TAG = "detectersPref[MA}";
+		String dbMsg = "";
+		try {
+			dbMsg +=  ",顔検出(標準)=" + is_detector_frontal_face_alt;
+			myEditor.putBoolean("is_detector_frontal_face_alt_key" , is_detector_frontal_face_alt);
+			dbMsg +=  ",横顔=" + is_detector_profileface;
+			myEditor.putBoolean("is_detector_profileface_key" , is_detector_profileface);
+			dbMsg +=  ",全身=" + is_detector_fullbody;
+			myEditor.putBoolean("is_detector_fullbody_key" , is_detector_fullbody);
+			dbMsg +=  ",上半身=" + is_detector_upperbody;
+			myEditor.putBoolean("is_detector_upperbody_key" , is_detector_upperbody);
+			dbMsg +=  ",下半身=" + is_detector_lowerbody;
+			myEditor.putBoolean("is_detector_lowerbody_key" , is_detector_lowerbody);
+			dbMsg +=  ",笑顔=" + is_detector_smile;
+			myEditor.putBoolean("is_detector_smile_key" , is_detector_smile);
+			dbMsg +=  ",ナンバープレート・ロシア=" + is_detector_russian_plate_number;
+			myEditor.putBoolean("is_detector_russian_plate_number_key" , is_detector_russian_plate_number);                    //ナンバープレート・ロシア
+			dbMsg +=  ",ナンバープレートRUS=" + is_detector_ricence_plate_rus_16stages;
+			myEditor.putBoolean("is_detector_ricence_plate_rus_16stages_key" , is_detector_ricence_plate_rus_16stages);                               //ナンバープレートRUS
+
+			dbMsg +=  ",目(標準)=" + is_detector_eye;
+			myEditor.putBoolean("is_detector_eye_key" , is_detector_eye);                  //目(標準)
+			dbMsg +=  ",右目=" + is_detector_righteye_2splits;
+			myEditor.putBoolean("is_detector_righteye_2splits_key" , is_detector_righteye_2splits);                  //右目
+			dbMsg +=  ",左目=" + is_detector_lefteye_2splits;
+			myEditor.putBoolean("is_detector_lefteye_2splitss_key" , is_detector_lefteye_2splits);                 //左目
+			dbMsg +=  ",眼鏡=" + is_detector_eyeglasses;
+			myEditor.putBoolean("is_detector_eyeglasses_key" , is_detector_eyeglasses);                                   //眼鏡
+			dbMsg +=  ",正面のみ=" + is_detector_frontalcatface;
+			myEditor.putBoolean("is_detector_frontalcatface_key" , is_detector_frontalcatface);                    //正面のみ？
+			dbMsg +=  ",正面(拡張)=" + is_detector_frontalcatface_extended;
+			myEditor.putBoolean("is_detector_frontalcatface_extended_key" , is_detector_frontalcatface_extended);                            //正面(拡張)？
+			dbMsg +=  ",正面の顔高い木？)=" + is_detector_frontalface_alt_tree;
+			myEditor.putBoolean("is_detector_frontalface_alt_tree_key" , is_detector_frontalface_alt_tree);                        //正面の顔高い木？
+			dbMsg +=  ",正面顔全体2=" + is_detector_frontalface_alt2;
+			myEditor.putBoolean("is_detector_frontalface_alt2_key" , is_detector_frontalface_alt2);                     //正面顔全体2
+			dbMsg +=  ",正面デフォルト=" + is_detector_frontalface_default;
+			myEditor.putBoolean("is_detector_frontalface_default_key" , is_detector_frontalface_default);                             //正面デフォルト
+			dbMsg += ",更新";
+			myEditor.commit();
+			dbMsg += "完了";
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
 
 	/**
 	 * メニューをリストダイアログで表示する
@@ -606,14 +712,14 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			AlertDialog.Builder listDlg = new AlertDialog.Builder(this);
 
 //			listDlg.setTitle("タイトル");
-			dbMsg += ",menuId="+menuId;
+			dbMsg += ",menuId=" + menuId;
 			if ( menuId == menuID_root ) {          //ルートメニュー
 				menuItems = new CharSequence[]{getResources().getString(R.string.mm_phot) , getResources().getString(R.string.mm_phot) + getResources().getString(R.string.mm_onoff_only) , getResources().getString(R.string.mm_effect) , getResources().getString(R.string.mm_effect) + getResources().getString(R.string.mm_onoff_only) , getResources().getString(R.string.mm_setting_titol) , getResources().getString(R.string.mm_quit_titol)};
 			} else if ( menuId == menuID_phot ) {          //撮影設定
 				menuItems = new CharSequence[]{getResources().getString(R.string.mm_phot_array_size)};
 			} else if ( menuId == menuID_phot_onoff ) {          //撮影設定
-				menuItems = new CharSequence[]{getResources().getString(R.string.mm_phot_sub_main) ,getResources().getString(R.string.mm_phot_flash) , getResources().getString(R.string.mm_phot_rumbling)};
-				menuItemChecks = new boolean[]{isSubCamera,isAutoFlash , isRumbling};      //オートフラッシュ、シャッター音の鳴動
+				menuItems = new CharSequence[]{getResources().getString(R.string.mm_phot_sub_main) , getResources().getString(R.string.mm_phot_flash) , getResources().getString(R.string.mm_phot_rumbling)};
+				menuItemChecks = new boolean[]{isSubCamera , isAutoFlash , isRumbling};      //オートフラッシュ、シャッター音の鳴動
 			} else if ( menuId == menuID_effect ) {          //エフェクト
 				menuItems = new CharSequence[]{getResources().getString(R.string.mm_detector_select)};
 				menuItemChecks = new boolean[]{isChaseFocus , false};      //顔検出 ,追跡フォーカス
@@ -622,7 +728,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				menuItemChecks = new boolean[]{isFaceRecognition , isChaseFocus , false};      //顔検出 ,追跡フォーカス
 			} else if ( menuId == menuID_detector_select ) {          //検出対象選択
 
-				detectosSelect = new LinkedHashMap< CharSequence, Boolean >() ;
+				detectosSelect = new LinkedHashMap< CharSequence, Boolean >();
 //				detectosSelect.clear();
 				detectosSelect.put(getResources().getString(R.string.mm_detector_frontal_face_alt) , is_detector_frontal_face_alt);                            //顔検出(標準)</string>
 				detectosSelect.put(getResources().getString(R.string.mm_detector_profileface) , is_detector_profileface);                                    //横顔
@@ -646,7 +752,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				menuItemChecks = new boolean[detectosSelect.size()];
 				int setCount = 0;
 				for ( Map.Entry< CharSequence, Boolean > entry : detectosSelect.entrySet() ) {
-					dbMsg += "("+setCount +")" +  entry.getKey()+ "="+entry.getValue();
+					dbMsg += "(" + setCount + ")" + entry.getKey() + "=" + entry.getValue();
 					menuItems[setCount] = entry.getKey();
 					menuItemChecks[setCount] = entry.getValue();
 					setCount++;
@@ -664,11 +770,10 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				});
 			} else if ( menuId == menuID_detector_select ) {      //チェックボックス（複数選択）
 				listDlg.setTitle(getResources().getString(R.string.mm_detector_select));
-				listDlg.setMultiChoiceItems(
-						menuItems , menuItemChecks , new DialogInterface.OnMultiChoiceClickListener() {
-							public void onClick(DialogInterface dialog , int which , boolean flag) {
-							}
-						});
+				listDlg.setMultiChoiceItems(menuItems , menuItemChecks , new DialogInterface.OnMultiChoiceClickListener() {
+					public void onClick(DialogInterface dialog , int which , boolean flag) {
+					}
+				});
 				listDlg.setPositiveButton("OK" , new DialogInterface.OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog , int idx) {
@@ -678,63 +783,44 @@ public class MainActivity extends Activity implements View.OnClickListener {
 						for ( int i = 0 ; i < menuItemChecks.length ; i++ ) {
 							String rName = ( String ) menuItems[i];
 							boolean eBool = menuItemChecks[i];
-							dbMsg += "(" + i + ")" +rName + "="+eBool ;
+							dbMsg += "(" + i + ")" + rName + "=" + eBool;
 							if ( rName.equals(getResources().getString(R.string.mm_detector_frontal_face_alt)) ) {                //顔検出(標準)</string>
-								is_detector_frontal_face_alt =eBool;
-								myEditor.putBoolean("is_detector_frontal_face_alt_key" , eBool);
+								is_detector_frontal_face_alt = eBool;
 							} else if ( rName.equals(getResources().getString(R.string.mm_detector_profileface)) ) {                    //横顔
 								is_detector_profileface = eBool;
-								myEditor.putBoolean("is_detector_profileface_key" , eBool);
 							} else if ( rName.equals(getResources().getString(R.string.mm_detector_upperbody)) ) {                    //上半身
 								is_detector_upperbody = eBool;
-								myEditor.putBoolean("is_detector_upperbody_key" , eBool);
 							} else if ( rName.equals(getResources().getString(R.string.mm_detector_fullbody)) ) {                    //全身
 								is_detector_fullbody = eBool;
-								myEditor.putBoolean("is_detector_fullbody_key" , eBool);
 							} else if ( rName.equals(getResources().getString(R.string.mm_detector_lowerbody)) ) {                    //下半身
-								is_detector_lowerbody =eBool;
-								myEditor.putBoolean("is_detector_lowerbody_key" , eBool);
+								is_detector_lowerbody = eBool;
 							} else if ( rName.equals(getResources().getString(R.string.mm_detector_smile)) ) {                    //笑顔
-								is_detector_smile =eBool;
-								myEditor.putBoolean("is_detector_smile_key" , eBool);
+								is_detector_smile = eBool;
 							} else if ( rName.equals(getResources().getString(R.string.mm_detector_russian_plate_number)) ) {                    //ナンバープレート・ロシア
-								is_detector_russian_plate_number =eBool;
-								myEditor.putBoolean("is_detector_russian_plate_number_key" , eBool);
+								is_detector_russian_plate_number = eBool;
 							} else if ( rName.equals(getResources().getString(R.string.mm_detector_ricence_plate_rus_16stages)) ) {                    //ナンバープレートRUS
-								is_detector_ricence_plate_rus_16stages =eBool;
-								myEditor.putBoolean("is_detector_ricence_plate_rus_16stages_key" , eBool);
+								is_detector_ricence_plate_rus_16stages = eBool;
 							} else if ( rName.equals(getResources().getString(R.string.mm_detector_eye)) ) {                    //目(標準)
-								is_detector_eye =eBool;
-								myEditor.putBoolean("is_detector_eye_key" , eBool);
+								is_detector_eye = eBool;
 							} else if ( rName.equals(getResources().getString(R.string.mm_detector_righteye_2splits)) ) {                    //右目
-								is_detector_righteye_2splits = menuItemChecks[i];
-								myEditor.putBoolean("is_detector_righteye_2splits_key" , eBool);
+								is_detector_righteye_2splits = eBool;
 							} else if ( rName.equals(getResources().getString(R.string.mm_detector_lefteye_2splits)) ) {                    //左目
-								is_detector_lefteye_2splits  =eBool;
-								myEditor.putBoolean("is_detector_lefteye_2splitss_key" , eBool);
+								is_detector_lefteye_2splits = eBool;
 							} else if ( rName.equals(getResources().getString(R.string.mm_detector_eyeglasses)) ) {                    //眼鏡
-								is_detector_eyeglasses  =eBool;
-								myEditor.putBoolean("is_detector_eyeglasses_key" , eBool);
+								is_detector_eyeglasses = eBool;
 							} else if ( rName.equals(getResources().getString(R.string.mm_detector_frontalcatface)) ) {                    //正面のみ？
-								is_detector_frontalcatface =eBool;
-								myEditor.putBoolean("is_detector_frontalcatface_key" , eBool);
+								is_detector_frontalcatface = eBool;
 							} else if ( rName.equals(getResources().getString(R.string.mm_detector_frontalcatface_extended)) ) {                    //正面(拡張)？
-								is_detector_frontalcatface_extended =eBool;
-								myEditor.putBoolean("is_detector_frontalcatface_extended_key" , eBool);
+								is_detector_frontalcatface_extended = eBool;
 							} else if ( rName.equals(getResources().getString(R.string.mm_detector_frontalface_alt_tree)) ) {                    //正面の顔高い木？
-								is_detector_frontalface_alt_tree =eBool;
-								myEditor.putBoolean("is_detector_frontalface_alt_tree_key" , eBool);
+								is_detector_frontalface_alt_tree = eBool;
 							} else if ( rName.equals(getResources().getString(R.string.mm_detector_frontalface_alt2)) ) {                    //正面顔全体2
-								is_detector_frontalface_alt2 =eBool;
-								myEditor.putBoolean("is_detector_frontalface_alt2_key" , eBool);
+								is_detector_frontalface_alt2 = eBool;
 							} else if ( rName.equals(getResources().getString(R.string.mm_detector_frontalface_default)) ) {                    //正面デフォルト
-								is_detector_frontalface_default =eBool;
-								myEditor.putBoolean("is_detector_frontalface_default_key" , eBool);
+								is_detector_frontalface_default = eBool;
 							}
 						}
-						dbMsg += ",更新";
-						myEditor.commit();
-						dbMsg += "完了";
+						detectersPref();
 						myLog(TAG , dbMsg);
 					}
 				});
@@ -785,13 +871,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			} else if ( selctItem.equals(getResources().getString(R.string.mm_detector_select)) ) {
 				showMenuDialog(menuID_detector_select);
 			} else if ( selctItem.equals(getResources().getString(R.string.mm_effect_face_recgnition)) ) {
-				dbMsg += ",isFaceRecognition=" + isFaceRecognition;
-				isFaceRecognition = !isFaceRecognition;                 //顔検出実行中
-				dbMsg += ">>" + isFaceRecognition;
-				myEditor.putBoolean("is_face_recognition_key" , isFaceRecognition);
-				dbMsg += ",更新";
-				myEditor.commit();
-				dbMsg += "完了";
+				detecterBTClick();
 			} else if ( selctItem.equals(getResources().getString(R.string.mm_effect_chase_focus)) ) {
 				dbMsg += ",isChaseFocus=" + isChaseFocus;
 				isChaseFocus = !isChaseFocus;
@@ -871,6 +951,90 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
 
 	//アプリケーション動作//////////////////////////////////////////////////////////////////////////メニュー機構//////
+	public void detecterBTClick() {
+		final String TAG = "detecterBTClick[MA}";
+		String dbMsg = "";
+		try {
+			dbMsg += ",isFaceRecognition=" + isFaceRecognition;
+			isFaceRecognition = !isFaceRecognition;                 //顔検出実行中
+			dbMsg += ">>" + isFaceRecognition;
+			myEditor.putBoolean("is_face_recognition_key" , isFaceRecognition);
+			dbMsg += ",更新";
+			myEditor.commit();
+			dbMsg += "完了";
+			String toastText = "検出終了";
+				if ( isFaceRecognition ) {
+					toastText = "";
+					ma_detecter_bt.setImageResource(android.R.drawable.star_on);      //    @android:drawable/star_on
+					if (is_detector_frontal_face_alt ) {                //顔検出(標準)</string>
+						toastText += getResources().getString(R.string.mm_detector_frontal_face_alt);
+					} else if (is_detector_profileface) {                    //横顔
+						toastText += ","+ getResources().getString(R.string.mm_detector_profileface);
+					} else if (is_detector_upperbody ) {                    //上半身
+						toastText += ","+ getResources().getString(R.string.mm_detector_upperbody);
+					} else if ( is_detector_fullbody ) {                    //全身
+						toastText += ","+ getResources().getString(R.string.mm_detector_fullbody);
+					} else if (is_detector_lowerbody  ) {                    //下半身
+						toastText += ","+ getResources().getString(R.string.mm_detector_lowerbody);
+					} else if (is_detector_smile) {                    //笑顔
+						toastText += ","+ getResources().getString(R.string.mm_detector_smile);
+					} else if (  is_detector_russian_plate_number) {                    //ナンバープレート・ロシア
+						toastText += ","+ getResources().getString(R.string.mm_detector_russian_plate_number);
+					} else if ( is_detector_ricence_plate_rus_16stages) {                    //ナンバープレートRUS
+						toastText += ","+ getResources().getString(R.string.mm_detector_ricence_plate_rus_16stages);
+					} else if (is_detector_eye) {                    //目(標準)
+						toastText += "\n特定した人物の詳細検出は"+ getResources().getString(R.string.mm_detector_eye);
+					} else if ( is_detector_righteye_2splits ) {                    //右目
+						toastText += ","+ getResources().getString(R.string.mm_detector_righteye_2splits);
+					} else if ( is_detector_lefteye_2splits) {                    //左目
+						toastText += ","+ getResources().getString(R.string.mm_detector_lefteye_2splits);
+					} else if ( is_detector_eyeglasses) {                    //眼鏡
+						toastText += ","+ getResources().getString(R.string.mm_detector_eyeglasses);
+					} else if ( is_detector_frontalcatface) {                    //正面のみ？
+						toastText += ","+ getResources().getString(R.string.mm_detector_frontalcatface);
+					} else if ( is_detector_frontalcatface_extended ) {                    //正面(拡張)？
+						toastText += ","+ getResources().getString(R.string.mm_detector_frontalcatface_extended);
+					} else if (is_detector_frontalface_alt_tree  ) {                    //正面の顔高い木？
+						toastText += ","+ getResources().getString(R.string.mm_detector_frontalface_alt_tree);
+					} else if (is_detector_frontalface_alt2 ) {                    //正面顔全体2
+						toastText += ","+ getResources().getString(R.string.mm_detector_frontalface_alt2);
+					} else if (is_detector_frontalface_default ) {                    //正面デフォルト
+						toastText += ","+ getResources().getString(R.string.mm_detector_frontalface_default);
+					}
+//					setEffectView();
+//					is_detector_frontal_face_alt = true;   //顔検出(標準)</string>
+//					is_detector_profileface = true;               //横顔
+				} else {
+					ma_detecter_bt.setImageResource(android.R.drawable.star_off);      //    @android:drawable/star_on
+//					is_detector_frontal_face_alt = false;   //顔検出(標準)</string>
+//					is_detector_profileface = false;               //横顔
+//					is_detector_upperbody = false;                //上半身
+//					is_detector_fullbody = false;                //全身
+//					is_detector_lowerbody = false;                // 下半身
+//					is_detector_smile = false;               //笑顔
+//					is_detector_russian_plate_number = false;                //ナンバープレート・ロシア
+//					is_detector_ricence_plate_rus_16stages = false;     //ナンバープレートRUS
+//
+//					is_detector_eye = false;               //目(標準)</string>
+//					is_detector_righteye_2splits = false;        //右目
+//					is_detector_lefteye_2splits = false;                //左目
+//					is_detector_eyeglasses = false;                //眼鏡
+//					is_detector_frontalcatface = false;               //正面のみ？
+//					is_detector_frontalcatface_extended = false;                //正面(拡張)？string>
+//					is_detector_frontalface_alt_tree = false;               //正面の顔高い木？
+//					is_detector_frontalface_alt2 = false;                //正面顔全体2
+//					is_detector_frontalface_default = false;                //正面デフォルト
+//					removetEffectView();
+				}
+//				detectersPref();
+			showToast(  toastText);
+			reStart();
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
 
 	/**
 	 * プレビューの幅と角度を更新する
@@ -919,6 +1083,20 @@ public class MainActivity extends Activity implements View.OnClickListener {
 				dbMsg += ">>" + mCameraDevice;
 			}
 			isReWriteNow = true;                        //書き換え発生
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+	public void reStart() {
+		final String TAG = "reStart[MA}";
+		String dbMsg = "";
+		try {
+			Intent intent = new Intent();
+			intent.setClass(this , this.getClass());
+			this.startActivity(intent);
+			this.finish();
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -1001,14 +1179,14 @@ public class MainActivity extends Activity implements View.OnClickListener {
 			if ( ma_effect_fl != null ) {
 				dbMsg += ",OCVFRV=" + OCVFRV;
 				if ( OCVFRV == null ) {
-					String filename = getFilesDir().getAbsolutePath() + "/haarcascades/haarcascade_frontalface_alt.xml";
-					dbMsg += "filename=" + filename;       //filename=/data/user/0/com.hijiyam_koubou.kaodori/files/haarcascades/haarcascade_frontalface_alt.xml
-					File rFile = new File(filename);
-					dbMsg += ";exists=" + rFile.exists();
-					if ( !rFile.exists() ) {
-						copyAssets("haarcascades" , haarcascadesLastModified);                    // assetsの内容を /data/data/*/files/ にコピーします。
-						dbMsg += ">>" + rFile.exists();
-					}
+//					String filename = getFilesDir().getAbsolutePath() + "/haarcascades/haarcascade_frontalface_alt.xml";
+//					dbMsg += "filename=" + filename;       //filename=/data/user/0/com.hijiyam_koubou.kaodori/files/haarcascades/haarcascade_frontalface_alt.xml
+//					File rFile = new File(filename);
+//					dbMsg += ";exists=" + rFile.exists();
+//					if ( !rFile.exists() ) {
+//						copyAssets("haarcascades" , haarcascadesLastModified);                    // assetsの内容を /data/data/*/files/ にコピーします。
+//						dbMsg += ">>" + rFile.exists();
+//					}
 					OCVFRV = new OCVFaceRecognitionVeiw(MainActivity.this);            //顔検出View
 					EffectAddTask EAT = new EffectAddTask();
 //					EAT.setOnCallBack(new CallBackTask(){
@@ -1095,16 +1273,19 @@ public class MainActivity extends Activity implements View.OnClickListener {
 							dbMsg += ",shift(" + sLeft + "," + sTop + ")";
 							dbMsg += "、現在(" + OCVFRV.getScaleX() + "×" + OCVFRV.getScaleY() + "%)";
 							FrameLayout.LayoutParams layoutParams = ( FrameLayout.LayoutParams ) OCVFRV.getLayoutParams();// ViewGroup.MarginLayoutParams だとyoutParams.width' on a null object reference
-							dbMsg += ",layoutParams(" + layoutParams.leftMargin + "×" + layoutParams.topMargin + ")[" + layoutParams.width + "×" + layoutParams.height + "]";
-							dbMsg += ",gravity=" + layoutParams.gravity;
-							layoutParams.leftMargin = sLeft;
-							layoutParams.topMargin = sTop;
-							layoutParams.width = PREVIEW_WIDTH;
-							layoutParams.height = PREVIEW_HEIGHT;
-							OCVFRV.setLayoutParams(layoutParams);
-							OCVFRV.requestLayout();
-							layoutParams = ( FrameLayout.LayoutParams ) OCVFRV.getLayoutParams();
-							dbMsg += ",>>(" + layoutParams.leftMargin + "×" + layoutParams.topMargin + ")[" + layoutParams.width + "×" + layoutParams.height + "]";
+					         if(layoutParams != null){
+								 dbMsg += ",layoutParams(" + layoutParams.leftMargin + "×" + layoutParams.topMargin + ")[" + layoutParams.width + "×" + layoutParams.height + "]";
+								 dbMsg += ",gravity=" + layoutParams.gravity;
+								 layoutParams.leftMargin = sLeft;
+								 layoutParams.topMargin = sTop;
+								 layoutParams.width = PREVIEW_WIDTH;
+								 layoutParams.height = PREVIEW_HEIGHT;
+								 OCVFRV.setLayoutParams(layoutParams);
+								 OCVFRV.requestLayout();
+								 layoutParams = ( FrameLayout.LayoutParams ) OCVFRV.getLayoutParams();
+								 dbMsg += ",>>(" + layoutParams.leftMargin + "×" + layoutParams.topMargin + ")[" + layoutParams.width + "×" + layoutParams.height + "]";
+							 }
+
 							dbMsg += ">>OCVFRV(" + OCVFRV.getLeft() + "," + OCVFRV.getTop() + ")[" + OCVFRV.getWidth() + "×" + OCVFRV.getHeight() + "]";
 //			dbMsg += ",camera=" + mSensorOrientation + "dig";
 							OCVFRV.setCondition();
