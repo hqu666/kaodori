@@ -1,6 +1,10 @@
 package com.hijiyam_koubou.kaodori;
 
+import android.Manifest;
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -8,6 +12,8 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 //import android.graphics.Rect;
 import android.graphics.RectF;
+import android.os.Build;
+import android.preference.PreferenceManager;
 import android.util.AttributeSet;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -64,23 +70,29 @@ public class OCVFaceRecognitionVeiw extends View {
 	private CascadeClassifier detectorRussian_plate_number;        //ナンバープレート・ロシア";
 	private CascadeClassifier detectorLicence_plate_rus_16stages;    //ナンバープレートRUS";
 
-	public boolean is_detector_frontal_face_alt = true;   //顔検出(標準)</string>
-	public boolean is_detector_eye = true;               //目(標準)</string>
-	public boolean is_detector_righteye_2splits = true;        //右目
-	public boolean is_detector_lefteye_2splits = true;                //左目
-	public boolean is_detector_eyeglasses = true;                //眼鏡
-	public boolean is_detector_frontalcatface = true;               //正面のみ？
-	public boolean is_detector_frontalcatface_extended = true;                //正面(拡張)？string>
-	public boolean is_detector_frontalface_alt_tree = true;               //正面の顔高い木？
-	public boolean is_detector_frontalface_alt2 = true;                //正面顔全体2
-	public boolean is_detector_frontalface_default = true;                //正面デフォルト
-	public boolean is_detector_fullbody = true;                //全身
-	public boolean is_detector_upperbody = true;                //上半身
-	public boolean is_detector_lowerbody = true;                // 下半身
+	public static SharedPreferences sharedPref;
+	public SharedPreferences.Editor myEditor;
+	//	public String writeFolder = "";
+//	public float upScale = 1.2f;
+	public long haarcascadesLastModified = 0;
+	public boolean is_detector_frontal_face_alt = false;   //顔検出(標準)</string>
+	public boolean is_detector_fullbody = false;                //全身
+	public boolean is_detector_upperbody = false;                //上半身
+	public boolean is_detector_lowerbody = false;                // 下半身
 	public boolean is_detector_profileface = true;               //横顔
-	public boolean is_detector_smile = true;               //笑顔
-	public boolean is_detector_russian_plate_number = true;                //ナンバープレート・ロシア
-	public boolean is_detector_ricence_plate_rus_16stages = true;     //ナンバープレートRUS
+	public boolean is_detector_smile = false;               //笑顔
+	public boolean is_detector_russian_plate_number = false;                //ナンバープレート・ロシア
+	public boolean is_detector_ricence_plate_rus_16stages = false;     //ナンバープレートRUS
+
+	public boolean is_detector_eye = false;               //目(標準)</string>
+	public boolean is_detector_righteye_2splits = false;        //右目
+	public boolean is_detector_lefteye_2splits = false;                //左目
+	public boolean is_detector_eyeglasses = false;                //眼鏡
+	public boolean is_detector_frontalcatface = false;               //正面のみ？
+	public boolean is_detector_frontalcatface_extended = false;                //正面(拡張)？string>
+	public boolean is_detector_frontalface_alt_tree = false;               //正面の顔高い木？
+	public boolean is_detector_frontalface_alt2 = false;                //正面顔全体2
+	public boolean is_detector_frontalface_default = false;                //正面デフォルト
 
 
 	private MatOfRect objects;
@@ -151,53 +163,102 @@ public class OCVFaceRecognitionVeiw extends View {
 		}
 	}
 
-//	public OCVFaceRecognitionVeiw(Context context, AttributeSet attrs, int defStyle) {
+	//	public OCVFaceRecognitionVeiw(Context context, AttributeSet attrs, int defStyle) {
 //		super(context, attrs, defStyle);
 //		time = 0;
 //		df = new SimpleDateFormat("HH:mm:ss");
 //	}
+	public void readPref() {
+		final String TAG = "readPref[OCVFR]";
+		String dbMsg = "許諾済み";//////////////////
+		try {
+//		if ( Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ) {                //(初回起動で)全パーミッションの許諾を取る
+//			dbMsg = "許諾確認";
+//			String[] PERMISSIONS = {Manifest.permission.CAMERA , Manifest.permission.WRITE_EXTERNAL_STORAGE , Manifest.permission.READ_EXTERNAL_STORAGE};
+//			boolean isNeedParmissionReqest = false;
+//			for ( String permissionName : PERMISSIONS ) {
+//				dbMsg += "," + permissionName;
+//				int checkResalt = checkSelfPermission(permissionName);
+//				dbMsg += "=" + checkResalt;
+//				if ( checkResalt != PackageManager.PERMISSION_GRANTED ) {
+//					isNeedParmissionReqest = true;
+//				}
+//			}
+//			if ( isNeedParmissionReqest ) {
+//				dbMsg += "許諾処理へ";
+//				requestPermissions(PERMISSIONS , REQUEST_PREF);
+//				return;
+//			}
+//		}
+//			dbMsg += ",isReadPref=" + isReadPref;
+			MyPreferenceFragment prefs = new MyPreferenceFragment();
+			prefs.readPref(context);
+
+			is_detector_frontal_face_alt = prefs.is_detector_frontal_face_alt;
+			dbMsg += ",顔検出(標準)=" + is_detector_frontal_face_alt;
+			is_detector_profileface = prefs.is_detector_profileface;
+			dbMsg += ",横顔=" + is_detector_profileface;
+			is_detector_fullbody = prefs.is_detector_fullbody;
+			dbMsg += ",全身=" + is_detector_fullbody;
+			is_detector_upperbody = prefs.is_detector_upperbody;
+			dbMsg += ",上半身=" + is_detector_upperbody;
+			is_detector_lowerbody = prefs.is_detector_lowerbody;
+			dbMsg += ",下半身=" + is_detector_lowerbody;
+			is_detector_smile = prefs.is_detector_smile;
+			dbMsg += ",笑顔=" + is_detector_smile;
+			is_detector_russian_plate_number = prefs.is_detector_russian_plate_number;
+			dbMsg += ",ナンバープレート・ロシア=" + is_detector_russian_plate_number;
+			is_detector_ricence_plate_rus_16stages = prefs.is_detector_ricence_plate_rus_16stages;
+			dbMsg += ",ナンバープレートRUS=" + is_detector_ricence_plate_rus_16stages;
+
+			is_detector_eye = prefs.is_detector_eye;
+			dbMsg += ",目(標準)=" + is_detector_eye;
+			is_detector_righteye_2splits = prefs.is_detector_righteye_2splits;
+			dbMsg += ",右目=" + is_detector_righteye_2splits;
+			is_detector_lefteye_2splits = prefs.is_detector_lefteye_2splits;
+			dbMsg += ",左目=" + is_detector_lefteye_2splits;
+			is_detector_eyeglasses = prefs.is_detector_eyeglasses;
+			dbMsg += ",眼鏡=" + is_detector_eyeglasses;
+			is_detector_frontalcatface = prefs.is_detector_frontalcatface;
+			dbMsg += ",正面のみ=" + is_detector_frontalcatface;
+			is_detector_frontalcatface_extended = prefs.is_detector_frontalcatface_extended;
+			dbMsg += ",正面(拡張)=" + is_detector_frontalcatface_extended;
+			is_detector_frontalface_alt_tree = prefs.is_detector_frontalface_alt_tree;
+			dbMsg += ",正面の顔高い木=" + is_detector_frontalface_alt_tree;
+			is_detector_frontalface_alt2 = prefs.is_detector_frontalface_alt2;
+			dbMsg += ",正面顔全体2=" + is_detector_frontalface_alt2;
+			is_detector_frontalface_default = prefs.is_detector_frontalface_default;
+			dbMsg += ",正面デフォルト=" + is_detector_frontalface_default;
+//		writeFolder = prefs.write_folder;
+//		dbMsg += "," + getResources().getString(R.string.write_folder) + "=" + writeFolder;
+//		if ( prefs.up_scale != null ) {
+//			dbMsg += ",up_scale=" + prefs.up_scale;
+//			CS_Util UTIL = new CS_Util();
+//			if ( UTIL.isFloatVal(prefs.up_scale) ) {
+//				upScale = Float.parseFloat(prefs.up_scale);
+//			} else {
+//				upScale = 2.0f;
+//			}
+//			dbMsg += "," + getResources().getString(R.string.up_scale) + "=" + upScale;
+//		}
+			haarcascadesLastModified = Long.parseLong(prefs.haarcascades_last_modified);
+			dbMsg += "," + getResources().getString(R.string.haarcascades_last_modified) + "=" + haarcascadesLastModified;
+
+			sharedPref = PreferenceManager.getDefaultSharedPreferences(context);            //	getActivity().getBaseContext()
+			myEditor = sharedPref.edit();
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
 
 	public void constractCommon(Context context) {
 		final String TAG = "constractCommon[OCVFR]";
 		String dbMsg = "";
 		try {
 			this.context = context;
-			MainActivity MA = new MainActivity();
-			is_detector_frontal_face_alt = MA.is_detector_frontal_face_alt;
-			dbMsg += ",顔検出(標準)=" + is_detector_frontal_face_alt;
-			is_detector_profileface = MA.is_detector_profileface;
-			dbMsg += ",横顔=" + is_detector_profileface;
-			is_detector_fullbody = MA.is_detector_fullbody;
-			dbMsg += ",全身=" + is_detector_fullbody;
-			is_detector_upperbody = MA.is_detector_upperbody;
-			dbMsg += ",上半身=" + is_detector_upperbody;
-			is_detector_lowerbody = MA.is_detector_lowerbody;
-			dbMsg += ",下半身=" + is_detector_lowerbody;
-			is_detector_smile = MA.is_detector_smile;
-			dbMsg += ",笑顔=" + is_detector_smile;
-			is_detector_russian_plate_number = MA.is_detector_russian_plate_number;
-			dbMsg += ",ナンバープレート・ロシア=" + is_detector_russian_plate_number;
-			is_detector_ricence_plate_rus_16stages = MA.is_detector_ricence_plate_rus_16stages;
-			dbMsg += ",ナンバープレートRUS=" + is_detector_ricence_plate_rus_16stages;
-
-			is_detector_eye = MA.is_detector_eye;
-			dbMsg += ",目(標準)=" + is_detector_eye;
-			is_detector_righteye_2splits = MA.is_detector_righteye_2splits;
-			dbMsg += ",右目=" + is_detector_righteye_2splits;
-			is_detector_lefteye_2splits = MA.is_detector_lefteye_2splits;
-			dbMsg += ",左目=" + is_detector_lefteye_2splits;
-			is_detector_eyeglasses = MA.is_detector_eyeglasses;
-			dbMsg += ",眼鏡=" + is_detector_eyeglasses;
-			is_detector_frontalcatface = MA.is_detector_frontalcatface;
-			dbMsg += ",正面のみ=" + is_detector_frontalcatface;
-			is_detector_frontalcatface_extended = MA.is_detector_frontalcatface_extended;
-			dbMsg += ",正面(拡張)=" + is_detector_frontalcatface_extended;
-			is_detector_frontalface_alt_tree = MA.is_detector_frontalface_alt_tree;
-			dbMsg += ",正面の顔高い木=" + is_detector_frontalface_alt_tree;
-			is_detector_frontalface_alt2 = MA.is_detector_frontalface_alt2;
-			dbMsg += ",正面顔全体2=" + is_detector_frontalface_alt2;
-			is_detector_frontalface_default = MA.is_detector_frontalface_default;
-			dbMsg += ",正面デフォルト=" + is_detector_frontalface_default;
+			readPref();
 
 			if ( detectosFIles == null ) {
 				detectosFIles = new LinkedHashMap< String, CascadeClassifier >();
@@ -207,24 +268,40 @@ public class OCVFaceRecognitionVeiw extends View {
 				detectosFIles.put("/haarcascades/haarcascade_upperbody.xml" , detectorUpperbody);                       //上半身";
 				detectosFIles.put("/haarcascades/haarcascade_lowerbody.xml" , detectorLowerbody);                       //下半身";
 				detectosFIles.put("/haarcascades/haarcascade_smile.xml" , detectorSmile);                                       //笑顔";
+				detectosFIles.put("/haarcascades/haarcascade_frontalcatface.xml" , detectorFrontalcatface);         //正面か";
+				detectosFIles.put("/haarcascades/haarcascade_frontalcatface_extended.xml" , detectorFrontalcatface_extended);        //正面(拡張)";
+				detectosFIles.put("/haarcascades/haarcascade_frontalface_alt_tree.xml" , detectorFrontalface_alt_tree);       //正面の顔高い木";
+				detectosFIles.put("/haarcascades/haarcascade_frontalface_alt2.xml" , detectorFrontalface_alt2);      //正面顔全体2";
+				detectosFIles.put("/haarcascades/haarcascade_frontalface_default.xml" , detectorFrontalface_default);   //正面デフォルト";
 				detectosFIles.put("/haarcascades/haarcascade_russian_plate_number.xml" , detectorRussian_plate_number);         //ナンバープレート・ロシア";
 				detectosFIles.put("/haarcascades/haarcascade_licence_plate_rus_16stages.xml" , detectorLicence_plate_rus_16stages);         //ナンバープレートRUS";
 
+//				String[] assetFilees =context.getResources().getAssets().list("haarcascades");      //  /assets/
+////				String[] assetFilees = context.getApplicationContext().getAssets().list("/assets/");
+//				File rFile = new File(assetFilees[0]);    //haarcascade_eye が拾える
+//				String passwRoot = context.getFilesDir().getAbsolutePath() + "/assets";             //.getParentFile()=getParent=null  ,getAbsolutePath=getName=getPath=haarcascade_eye.xml
+//				dbMsg += ",passwRoot=" + passwRoot;     //getCanonicalPath=/haarcascade_eye.xml,   getParentFile().getPath()=null
 				int setCount = 0;
 				for ( Map.Entry< String, CascadeClassifier > entry : detectosFIles.entrySet() ) {
 					String rDetectorFile = entry.getKey();
 					CascadeClassifier cfs = entry.getValue();
 					dbMsg += "\n(" + setCount + ")";
-					String path = context.getFilesDir().getAbsolutePath() + "/" + rDetectorFile;
+					String path = context.getFilesDir().getAbsolutePath() + "/" + rDetectorFile;    //Aprcationがインストールされているフォルダの場合
 					dbMsg += path;
 					File rFile = new File(path);
 					dbMsg += " ,exists=" + rFile.exists();
 					if ( rFile.exists() ) {
 						cfs = new CascadeClassifier(path);
 						dbMsg += "=" + cfs;
-						if ( rDetectorFile.contains("haarcascade_frontalface_alt") ) {      //標準顔検出
-							detectorFrontalFaceAlt = new CascadeClassifier(path);
-							dbMsg += "=" + detectorFrontalFaceAlt;
+						if ( rDetectorFile.contains("haarcascade_frontalface_alt_tree") ) {                 //正面の顔高い木";
+							detectorFrontalface_alt_tree = new CascadeClassifier(path);
+							dbMsg += "=" + detectorFrontalface_alt_tree;
+						} else if ( rDetectorFile.contains("haarcascade_frontalface_alt2") ) {                //正面顔全体2";
+							detectorFrontalface_alt2 = new CascadeClassifier(path);
+							dbMsg += "=" + detectorFrontalface_alt2;
+						} else if ( rDetectorFile.contains("haarcascade_frontalface_alt") ) {      //標準顔検出
+							detectorFrontalFaceAlt = cfs;            // new CascadeClassifier(path);
+//							dbMsg += "=" + detectorFrontalFaceAlt;
 						} else if ( rDetectorFile.contains("haarcascade_profileface") ) {                         //横顔";
 							detectorProfileface = new CascadeClassifier(path);
 							dbMsg += "=" + detectorProfileface;
@@ -240,6 +317,15 @@ public class OCVFaceRecognitionVeiw extends View {
 						} else if ( rDetectorFile.contains("haarcascade_smile") ) {                                             //笑顔";
 							detectorSmile = new CascadeClassifier(path);
 							dbMsg += "=" + detectorSmile;
+						} else if ( rDetectorFile.contains("haarcascade_frontalcatface") ) {                //正面か";
+							detectorFrontalcatface = new CascadeClassifier(path);
+							dbMsg += "=" + detectorFrontalcatface;
+						} else if ( rDetectorFile.contains("haarcascade_frontalcatface_extended") ) {                 //正面(拡張)";
+							detectorFrontalcatface_extended = new CascadeClassifier(path);
+							dbMsg += "=" + detectorFrontalcatface_extended;
+						} else if ( rDetectorFile.contains("haarcascade_frontalface_default") ) {             //正面デフォルト";
+							detectorFrontalface_default = new CascadeClassifier(path);
+							dbMsg += "=" + detectorFrontalface_default;
 						} else if ( rDetectorFile.contains("haarcascade_russian_plate_number") ) {               //ナンバープレート・ロシア";
 							detectorRussian_plate_number = new CascadeClassifier(path);
 							dbMsg += "=" + detectorRussian_plate_number;
@@ -249,7 +335,11 @@ public class OCVFaceRecognitionVeiw extends View {
 						}
 					} else {
 						dbMsg += "," + rDetectorFile + "読み込めず";
-						if ( rDetectorFile.contains("haarcascade_frontalface_alt") ) {      //標準顔検出
+						if ( rDetectorFile.contains("haarcascade_frontalface_alt_tree") ) {                 //正面の顔高い木";
+							is_detector_frontalface_alt_tree = false;
+						} else if ( rDetectorFile.contains("haarcascade_frontalface_alt2") ) {                //正面顔全体2";
+							is_detector_frontalface_alt2 = false;
+						} else if ( rDetectorFile.contains("haarcascade_frontalface_alt") ) {      //標準顔検出
 							is_detector_frontal_face_alt = false;
 						} else if ( rDetectorFile.contains("haarcascade_profileface") ) {                         //横顔";
 							is_detector_profileface = false;
@@ -261,6 +351,12 @@ public class OCVFaceRecognitionVeiw extends View {
 							is_detector_lowerbody = false;
 						} else if ( rDetectorFile.contains("haarcascade_smile") ) {                                             //笑顔";
 							is_detector_smile = false;
+						} else if ( rDetectorFile.contains("haarcascade_frontalcatface") ) {                //正面か";
+							is_detector_frontalcatface = false;
+						} else if ( rDetectorFile.contains("haarcascade_frontalcatface_extended") ) {                 //正面(拡張)";
+							is_detector_frontalcatface_extended = false;
+						} else if ( rDetectorFile.contains("haarcascade_frontalface_default") ) {             //正面デフォルト";
+							is_detector_frontalface_default = false;
 						} else if ( rDetectorFile.contains("haarcascade_russian_plate_number") ) {               //ナンバープレート・ロシア";
 							is_detector_russian_plate_number = false;
 						} else if ( rDetectorFile.contains("haarcascade_licence_plate_rus_16stages") ) {              //ナンバープレートRUS";
@@ -275,28 +371,23 @@ public class OCVFaceRecognitionVeiw extends View {
 				detectosDetaileFIles.put("/haarcascades/haarcascade_righteye_2splits.xml" , detectorRighteye_2splits);      //右目";
 				detectosDetaileFIles.put("/haarcascades/haarcascade_lefteye_2splits.xml" , detectorLefteye_2splits);         //左目";
 				detectosDetaileFIles.put("/haarcascades/haarcascade_eye_tree_eyeglasses.xml" , detectorEyeglasses);         //眼鏡";
-				detectosDetaileFIles.put("/haarcascades/haarcascade_frontalcatface.xml" , detectorFrontalcatface);         //正面か";
-				detectosDetaileFIles.put("/haarcascades/haarcascade_frontalcatface_extended.xml" , detectorFrontalcatface_extended);        //正面(拡張)";
-				detectosDetaileFIles.put("/haarcascades/haarcascade_frontalface_alt_tree.xml" , detectorFrontalface_alt_tree);       //正面の顔高い木";
-				detectosDetaileFIles.put("/haarcascades/haarcascade_frontalface_alt2.xml" , detectorFrontalface_alt2);      //正面顔全体2";
-				detectosDetaileFIles.put("/haarcascades/haarcascade_frontalface_default.xml" , detectorFrontalface_default);   //正面デフォルト";
 				setCount = 0;
 				for ( Map.Entry< String, CascadeClassifier > entry : detectosDetaileFIles.entrySet() ) {
 					String rDetectorFile = entry.getKey();
 					CascadeClassifier cfs = entry.getValue();
 					dbMsg += "\n(" + setCount + ")";
-
-
-					String path = context.getApplicationContext().getAssets() + rDetectorFile;
-
-//						String path = context.getFilesDir().getAbsolutePath() + "/" + rDetectorFile;
+					String path = context.getFilesDir().getAbsolutePath() + "/" + rDetectorFile;    //Aprcationがインストールされているフォルダの場合
+//					String path = context.getApplicationContext().getAssets() + rDetectorFile;//						String path = context.getFilesDir().getAbsolutePath() + "/" + rDetectorFile;
 					dbMsg += path;
 					File rFile = new File(path);
 					dbMsg += " ,exists=" + rFile.exists();
 					if ( rFile.exists() ) {
 //						cfs = new CascadeClassifier(path);
 //						dbMsg += "=" + cfs;
-						if ( rDetectorFile.contains("haarcascade_eye") ) {                         //目
+						if ( rDetectorFile.contains("haarcascade_eye_tree_eyeglasses") ) {          //眼鏡";
+							detectorEyeglasses = new CascadeClassifier(path);
+							dbMsg += "=" + detectorEyeglasses;
+						} else if ( rDetectorFile.contains("haarcascade_eye") ) {                         //目
 							detectorEye = new CascadeClassifier(path);
 							dbMsg += "=" + detectorEye;
 						} else if ( rDetectorFile.contains("haarcascade_righteye_2splits") ) {            //右目";
@@ -305,24 +396,6 @@ public class OCVFaceRecognitionVeiw extends View {
 						} else if ( rDetectorFile.contains("haarcascade_lefteye_2splits") ) {            //左目";
 							detectorLefteye_2splits = new CascadeClassifier(path);
 							dbMsg += "=" + detectorLefteye_2splits;
-						} else if ( rDetectorFile.contains("haarcascade_eye_tree_eyeglasses") ) {          //眼鏡";
-							detectorEyeglasses = new CascadeClassifier(path);
-							dbMsg += "=" + detectorEyeglasses;
-						} else if ( rDetectorFile.contains("haarcascade_frontalcatface") ) {                //正面か";
-							detectorFrontalcatface = new CascadeClassifier(path);
-							dbMsg += "=" + detectorFrontalcatface;
-						} else if ( rDetectorFile.contains("haarcascade_frontalcatface_extended") ) {                 //正面(拡張)";
-							detectorFrontalcatface_extended = new CascadeClassifier(path);
-							dbMsg += "=" + detectorFrontalcatface_extended;
-						} else if ( rDetectorFile.contains("haarcascade_frontalface_alt_tree") ) {                 //正面の顔高い木";
-							detectorFrontalface_alt_tree = new CascadeClassifier(path);
-							dbMsg += "=" + detectorFrontalface_alt_tree;
-						} else if ( rDetectorFile.contains("haarcascade_frontalface_alt2") ) {                //正面顔全体2";
-							detectorFrontalface_alt2 = new CascadeClassifier(path);
-							dbMsg += "=" + detectorFrontalface_alt2;
-						} else if ( rDetectorFile.contains("haarcascade_frontalface_default") ) {             //正面デフォルト";
-							detectorFrontalface_default = new CascadeClassifier(path);
-							dbMsg += "=" + detectorFrontalface_default;
 						}
 					} else {
 						dbMsg += "," + rDetectorFile + "読み込めず";
@@ -334,16 +407,6 @@ public class OCVFaceRecognitionVeiw extends View {
 							is_detector_lefteye_2splits = false;
 						} else if ( rDetectorFile.contains("haarcascade_eye_tree_eyeglasses") ) {          //眼鏡";
 							is_detector_eyeglasses = false;
-						} else if ( rDetectorFile.contains("haarcascade_frontalcatface") ) {                //正面か";
-							is_detector_frontalcatface = false;
-						} else if ( rDetectorFile.contains("haarcascade_frontalcatface_extended") ) {                 //正面(拡張)";
-							is_detector_frontalcatface_extended = false;
-						} else if ( rDetectorFile.contains("haarcascade_frontalface_alt_tree") ) {                 //正面の顔高い木";
-							is_detector_frontalface_alt_tree = false;
-						} else if ( rDetectorFile.contains("haarcascade_frontalface_alt2") ) {                //正面顔全体2";
-							is_detector_frontalface_alt2 = false;
-						} else if ( rDetectorFile.contains("haarcascade_frontalface_default") ) {             //正面デフォルト";
-							is_detector_frontalface_default = false;
 						}
 					}
 					setCount++;
@@ -405,7 +468,6 @@ public class OCVFaceRecognitionVeiw extends View {
 			} else {
 				dbMsg += "探知器作成済み";
 			}
-			objects = new MatOfRect();
 			isCompletion = true;
 			// 			setCondition();     この時点ではレイアウトが拾えない
 			faces.clear();
@@ -548,10 +610,15 @@ public class OCVFaceRecognitionVeiw extends View {
 			for ( Map.Entry< String, CascadeClassifier > entry : detectosFIles.entrySet() ) {
 				String rDetectorFile = entry.getKey();
 				CascadeClassifier cfs = entry.getValue();
-				dbMsg += "\n" + rDetectorFile;
 				detectos dInfo = new detectos();
 				dInfo.note = "";
-				if ( rDetectorFile.contains("haarcascade_frontalface_alt") && is_detector_frontal_face_alt ) {      //標準顔検出
+				if ( rDetectorFile.contains("haarcascade_frontalface_alt_tree") && is_detector_frontalface_alt_tree ) {                 //正面の顔高い木";
+					dInfo.note = getResources().getString(R.string.mm_detector_frontalface_alt_tree);                    //正面の顔高い木？
+					dInfo.detector = detectorFrontalface_alt_tree;
+				} else if ( rDetectorFile.contains("haarcascade_frontalface_alt2") && is_detector_frontalface_alt2 ) {                //正面顔全体2";
+					dInfo.note = getResources().getString(R.string.mm_detector_frontalface_alt2);
+					dInfo.detector = detectorFrontalface_alt2;
+				} else if ( rDetectorFile.contains("haarcascade_frontalface_alt") && is_detector_frontal_face_alt ) {      //標準顔検出
 					dInfo.note = getResources().getString(R.string.mm_detector_frontal_face_alt);
 					dInfo.detector = detectorFrontalFaceAlt;
 				} else if ( rDetectorFile.contains("haarcascade_profileface") && is_detector_profileface ) {                         //横顔";
@@ -569,6 +636,15 @@ public class OCVFaceRecognitionVeiw extends View {
 				} else if ( rDetectorFile.contains("haarcascade_smile") && is_detector_smile ) {                                             //笑顔";
 					dInfo.note = getResources().getString(R.string.mm_detector_smile);
 					dInfo.detector = detectorSmile;
+				} else if ( rDetectorFile.contains("haarcascade_frontalcatface") && is_detector_frontalcatface ) {                //正面か";
+					dInfo.note = getResources().getString(R.string.mm_detector_frontalcatface);
+					dInfo.detector = detectorFrontalcatface;
+				} else if ( rDetectorFile.contains("haarcascade_frontalcatface_extended") && is_detector_frontalcatface_extended ) {                 //正面(拡張)";
+					dInfo.note = getResources().getString(R.string.mm_detector_frontalcatface_extended);
+					dInfo.detector = detectorFrontalcatface_extended;
+				} else if ( rDetectorFile.contains("haarcascade_frontalface_default") && is_detector_frontalface_default ) {             //正面デフォルト";
+					dInfo.note = getResources().getString(R.string.mm_detector_frontalface_default);                    //正面デフォルト
+					dInfo.detector = detectorFrontalface_default;
 				} else if ( rDetectorFile.contains("haarcascade_russian_plate_number") && is_detector_russian_plate_number ) {               //ナンバープレート・ロシア";
 					dInfo.note = getResources().getString(R.string.mm_detector_russian_plate_number);
 					dInfo.detector = detectorRussian_plate_number;
@@ -576,8 +652,8 @@ public class OCVFaceRecognitionVeiw extends View {
 					dInfo.note = getResources().getString(R.string.mm_detector_ricence_plate_rus_16stages);
 					dInfo.detector = detectorLicence_plate_rus_16stages;
 				}
-				dbMsg += "=" + dInfo.note + "=" + dInfo.detector;
-				if ( !dInfo.note.equals("") && dInfo.detector != null ) {
+				if ( !dInfo.note.equals("") && dInfo.detector != null ) {        //検出対象確定    /
+					dbMsg += "\n" + rDetectorFile + "=" + dInfo.note + "=" + dInfo.detector;
 					dInfo.andriodtArray = new ArrayList< android.graphics.Rect >();
 					dInfo.faces = new ArrayList< RectF >();
 					detectionList.add(dInfo);
@@ -634,20 +710,78 @@ public class OCVFaceRecognitionVeiw extends View {
 			for ( detectos tInfo : detectionList ) {
 				dbMsg += "," + tInfo.note;
 				tInfo.detector.detectMultiScale(imageMat , objects);
-				int detectionCount = objects.toArray().length;
-				dbMsg += ";=" + detectionCount + "件検出";
-				if ( 0 < detectionCount ) {
-					detectos rInfo = makedetectionList(tInfo , objects , dWidth , dHight , correctionH , correctionV , correctionSV);
-					faces.addAll(rInfo.faces);
-					retArray.addAll(rInfo.andriodtArray);
+				if ( objects != null ) {
+					int detectionCount = objects.toArray().length;
+					dbMsg += ";=" + detectionCount + "件検出";
+					if ( 0 < detectionCount ) {
+						detectos rInfo = makedetectionList(tInfo , objects , dWidth , dHight , correctionH , correctionV , correctionSV);
+						faces.addAll(rInfo.faces);
+						retArray.addAll(rInfo.andriodtArray);
+					}
+				} else {
+					dbMsg += ";=null";
 				}
 			}
+			int facesSize = faces.size();
+			int endCount = facesSize - 1;
+			dbMsg += ",合計=" + facesSize + "件";
+			if ( 0 == facesSize ) {                            //顔が検出できない時は
+				faces.add(new RectF(0 , 0 , 1 , 1));            //プレビュー全体選択に戻す
+			} else {
+				for ( int fCount = 0 ; fCount < endCount ; fCount++ ) { //重複確認
+					RectF face = faces.get(fCount);
+					dbMsg += "\n" + fCount + "/" + endCount + "(" + face.left + "," + face.top + ")～（" + face.right + "," + face.bottom + "）";
+					for ( int dCount = endCount ; 0 < dCount ; dCount-- ) { //RectF face : faces
+						RectF faceD = faces.get(dCount);
+						dbMsg += "と" + dCount + "(" + faceD.left + "," + faceD.top + ")～（" + faceD.right + "," + faceD.bottom + "）";
+						int delPatarn = 0;
+						if ( ((face.left <= face.right) && (face.top <= faceD.bottom && faceD.bottom <= face.bottom)) ) {
+							delPatarn += 1;
+							dbMsg += ",左下";//.left が　face.left～ <face.right　の中   でfaceD.bottom が　face.top～ <face.bottom　の中
+						}
+						if ( ((face.left <= faceD.left && faceD.left <= face.right) && (face.top <= faceD.top && faceD.top <= face.bottom)) ) {
+							delPatarn += 2;
+							dbMsg += ",左上";            //top が　face.top～ <face.bottom　の中   でfaceD.bottom が　face.top～ <face.bottom　の中
+						}
+						if ( ((face.left <= faceD.right && faceD.right <= face.left) && (face.top <= faceD.bottom && faceD.bottom <= face.bottom)) ) {
+							delPatarn += 4;
+							dbMsg += ",右下";    //top が　face.top～ <face.bottom　の中   でfaceD.bottom が　face.top～ <face.bottom　の中
+						}
+						if ( ((face.left <= faceD.right && faceD.right <= face.left) && (face.top <= faceD.top && faceD.top <= face.bottom)) ) {
+							delPatarn += 8;
+							dbMsg += ",右上";    //top が　face.top～ <face.bottom　の中   でfaceD.bottom が　face.top～ <face.bottom　の中
+						}
+						if ( ((faceD.left <= face.right && face.right <= faceD.right) && (faceD.top <= face.top && face.top <= faceD.bottom)) && ((faceD.left <= face.right && face.right <= faceD.right) && (faceD.top <= face.bottom && face.bottom <= faceD.bottom)) ) {
+							delPatarn += 32;
+							dbMsg += ",右内側";            //top が　face.top～ <face.bottom　の中   でfaceD.bottom が　face.top～ <face.bottom　の中
+						}
+						if ( ((faceD.left <= face.left && face.left <= faceD.right) && (faceD.top <= face.top && face.top <= faceD.bottom)) && ((faceD.left <= face.right && face.right <= faceD.right) && (faceD.top <= face.bottom && face.bottom <= faceD.bottom)) ) {
+							delPatarn += 128;
+							dbMsg += ",全点内側";
+						}
 
-			dbMsg += ",faces=" + faces.size();
-			if ( 0 == faces.size() ) {                            //顔が検出できない時は
-//				faces.clear();
-				faces.add(new RectF(0 , 0 , 1 , 1));            //プレビュー全体選択
-			} else if ( 1 == faces.size() ) {
+//						if ( ((faceD.left < face.right && face.right < faceD.left) && (faceD.top < face.bottom && face.bottom < faceD.bottom)) ) {
+//							delPatarn += 64;
+//							dbMsg += "右下";    //top が　face.top～ <face.bottom　の中   でfaceD.bottom が　face.top～ <face.bottom　の中
+//						}
+//						if ( ((faceD.left < face.right && face.right < faceD.left) && (faceD.top < face.top && face.top < faceD.bottom)) ) {
+//							delPatarn += 128;
+//							dbMsg += "右上";    //top が　face.top～ <face.bottom　の中   でfaceD.bottom が　face.top～ <face.bottom　の中
+//						}
+
+						dbMsg += ",delPatarn=" + delPatarn;
+						if ( 0 < delPatarn ) {
+							faces.remove(dCount);
+							dbMsg += ">>remove<<";
+							endCount--;
+						}
+
+					}
+				}
+				facesSize = faces.size();
+				dbMsg += ">重複削除後>=" + facesSize + "件";
+			}
+			if ( 1 == facesSize ) {
 				int pX = ( int ) faces.get(0).left;    //- rect.width ;
 				int pY = ( int ) faces.get(0).top;    //+  rect.height;
 				int pWidth = ( int ) (faces.get(0).right - faces.get(0).left);    //*5 ;
@@ -663,7 +797,11 @@ public class OCVFaceRecognitionVeiw extends View {
 				imageMat = null;
 				dbMsg += ",imageMat破棄";
 			}
-			;
+			if ( objects != null ) {
+				objects.release();
+				objects = null;
+				dbMsg += ";object破棄";
+			}
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -726,46 +864,39 @@ public class OCVFaceRecognitionVeiw extends View {
 		try {
 			dbMsg += ",pasonMat=" + pasonMat.size() + ",elemSize=" + pasonMat.elemSize();
 			dbMsg += "(" + pRect.x + "," + pRect.y + ")[" + pRect.width + "×" + pRect.height + "]";
-			//検索用submat切り出し
-			Mat sub = new Mat();
-			pasonMat.submat(pRect.y , pRect.y + pRect.height , pRect.x , pRect.x + pRect.width).copyTo(sub);
-			MatOfRect moRect = new MatOfRect();
+//			//検索用submat切り出し
+//			Mat sub = new Mat();
+//			pasonMat.submat(pRect.y , pRect.y + pRect.height , pRect.x , pRect.x + pRect.width).copyTo(sub);
 
 			ArrayList< detectos > detectoList = new ArrayList< detectos >();
 			for ( Map.Entry< String, CascadeClassifier > entry : detectosDetaileFIles.entrySet() ) {
 				String rDetectorFile = entry.getKey();
 				CascadeClassifier cfs = entry.getValue();
-				dbMsg += "\n" + rDetectorFile;
 				detectos dInfo = new detectos();
 				dInfo.note = "";
-				if ( rDetectorFile.contains("haarcascade_eye") && is_detector_eye ) {                         //目
+
+				if ( rDetectorFile.contains("haarcascade_eye_tree_eyeglasses") && is_detector_eyeglasses ) {          //眼鏡";
+					dInfo.note = getResources().getString(R.string.mm_detector_eyeglasses);
+					dInfo.detector = detectorEyeglasses;
+				} else if ( rDetectorFile.contains("haarcascade_eye") && is_detector_eye ) {                         //目
 					dInfo.note = getResources().getString(R.string.mm_detector_eye);
+					dInfo.detector = detectorEye;
 				} else if ( rDetectorFile.contains("haarcascade_righteye_2splits") && is_detector_righteye_2splits ) {            //右目";
 					dInfo.note = getResources().getString(R.string.mm_detector_righteye_2splits);
+					dInfo.detector = detectorRighteye_2splits;
 				} else if ( rDetectorFile.contains("haarcascade_lefteye_2splits") && is_detector_lefteye_2splits ) {            //左目";
 					dInfo.note = getResources().getString(R.string.mm_detector_lefteye_2splits);
-				} else if ( rDetectorFile.contains("haarcascade_eye_tree_eyeglasses") && is_detector_eyeglasses ) {          //眼鏡";
-					dInfo.note = getResources().getString(R.string.mm_detector_eyeglasses);
-				} else if ( rDetectorFile.contains("haarcascade_frontalcatface") && is_detector_frontalcatface ) {                //正面か";
-					dInfo.note = getResources().getString(R.string.mm_detector_frontalcatface);
-				} else if ( rDetectorFile.contains("haarcascade_frontalcatface_extended") && is_detector_frontalcatface_extended ) {                 //正面(拡張)";
-					dInfo.note = getResources().getString(R.string.mm_detector_frontalcatface_extended);
-				} else if ( rDetectorFile.contains("haarcascade_frontalface_alt_tree") && is_detector_frontalface_alt_tree ) {                 //正面の顔高い木";
-					dInfo.note = getResources().getString(R.string.mm_detector_frontalface_alt_tree);                    //正面の顔高い木？
-				} else if ( rDetectorFile.contains("haarcascade_frontalface_alt2") && is_detector_frontalface_alt2 ) {                //正面顔全体2";
-					dInfo.note = getResources().getString(R.string.mm_detector_frontalface_alt2);
-				} else if ( rDetectorFile.contains("haarcascade_frontalface_default") && is_detector_frontalface_default ) {             //正面デフォルト";
-					dInfo.note = getResources().getString(R.string.mm_detector_frontalface_default);                    //正面デフォルト
+					dInfo.detector = detectorLefteye_2splits;
 				}
-				dbMsg += "=" + dInfo.note + "=" + dInfo.detector;
 				if ( !dInfo.note.equals("") && dInfo.detector != null ) {
+					dbMsg += "\n" + rDetectorFile + "=" + dInfo.note + "=" + dInfo.detector;
 					dInfo.andriodtArray = new ArrayList< android.graphics.Rect >();
 					dInfo.faces = new ArrayList< RectF >();
-					detectionList.add(dInfo);
+					detectoList.add(dInfo);
 				}
 			}
-			int dlistSize = detectionList.size();
-			dbMsg += ">>" + dlistSize + "件";
+			int dlistSize = detectoList.size();
+			dbMsg += ">detectionList>" + dlistSize + "項目";
 			if ( dlistSize == 0 ) {
 				return null;
 			}
@@ -796,21 +927,24 @@ public class OCVFaceRecognitionVeiw extends View {
 //			private CascadeClassifier detectorFrontalface_alt_tree;            //正面の顔高い木";
 //			private CascadeClassifier detectorFrontalface_alt2;                //正面顔全体2";
 //			private CascadeClassifier detectorFrontalface_default;            //正面デフォルト";
-
-
-			for ( detectos rInfo : detectoList ) {
-				rInfo.detector.detectMultiScale(pasonMat , moRect);                        //目
-				int detectionCount = moRect.toArray().length;
-				dbMsg += ",検出=" + detectionCount + "件";
-				if ( 0 < detectionCount ) {
-					retArray = detailList(retArray , moRect , rInfo.note);
+			MatOfRect moRect = new MatOfRect();
+			for ( detectos rInfo : detectoList ) {//detectoList       /
+				rInfo.detector.detectMultiScale(pasonMat , moRect);
+				if ( moRect != null ) {
+					int detectionCount = moRect.toArray().length;
+					dbMsg += "(" + retArray.size() + ")" + rInfo.note + "=" + detectionCount + "件";
+					if ( 0 < detectionCount ) {
+						retArray = detailList(retArray , moRect , rInfo.note);
+					}
+				} else {
+					dbMsg += ";=null";
 				}
 			}
-			dbMsg += ",retArray=" + retArray.size();
-			if ( sub != null ) {
-				sub.release();
-				sub = null;
-				dbMsg += "sub破棄";
+			dbMsg += ",retArray=" + retArray.size() + "個所";
+			if ( moRect != null ) {
+				moRect.release();
+				moRect = null;
+				dbMsg += "、moRect破棄";
 			}
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
@@ -911,7 +1045,11 @@ public class OCVFaceRecognitionVeiw extends View {
 							canvas.drawRect(foRect , paint);
 						}
 					} else {
-						canvas.drawText(fLeft + " , " + fTop , width * face.left + 8 , height * face.top + 40 , paint);
+						if ( fLeft == 0 && fTop == 0 ) {
+							canvas.drawText("検出できない時は検出対象を変えてお試しください。" , width * face.left + 8 , height * face.top + 40 , paint);
+						} else {
+							canvas.drawText(fLeft + " , " + fTop , width * face.left + 8 , height * face.top + 40 , paint);
+						}
 						float sRight = fRight - 250;
 						if ( fRight < sRight ) {
 							sRight = fLeft + (fRight - fLeft) / 2;

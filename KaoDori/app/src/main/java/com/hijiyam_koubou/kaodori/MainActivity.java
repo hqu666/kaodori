@@ -189,6 +189,15 @@ MainActivity extends Activity implements View.OnClickListener,View.OnLongClickLi
 			is_detector_smile = prefs.is_detector_smile;
 			dbMsg += ",笑顔=" + is_detector_smile;
 			is_detector_russian_plate_number = prefs.is_detector_russian_plate_number;
+			is_detector_frontalcatface = prefs.is_detector_frontalcatface;
+			dbMsg += ",正面のみ=" + is_detector_frontalcatface;
+			is_detector_frontalcatface_extended = prefs.is_detector_frontalcatface_extended;
+			dbMsg += ",正面(拡張)=" + is_detector_frontalcatface_extended;
+			is_detector_frontalface_alt_tree = prefs.is_detector_frontalface_alt_tree;
+			dbMsg += ",正面の顔高い木=" + is_detector_frontalface_alt_tree;
+			is_detector_frontalface_alt2 = prefs.is_detector_frontalface_alt2;
+			dbMsg += ",正面顔全体2=" + is_detector_frontalface_alt2;
+			is_detector_frontalface_default = prefs.is_detector_frontalface_default;
 			dbMsg += ",ナンバープレート・ロシア=" + is_detector_russian_plate_number;
 			is_detector_ricence_plate_rus_16stages = prefs.is_detector_ricence_plate_rus_16stages;
 			dbMsg += ",ナンバープレートRUS=" + is_detector_ricence_plate_rus_16stages;
@@ -201,15 +210,6 @@ MainActivity extends Activity implements View.OnClickListener,View.OnLongClickLi
 			dbMsg += ",左目=" + is_detector_lefteye_2splits;
 			is_detector_eyeglasses = prefs.is_detector_eyeglasses;
 			dbMsg += ",眼鏡=" + is_detector_eyeglasses;
-			is_detector_frontalcatface = prefs.is_detector_frontalcatface;
-			dbMsg += ",正面のみ=" + is_detector_frontalcatface;
-			is_detector_frontalcatface_extended = prefs.is_detector_frontalcatface_extended;
-			dbMsg += ",正面(拡張)=" + is_detector_frontalcatface_extended;
-			is_detector_frontalface_alt_tree = prefs.is_detector_frontalface_alt_tree;
-			dbMsg += ",正面の顔高い木=" + is_detector_frontalface_alt_tree;
-			is_detector_frontalface_alt2 = prefs.is_detector_frontalface_alt2;
-			dbMsg += ",正面顔全体2=" + is_detector_frontalface_alt2;
-			is_detector_frontalface_default = prefs.is_detector_frontalface_default;
 			dbMsg += ",正面デフォルト=" + is_detector_frontalface_default;
 			writeFolder = prefs.write_folder;
 			dbMsg += "," + getResources().getString(R.string.write_folder) + "=" + writeFolder;
@@ -301,10 +301,10 @@ MainActivity extends Activity implements View.OnClickListener,View.OnLongClickLi
 			dbMsg += ",mFile=" + mFile.getParent();
 
 			readPref();                    //同期させないとインストール時にパーミッションエラー発生 ?
+			copyAssets("haarcascades" );                    // assetsの内容を /data/data/*/files/ にコピーします。
 			setViewState();
 			dbMsg += ",haarcascadesLastModified=" + haarcascadesLastModified;
 //			OCVFRV.constractCommon(this , haarcascadesLastModified);            //顔検出のセットアップ
-//			copyAssets("haarcascades" , haarcascadesLastModified);                    // assetsの内容を /data/data/*/files/ にコピーします。
 
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
@@ -732,12 +732,6 @@ MainActivity extends Activity implements View.OnClickListener,View.OnLongClickLi
 //				detectosSelect.clear();
 				detectosSelect.put(getResources().getString(R.string.mm_detector_frontal_face_alt) , is_detector_frontal_face_alt);                            //顔検出(標準)</string>
 				detectosSelect.put(getResources().getString(R.string.mm_detector_profileface) , is_detector_profileface);                                    //横顔
-				detectosSelect.put(getResources().getString(R.string.mm_detector_upperbody) , is_detector_upperbody);                                        //上半身
-				detectosSelect.put(getResources().getString(R.string.mm_detector_fullbody) , is_detector_fullbody);                                            //全身
-				detectosSelect.put(getResources().getString(R.string.mm_detector_eye) , is_detector_eye);                                                    //目(標準)
-				detectosSelect.put(getResources().getString(R.string.mm_detector_righteye_2splits) , is_detector_righteye_2splits);                            //右目
-				detectosSelect.put(getResources().getString(R.string.mm_detector_lefteye_2splits) , is_detector_lefteye_2splits);                            //左目
-				detectosSelect.put(getResources().getString(R.string.mm_detector_eyeglasses) , is_detector_eyeglasses);                                        //眼鏡
 				detectosSelect.put(getResources().getString(R.string.mm_detector_frontalcatface) , is_detector_frontalcatface);                                //正面のみ？
 				detectosSelect.put(getResources().getString(R.string.mm_detector_frontalcatface_extended) , is_detector_frontalcatface_extended);            //正面(拡張)？string>
 				detectosSelect.put(getResources().getString(R.string.mm_detector_frontalface_alt_tree) , is_detector_frontalface_alt_tree);                    //正面の顔高い木？
@@ -745,8 +739,15 @@ MainActivity extends Activity implements View.OnClickListener,View.OnLongClickLi
 				detectosSelect.put(getResources().getString(R.string.mm_detector_frontalface_default) , is_detector_frontalface_default);                    //正面デフォルト
 				detectosSelect.put(getResources().getString(R.string.mm_detector_smile) , is_detector_smile);                                                //笑顔
 				detectosSelect.put(getResources().getString(R.string.mm_detector_lowerbody) , is_detector_lowerbody);                                        //下半身
+				detectosSelect.put(getResources().getString(R.string.mm_detector_upperbody) , is_detector_upperbody);                                        //上半身
+				detectosSelect.put(getResources().getString(R.string.mm_detector_fullbody) , is_detector_fullbody);                                            //全身
 				detectosSelect.put(getResources().getString(R.string.mm_detector_russian_plate_number) , is_detector_russian_plate_number);                    //ナンバープレート・ロシア
 				detectosSelect.put(getResources().getString(R.string.mm_detector_ricence_plate_rus_16stages) , is_detector_ricence_plate_rus_16stages);         //ナンバープレートRUS
+
+				detectosSelect.put(getResources().getString(R.string.mm_detector_eye) , is_detector_eye);                                                    //目(標準)
+				detectosSelect.put(getResources().getString(R.string.mm_detector_righteye_2splits) , is_detector_righteye_2splits);                            //右目
+				detectosSelect.put(getResources().getString(R.string.mm_detector_lefteye_2splits) , is_detector_lefteye_2splits);                            //左目
+				detectosSelect.put(getResources().getString(R.string.mm_detector_eyeglasses) , is_detector_eyeglasses);                                        //眼鏡
 
 				menuItems = new CharSequence[detectosSelect.size()];
 				menuItemChecks = new boolean[detectosSelect.size()];
@@ -978,6 +979,16 @@ MainActivity extends Activity implements View.OnClickListener,View.OnLongClickLi
 						toastText += ","+ getResources().getString(R.string.mm_detector_lowerbody);
 					} else if (is_detector_smile) {                    //笑顔
 						toastText += ","+ getResources().getString(R.string.mm_detector_smile);
+					} else if ( is_detector_frontalcatface) {                    //正面のみ？
+						toastText += ","+ getResources().getString(R.string.mm_detector_frontalcatface);
+					} else if ( is_detector_frontalcatface_extended ) {                    //正面(拡張)？
+						toastText += ","+ getResources().getString(R.string.mm_detector_frontalcatface_extended);
+					} else if (is_detector_frontalface_alt_tree  ) {                    //正面の顔高い木？
+						toastText += ","+ getResources().getString(R.string.mm_detector_frontalface_alt_tree);
+					} else if (is_detector_frontalface_alt2 ) {                    //正面顔全体2
+						toastText += ","+ getResources().getString(R.string.mm_detector_frontalface_alt2);
+					} else if (is_detector_frontalface_default ) {                    //正面デフォルト
+						toastText += ","+ getResources().getString(R.string.mm_detector_frontalface_default);
 					} else if (  is_detector_russian_plate_number) {                    //ナンバープレート・ロシア
 						toastText += ","+ getResources().getString(R.string.mm_detector_russian_plate_number);
 					} else if ( is_detector_ricence_plate_rus_16stages) {                    //ナンバープレートRUS
@@ -990,16 +1001,6 @@ MainActivity extends Activity implements View.OnClickListener,View.OnLongClickLi
 						toastText += ","+ getResources().getString(R.string.mm_detector_lefteye_2splits);
 					} else if ( is_detector_eyeglasses) {                    //眼鏡
 						toastText += ","+ getResources().getString(R.string.mm_detector_eyeglasses);
-					} else if ( is_detector_frontalcatface) {                    //正面のみ？
-						toastText += ","+ getResources().getString(R.string.mm_detector_frontalcatface);
-					} else if ( is_detector_frontalcatface_extended ) {                    //正面(拡張)？
-						toastText += ","+ getResources().getString(R.string.mm_detector_frontalcatface_extended);
-					} else if (is_detector_frontalface_alt_tree  ) {                    //正面の顔高い木？
-						toastText += ","+ getResources().getString(R.string.mm_detector_frontalface_alt_tree);
-					} else if (is_detector_frontalface_alt2 ) {                    //正面顔全体2
-						toastText += ","+ getResources().getString(R.string.mm_detector_frontalface_alt2);
-					} else if (is_detector_frontalface_default ) {                    //正面デフォルト
-						toastText += ","+ getResources().getString(R.string.mm_detector_frontalface_default);
 					}
 //					setEffectView();
 //					is_detector_frontal_face_alt = true;   //顔検出(標準)</string>
@@ -1420,7 +1421,9 @@ MainActivity extends Activity implements View.OnClickListener,View.OnLongClickLi
 //									String dbMsg = "";
 //									try {
 							List< Rect > retArray = OCVFRV.readFrameRGB(shotBitmap , mSensorOrientation);
-							dbMsg += ",=" + retArray.size() + "人検出";
+							if(retArray != null){
+								dbMsg += ",=" + retArray.size() + "人検出";
+							}
 
 //										myLog(TAG , dbMsg);
 //									} catch (Exception er) {
@@ -1492,39 +1495,39 @@ MainActivity extends Activity implements View.OnClickListener,View.OnLongClickLi
 	}
 
 	/**
-	 * assetsの内容を /data/data/.../files/ にコピーします。
+	 * assetsのdirフォルダに置かれたDetegerデータの内容を /data/data/.../files/ にコピーします。
+	 * ☆assetsのフルパス名は拾えないのでアプリケーションがリ利用可能なエリアに作成
 	 */
-	private void copyAssets(String dir , long haarcascadesLastModified) throws IOException {
-		final String TAG = "copyAssets[MA}";
+	private void copyAssets(String dir) throws IOException {
+		final String TAG = "copyAssets[MA}";      // , long haarcascadesLastModified
 		String dbMsg = "";
 		try {
 			dbMsg = "dir=" + dir;
 //			MainActivity MA = new MainActivity();
-
-			dbMsg += ",認証ファイル最終更新日=" + haarcascadesLastModified;
+     //			dbMsg += ",認証ファイル最終更新日=" + haarcascadesLastModified;
 			byte[] buf = new byte[8192];
 			int size;
 			boolean isCopy = false;    //初回使用時なと、強制的にコピーする
 			File dst = new File(getApplicationContext().getFilesDir() , dir);
-			if ( !dst.exists() ) {
+			if ( !dst.exists() ) {                   //作成されていない場合；インストール直後のみ
 				dst.mkdirs();
 				dst.setReadable(true , false);
 				dst.setWritable(true , false);
 				dst.setExecutable(true , false);
 				dbMsg += ">>作成";
 				isCopy = true;
-			}
-			int readedCount = dst.list().length;
-			dbMsg += ",読込み済み=" + readedCount + "件";
-			if ( readedCount < 10 ) {
-				isCopy = true;
-			}
-			for ( String filename : getApplicationContext().getAssets().list(dir) ) {
-				File file = new File(dst , filename);
-				Long lastModified = file.lastModified();
-				if ( isCopy || haarcascadesLastModified < lastModified ) {    //無ければ
+//			}
+				int readedCount = dst.list().length;
+				dbMsg += ",読込み済み=" + readedCount + "件";
+				if ( readedCount < 10 ) {
+					isCopy = true;
+				}
+				for ( String filename : getApplicationContext().getAssets().list(dir) ) {
+					File file = new File(dst , filename);
+					Long lastModified = file.lastModified();
+//				if ( isCopy || haarcascadesLastModified < lastModified ) {    //無ければ
 					dbMsg += "," + filename + ";" + lastModified;
-					haarcascadesLastModified = lastModified;
+//					haarcascadesLastModified = lastModified;
 					OutputStream out = new FileOutputStream(file);
 					InputStream in = getApplicationContext().getAssets().open(dir + "/" + filename);
 					while ( (size = in.read(buf)) >= 0 ) {
@@ -1538,6 +1541,7 @@ MainActivity extends Activity implements View.OnClickListener,View.OnLongClickLi
 					file.setWritable(true , false);
 					file.setExecutable(true , false);
 					dbMsg += ">>コピー";
+//				}
 				}
 			}
 			myLog(TAG , dbMsg);
