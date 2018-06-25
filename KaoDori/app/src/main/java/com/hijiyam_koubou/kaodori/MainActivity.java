@@ -1422,7 +1422,7 @@ MainActivity extends Activity implements View.OnClickListener,View.OnLongClickLi
 //									try {
 							List< Rect > retArray = OCVFRV.readFrameRGB(shotBitmap , mSensorOrientation);
 							if(retArray != null){
-								dbMsg += ",=" + retArray.size() + "人検出";
+								dbMsg += ",=" + retArray.size() + "箇所検出";
 							}
 
 //										myLog(TAG , dbMsg);

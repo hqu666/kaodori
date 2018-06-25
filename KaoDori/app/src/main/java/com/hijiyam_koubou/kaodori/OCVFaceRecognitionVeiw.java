@@ -665,47 +665,6 @@ public class OCVFaceRecognitionVeiw extends View {
 				return null;
 			}
 
-//			if ( is_detector_frontal_face_alt ) {                                    //顔検出(標準)
-//				dInfo = new detectos();
-//				dInfo.detector = detectorFrontalFaceAlt;
-//				dInfo.note = "標準顔検出";
-//				dInfo.andriodtArray = new ArrayList< android.graphics.Rect >();
-//				dInfo.faces = new ArrayList< RectF >();
-//				detectionList.add(dInfo);
-//			}
-//			if ( is_detector_profileface ) {                                            //横顔
-//				dInfo = new detectos();
-//				dInfo.detector = detectorProfileface;
-//				dInfo.note = "横顔";
-//				dInfo.andriodtArray = new ArrayList< android.graphics.Rect >();
-//				dInfo.faces = new ArrayList< RectF >();
-//				detectionList.add(dInfo);
-//			}
-//			if ( is_detector_fullbody ) {                                            //全身
-//				dInfo = new detectos();
-//				dInfo.detector = detectorFullbody;
-//				dInfo.note = "全身";
-//				dInfo.andriodtArray = new ArrayList< android.graphics.Rect >();
-//				dInfo.faces = new ArrayList< RectF >();
-//				detectionList.add(dInfo);
-//			}
-//			if ( is_detector_upperbody ) {                                    //上半身
-//				dInfo = new detectos();
-//				dInfo.detector = detectorUpperbody;
-//				dInfo.note = "上半身";
-//				dInfo.andriodtArray = new ArrayList< android.graphics.Rect >();
-//				dInfo.faces = new ArrayList< RectF >();
-//				detectionList.add(dInfo);
-//			}
-//			if ( is_detector_lowerbody ) {                                    // 下半身
-//				dInfo = new detectos();
-//				dInfo.detector = detectorLowerbody;
-//				dInfo.note = "上半身";
-//				dInfo.andriodtArray = new ArrayList< android.graphics.Rect >();
-//				dInfo.faces = new ArrayList< RectF >();
-//				detectionList.add(dInfo);
-//			}
-
 			faces.clear();
 			for ( detectos tInfo : detectionList ) {
 				dbMsg += "," + tInfo.note;
@@ -728,56 +687,57 @@ public class OCVFaceRecognitionVeiw extends View {
 			if ( 0 == facesSize ) {                            //顔が検出できない時は
 				faces.add(new RectF(0 , 0 , 1 , 1));            //プレビュー全体選択に戻す
 			} else {
-				for ( int fCount = 0 ; fCount < endCount ; fCount++ ) { //重複確認
-					RectF face = faces.get(fCount);
-					dbMsg += "\n" + fCount + "/" + endCount + "(" + face.left + "," + face.top + ")～（" + face.right + "," + face.bottom + "）";
-					for ( int dCount = endCount ; 0 < dCount ; dCount-- ) { //RectF face : faces
-						RectF faceD = faces.get(dCount);
-						dbMsg += "と" + dCount + "(" + faceD.left + "," + faceD.top + ")～（" + faceD.right + "," + faceD.bottom + "）";
-						int delPatarn = 0;
-						if ( ((face.left <= face.right) && (face.top <= faceD.bottom && faceD.bottom <= face.bottom)) ) {
-							delPatarn += 1;
-							dbMsg += ",左下";//.left が　face.left～ <face.right　の中   でfaceD.bottom が　face.top～ <face.bottom　の中
-						}
-						if ( ((face.left <= faceD.left && faceD.left <= face.right) && (face.top <= faceD.top && faceD.top <= face.bottom)) ) {
-							delPatarn += 2;
-							dbMsg += ",左上";            //top が　face.top～ <face.bottom　の中   でfaceD.bottom が　face.top～ <face.bottom　の中
-						}
-						if ( ((face.left <= faceD.right && faceD.right <= face.left) && (face.top <= faceD.bottom && faceD.bottom <= face.bottom)) ) {
-							delPatarn += 4;
-							dbMsg += ",右下";    //top が　face.top～ <face.bottom　の中   でfaceD.bottom が　face.top～ <face.bottom　の中
-						}
-						if ( ((face.left <= faceD.right && faceD.right <= face.left) && (face.top <= faceD.top && faceD.top <= face.bottom)) ) {
-							delPatarn += 8;
-							dbMsg += ",右上";    //top が　face.top～ <face.bottom　の中   でfaceD.bottom が　face.top～ <face.bottom　の中
-						}
-						if ( ((faceD.left <= face.right && face.right <= faceD.right) && (faceD.top <= face.top && face.top <= faceD.bottom)) && ((faceD.left <= face.right && face.right <= faceD.right) && (faceD.top <= face.bottom && face.bottom <= faceD.bottom)) ) {
-							delPatarn += 32;
-							dbMsg += ",右内側";            //top が　face.top～ <face.bottom　の中   でfaceD.bottom が　face.top～ <face.bottom　の中
-						}
-						if ( ((faceD.left <= face.left && face.left <= faceD.right) && (faceD.top <= face.top && face.top <= faceD.bottom)) && ((faceD.left <= face.right && face.right <= faceD.right) && (faceD.top <= face.bottom && face.bottom <= faceD.bottom)) ) {
-							delPatarn += 128;
-							dbMsg += ",全点内側";
-						}
-
-//						if ( ((faceD.left < face.right && face.right < faceD.left) && (faceD.top < face.bottom && face.bottom < faceD.bottom)) ) {
-//							delPatarn += 64;
-//							dbMsg += "右下";    //top が　face.top～ <face.bottom　の中   でfaceD.bottom が　face.top～ <face.bottom　の中
+				faces=deleteOverlapp(faces);
+//				for ( int fCount = 0 ; fCount < endCount ; fCount++ ) { //重複確認
+//					RectF face = faces.get(fCount);
+//					dbMsg += "\n" + fCount + "/" + endCount + "(" + face.left + "," + face.top + ")～（" + face.right + "," + face.bottom + "）";
+//					for ( int dCount = endCount ; 0 < dCount ; dCount-- ) { //RectF face : faces
+//						RectF faceD = faces.get(dCount);
+//						dbMsg += "と" + dCount + "(" + faceD.left + "," + faceD.top + ")～（" + faceD.right + "," + faceD.bottom + "）";
+//						int delPatarn = 0;
+//						if ( ((face.left <= face.right) && (face.top <= faceD.bottom && faceD.bottom <= face.bottom)) ) {
+//							delPatarn += 1;
+//							dbMsg += ",左下";//.left が　face.left～ <face.right　の中   でfaceD.bottom が　face.top～ <face.bottom　の中
 //						}
-//						if ( ((faceD.left < face.right && face.right < faceD.left) && (faceD.top < face.top && face.top < faceD.bottom)) ) {
+//						if ( ((face.left <= faceD.left && faceD.left <= face.right) && (face.top <= faceD.top && faceD.top <= face.bottom)) ) {
+//							delPatarn += 2;
+//							dbMsg += ",左上";            //top が　face.top～ <face.bottom　の中   でfaceD.bottom が　face.top～ <face.bottom　の中
+//						}
+//						if ( ((face.left <= faceD.right && faceD.right <= face.left) && (face.top <= faceD.bottom && faceD.bottom <= face.bottom)) ) {
+//							delPatarn += 4;
+//							dbMsg += ",右下";    //top が　face.top～ <face.bottom　の中   でfaceD.bottom が　face.top～ <face.bottom　の中
+//						}
+//						if ( ((face.left <= faceD.right && faceD.right <= face.left) && (face.top <= faceD.top && faceD.top <= face.bottom)) ) {
+//							delPatarn += 8;
+//							dbMsg += ",右上";    //top が　face.top～ <face.bottom　の中   でfaceD.bottom が　face.top～ <face.bottom　の中
+//						}
+//						if ( ((faceD.left <= face.right && face.right <= faceD.right) && (faceD.top <= face.top && face.top <= faceD.bottom)) && ((faceD.left <= face.right && face.right <= faceD.right) && (faceD.top <= face.bottom && face.bottom <= faceD.bottom)) ) {
+//							delPatarn += 32;
+//							dbMsg += ",右内側";            //top が　face.top～ <face.bottom　の中   でfaceD.bottom が　face.top～ <face.bottom　の中
+//						}
+//						if ( ((faceD.left <= face.left && face.left <= faceD.right) && (faceD.top <= face.top && face.top <= faceD.bottom)) && ((faceD.left <= face.right && face.right <= faceD.right) && (faceD.top <= face.bottom && face.bottom <= faceD.bottom)) ) {
 //							delPatarn += 128;
-//							dbMsg += "右上";    //top が　face.top～ <face.bottom　の中   でfaceD.bottom が　face.top～ <face.bottom　の中
+//							dbMsg += ",全点内側";
 //						}
-
-						dbMsg += ",delPatarn=" + delPatarn;
-						if ( 0 < delPatarn ) {
-							faces.remove(dCount);
-							dbMsg += ">>remove<<";
-							endCount--;
-						}
-
-					}
-				}
+//
+////						if ( ((faceD.left < face.right && face.right < faceD.left) && (faceD.top < face.bottom && face.bottom < faceD.bottom)) ) {
+////							delPatarn += 64;
+////							dbMsg += "右下";    //top が　face.top～ <face.bottom　の中   でfaceD.bottom が　face.top～ <face.bottom　の中
+////						}
+////						if ( ((faceD.left < face.right && face.right < faceD.left) && (faceD.top < face.top && face.top < faceD.bottom)) ) {
+////							delPatarn += 128;
+////							dbMsg += "右上";    //top が　face.top～ <face.bottom　の中   でfaceD.bottom が　face.top～ <face.bottom　の中
+////						}
+//
+//						dbMsg += ",delPatarn=" + delPatarn;
+//						if ( 0 < delPatarn ) {
+//							faces.remove(dCount);
+//							dbMsg += ">>remove<<";
+//							endCount--;
+//						}
+//
+//					}
+//				}
 				facesSize = faces.size();
 				dbMsg += ">重複削除後>=" + facesSize + "件";
 			}
@@ -789,8 +749,11 @@ public class OCVFaceRecognitionVeiw extends View {
 				org.opencv.core.Rect wRect = new org.opencv.core.Rect(pX , pY , pWidth , pHight);
 				pasonInfoList = new ArrayList< pasonInfo >();
 				pasonInfoList = detailedPersonFace(imageMat , wRect);
+				retArray.add(new android.graphics.Rect(pX , pY ,pX+ pWidth , pY+pHight));
+
 			}
 			invalidate();            //onDrawへ
+
 			bitmap.recycle();
 			if ( imageMat != null ) {
 				imageMat.release();
@@ -802,6 +765,78 @@ public class OCVFaceRecognitionVeiw extends View {
 				objects = null;
 				dbMsg += ";object破棄";
 			}
+
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+			isCompletion = true;
+		}
+		return retArray;
+	}
+
+	/**
+	 * 重複領域の削除
+	 * */
+	public List< RectF > deleteOverlapp(List< RectF > retArray) {
+		final String TAG = "deleteOverlapp[OCVFR]";
+		String dbMsg = "";
+//		List< android.graphics.Rect > retArray = new ArrayList();
+		try {
+			int facesSize = retArray.size();
+			int endCount = facesSize - 1;
+			dbMsg += ",合計=" + facesSize + "件";
+			for ( int fCount = 0 ; fCount < endCount ; fCount++ ) { //重複確認
+				RectF face = retArray.get(fCount);
+				dbMsg += "\n" + fCount + "/" + endCount + "(" + face.left + "," + face.top + ")～（" + face.right + "," + face.bottom + "）";
+				for ( int dCount = endCount ; 0 < dCount ; dCount-- ) { //RectF face : faces
+					RectF faceD = retArray.get(dCount);
+					dbMsg += "と" + dCount + "(" + faceD.left + "," + faceD.top + ")～（" + faceD.right + "," + faceD.bottom + "）";
+					int delPatarn = 0;
+					if ( ((face.left <= face.right) && (face.top <= faceD.bottom && faceD.bottom <= face.bottom)) ) {
+						delPatarn += 1;
+						dbMsg += ",左下";//.left が　face.left～ <face.right　の中   でfaceD.bottom が　face.top～ <face.bottom　の中
+					}
+					if ( ((face.left <= faceD.left && faceD.left <= face.right) && (face.top <= faceD.top && faceD.top <= face.bottom)) ) {
+						delPatarn += 2;
+						dbMsg += ",左上";            //top が　face.top～ <face.bottom　の中   でfaceD.bottom が　face.top～ <face.bottom　の中
+					}
+					if ( ((face.left <= faceD.right && faceD.right <= face.left) && (face.top <= faceD.bottom && faceD.bottom <= face.bottom)) ) {
+						delPatarn += 4;
+						dbMsg += ",右下";    //top が　face.top～ <face.bottom　の中   でfaceD.bottom が　face.top～ <face.bottom　の中
+					}
+					if ( ((face.left <= faceD.right && faceD.right <= face.left) && (face.top <= faceD.top && faceD.top <= face.bottom)) ) {
+						delPatarn += 8;
+						dbMsg += ",右上";    //top が　face.top～ <face.bottom　の中   でfaceD.bottom が　face.top～ <face.bottom　の中
+					}
+					if ( ((faceD.left <= face.right && face.right <= faceD.right) && (faceD.top <= face.top && face.top <= faceD.bottom)) && ((faceD.left <= face.right && face.right <= faceD.right) && (faceD.top <= face.bottom && face.bottom <= faceD.bottom)) ) {
+						delPatarn += 32;
+						dbMsg += ",右内側";            //top が　face.top～ <face.bottom　の中   でfaceD.bottom が　face.top～ <face.bottom　の中
+					}
+					if ( ((faceD.left <= face.left && face.left <= faceD.right) && (faceD.top <= face.top && face.top <= faceD.bottom)) && ((faceD.left <= face.right && face.right <= faceD.right) && (faceD.top <= face.bottom && face.bottom <= faceD.bottom)) ) {
+						delPatarn += 128;
+						dbMsg += ",全点内側";
+					}
+
+//						if ( ((faceD.left < face.right && face.right < faceD.left) && (faceD.top < face.bottom && face.bottom < faceD.bottom)) ) {
+//							delPatarn += 64;
+//							dbMsg += "右下";    //top が　face.top～ <face.bottom　の中   でfaceD.bottom が　face.top～ <face.bottom　の中
+//						}
+//						if ( ((faceD.left < face.right && face.right < faceD.left) && (faceD.top < face.top && face.top < faceD.bottom)) ) {
+//							delPatarn += 128;
+//							dbMsg += "右上";    //top が　face.top～ <face.bottom　の中   でfaceD.bottom が　face.top～ <face.bottom　の中
+//						}
+
+					dbMsg += ",delPatarn=" + delPatarn;
+					if ( 0 < delPatarn ) {
+						faces.remove(dCount);
+						dbMsg += ">>remove<<";
+						endCount--;
+					}
+
+				}
+			}
+			facesSize = faces.size();
+			dbMsg += ">重複削除後>=" + facesSize + "件";
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -901,32 +936,6 @@ public class OCVFaceRecognitionVeiw extends View {
 				return null;
 			}
 
-//			detectos dInfo = new detectos();
-//			dInfo.detector = detectorEye;
-//			dInfo.note = "目";
-//			detectoList.add(dInfo);
-//
-//			dInfo = new detectos();
-//			dInfo.detector = detectorRighteye_2splits;
-//			dInfo.note = "右目";
-//			detectoList.add(dInfo);
-//
-//			dInfo = new detectos();
-//			dInfo.detector = detectorLefteye_2splits;
-//			dInfo.note = "左目";
-//			detectoList.add(dInfo);
-//
-//
-//			dInfo = new detectos();
-//			dInfo.detector = detectorEyeglasses;
-//			dInfo.note = "眼鏡";
-//			detectoList.add(dInfo);
-
-//			private CascadeClassifier detectorFrontalcatface;                //正面か";
-//			private CascadeClassifier detectorFrontalcatface_extended;        //正面(拡張)";
-//			private CascadeClassifier detectorFrontalface_alt_tree;            //正面の顔高い木";
-//			private CascadeClassifier detectorFrontalface_alt2;                //正面顔全体2";
-//			private CascadeClassifier detectorFrontalface_default;            //正面デフォルト";
 			MatOfRect moRect = new MatOfRect();
 			for ( detectos rInfo : detectoList ) {//detectoList       /
 				rInfo.detector.detectMultiScale(pasonMat , moRect);
@@ -941,6 +950,15 @@ public class OCVFaceRecognitionVeiw extends View {
 				}
 			}
 			dbMsg += ",retArray=" + retArray.size() + "個所";
+
+//			int facesSize = retArray.size();
+//			if ( 0 == facesSize ) {                            //顔が検出できない時は
+//			} else {
+//				retArray = deleteOverlapp(retArray);
+//			}
+
+
+
 			if ( moRect != null ) {
 				moRect.release();
 				moRect = null;
