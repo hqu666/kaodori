@@ -176,25 +176,7 @@ public class OCVFaceRecognitionVeiw extends View {
 		final String TAG = "readPref[OCVFR]";
 		String dbMsg = "許諾済み";//////////////////
 		try {
-//		if ( Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ) {                //(初回起動で)全パーミッションの許諾を取る
-//			dbMsg = "許諾確認";
-//			String[] PERMISSIONS = {Manifest.permission.CAMERA , Manifest.permission.WRITE_EXTERNAL_STORAGE , Manifest.permission.READ_EXTERNAL_STORAGE};
-//			boolean isNeedParmissionReqest = false;
-//			for ( String permissionName : PERMISSIONS ) {
-//				dbMsg += "," + permissionName;
-//				int checkResalt = checkSelfPermission(permissionName);
-//				dbMsg += "=" + checkResalt;
-//				if ( checkResalt != PackageManager.PERMISSION_GRANTED ) {
-//					isNeedParmissionReqest = true;
-//				}
-//			}
-//			if ( isNeedParmissionReqest ) {
-//				dbMsg += "許諾処理へ";
-//				requestPermissions(PERMISSIONS , REQUEST_PREF);
-//				return;
-//			}
-//		}
-//			dbMsg += ",isReadPref=" + isReadPref;
+
 			MyPreferenceFragment prefs = new MyPreferenceFragment();
 			prefs.readPref(context);
 
@@ -562,7 +544,7 @@ public class OCVFaceRecognitionVeiw extends View {
 			if ( viewAspect == null ) {
 				setCondition();
 			}
-			detectionList = new ArrayList< detectos >();
+			List< detectos >detectionList = new ArrayList< detectos >();
 			for ( Map.Entry< String, CascadeClassifier > entry : detectosFIles.entrySet() ) {
 				String rDetectorFile = entry.getKey();
 				CascadeClassifier cfs = entry.getValue();
@@ -707,7 +689,7 @@ public class OCVFaceRecognitionVeiw extends View {
 
 			List< detectos > rInfo = makedetectionList(facesList , dWidth , dHight , correctionH , correctionV , correctionSH , correctionSV);
 			for ( detectos tInfo : rInfo ) {
-				dbMsg += "(" + tInfo.note + ")" + tInfo.faces.size() + "件";
+				dbMsg += "(" + tInfo.note + ")" + tInfo.andriodtArray.size() + "件";
 				faces.addAll(tInfo.faces);
 				retArray.addAll(tInfo.andriodtArray);
 			}
@@ -718,7 +700,7 @@ public class OCVFaceRecognitionVeiw extends View {
 				int pHight = ( int ) (faces.get(0).bottom - faces.get(0).top);    //*8;
 				org.opencv.core.Rect wRect = new org.opencv.core.Rect(pX , pY , pWidth , pHight);
 				pasonInfoList = new ArrayList< pasonInfo >();
-				pasonInfoList = detailedPersonFace(imageMat , wRect);
+				pasonInfoList = detailedPersonFace(imageMat , dWidth, dHight, correctionH, correctionV, correctionSH, correctionSV);
 				retArray.add(new android.graphics.Rect(pX , pY , pX + pWidth , pY + pHight));
 
 			}
@@ -907,16 +889,16 @@ public class OCVFaceRecognitionVeiw extends View {
 	}
 
 
-	public List< pasonInfo > detailedPersonFace(Mat pasonMat , org.opencv.core.Rect pRect) {
+	public List< pasonInfo > detailedPersonFace(Mat pasonMat ,int dWidth,int dHight,double correctionH,double correctionV,double correctionSH,	double correctionSV ) {
 		final String TAG = "detailedPersonFace[OCVFR]";
 		String dbMsg = "";
 		List< pasonInfo > retArray = new ArrayList();
 		try {
 			dbMsg += ",pasonMat=" + pasonMat.size() + ",elemSize=" + pasonMat.elemSize();
-			dbMsg += "(" + pRect.x + "," + pRect.y + ")[" + pRect.width + "×" + pRect.height + "]";
-//			//検索用submat切り出し
-//			Mat sub = new Mat();
-//			pasonMat.submat(pRect.y , pRect.y + pRect.height , pRect.x , pRect.x + pRect.width).copyTo(sub);
+//			dbMsg += "(" + pRect.x + "," + pRect.y + ")[" + pRect.width + "×" + pRect.height + "]";
+////			//検索用submat切り出し
+////			Mat sub = new Mat();
+////			pasonMat.submat(pRect.y , pRect.y + pRect.height , pRect.x , pRect.x + pRect.width).copyTo(sub);
 
 			ArrayList< detectos > detectoList = new ArrayList< detectos >();
 			for ( Map.Entry< String, CascadeClassifier > entry : detectosDetaileFIles.entrySet() ) {
@@ -940,8 +922,8 @@ public class OCVFaceRecognitionVeiw extends View {
 				}
 				if ( !dInfo.note.equals("") && dInfo.detector != null ) {
 					dbMsg += "\n" + rDetectorFile + "=" + dInfo.note + "=" + dInfo.detector;
-					dInfo.andriodtArray = new ArrayList< android.graphics.Rect >();
-					dInfo.faces = new ArrayList< RectF >();
+//					dInfo.andriodtArray = new ArrayList< android.graphics.Rect >();
+//					dInfo.faces = new ArrayList< RectF >();
 					detectoList.add(dInfo);
 				}
 			}
@@ -950,66 +932,55 @@ public class OCVFaceRecognitionVeiw extends View {
 			if ( dlistSize == 0 ) {
 				return null;
 			}
-
 			Map< String, org.opencv.core.Rect > facesList = new LinkedHashMap< String, org.opencv.core.Rect >();
-
-			MatOfRect moRect = new MatOfRect();
-			for ( detectos rInfo : detectoList ) {//detectoList       /
-				rInfo.detector.detectMultiScale(pasonMat , moRect);
-				if ( moRect != null ) {
-					int detectionCount = moRect.toArray().length;
-					dbMsg += "(" + retArray.size() + ")" + rInfo.note + "=" + detectionCount + "件";
+			for ( detectos tInfo : detectoList ) {
+				dbMsg += "," + tInfo.note;
+				tInfo.detector.detectMultiScale(imageMat , objects);
+				if ( objects != null ) {
+					int detectionCount = objects.toArray().length;
+					dbMsg += ";" + detectionCount + "件検出";
 					if ( 0 < detectionCount ) {
-
-						//重複
-
-
-						retArray = detailList(retArray , moRect , rInfo.note);
+						int oCount =0;
+						for ( org.opencv.core.Rect rect : objects.toArray() ) {
+							oCount++;
+							dbMsg += "("+oCount+"(" + rect.x + "," + rect.y + ")[" + rect.width + "×" + rect.height + "]";
+							//  new org.opencv.core.Rect( rect.x , rect.y, rect.width, rect.height)
+							facesList.put(tInfo.note+oCount , rect);   //keyにする側はユニーク名が必要
+						}
 					}
 				} else {
 					dbMsg += ";=null";
 				}
 			}
-			dbMsg += ",retArray=" + retArray.size() + "個所";
-
-//			int facesSize = retArray.size();
-//			if ( 0 == facesSize ) {                            //顔が検出できない時は
-//			} else {
-//				retArray = deleteOverlapp(retArray);
-//			}
-
-
-			if ( moRect != null ) {
-				moRect.release();
-				moRect = null;
-				dbMsg += "、moRect破棄";
+			int facesSize = facesList.size();
+			dbMsg += ",検出合計=" + facesSize + "件";
+//			faces.clear();
+			if ( 2<= facesSize ) {                            //顔が検出できない時は
+				facesList = deleteOverlapp(facesList);
+				facesSize = facesList.size();
+				dbMsg += ">重複確認後>=" + facesSize + "件";
 			}
-			myLog(TAG , dbMsg);
-		} catch (Exception er) {
-			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-			isCompletion = true;
-		}
-		return retArray;
-	}
-
-
-	public List< pasonInfo > detailList(List< pasonInfo > retArray , MatOfRect moRect , String division) {
-		final String TAG = "detailList[OCVFR]";
-		String dbMsg = "";
-		try {
-			int detectionCount = moRect.toArray().length;
-			dbMsg += ",検出=" + detectionCount + "件";
+			List< detectos > rInfo = makedetectionList(facesList , dWidth , dHight , correctionH , correctionV , correctionSH , correctionSV);
+			dbMsg += ">" + rInfo.size() + "件作成";
 			int infCount = 0;
-			for ( org.opencv.core.Rect rect : moRect.toArray() ) {
-				infCount++;
+
+			for ( detectos tInfo : rInfo ) {
+				dbMsg += "(" + tInfo.note + ")" + tInfo.faces.size() + "件";
+//				faces.addAll(tInfo.faces);
 				pasonInfo PI = new pasonInfo();
-				;
-				PI.division = infCount + ")" + division + ";";
-				PI.area = new Rect(rect.x , rect.y , rect.width , rect.height);//顔の位置（X座標）,顔の位置（Y座標）,顔の横幅,顔の縦幅     /
-				PI.note = "(" + rect.x + "," + rect.y + ")[" + rect.width + "×" + rect.height;
+				PI.division = infCount + ")" + tInfo.note + ";";
+				int rectX = ( int ) tInfo.andriodtArray.get(0).left;
+				int rectY = ( int )  tInfo.andriodtArray.get(0).top;
+				int rectWidth = ( int )  tInfo.andriodtArray.get(0).width();
+				int rectHeight = tInfo.andriodtArray.get(0).width();
+				dbMsg += "(" + rectX + "," + rectY + ")[" + rectWidth + "×" + rectHeight + "]";
+				PI.area = new Rect(rectX , rectY , rectWidth ,rectHeight);//顔の位置（X座標）,顔の位置（Y座標）,顔の横幅,顔の縦幅     /
+				PI.note = "(" + rectX+ "," + rectY+ ")[" + rectWidth + "×" + rectHeight+"]";
 				retArray.add(PI);
 			}
-			dbMsg += ",retArray=" + retArray.size();
+
+			dbMsg += ",retArray=" + retArray.size() + "個所";
+
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -1017,6 +988,31 @@ public class OCVFaceRecognitionVeiw extends View {
 		}
 		return retArray;
 	}
+
+
+//	public List< pasonInfo > detailList(List< pasonInfo > retArray , MatOfRect moRect , String division) {
+//		final String TAG = "detailList[OCVFR]";
+//		String dbMsg = "";
+//		try {
+//			int detectionCount = moRect.toArray().length;
+//			dbMsg += ",検出=" + detectionCount + "件";
+//			int infCount = 0;
+//			for ( org.opencv.core.Rect rect : moRect.toArray() ) {
+//				infCount++;
+//				pasonInfo PI = new pasonInfo();
+//				PI.division = infCount + ")" + division + ";";
+//				PI.area = new Rect(rect.x , rect.y , rect.width , rect.height);//顔の位置（X座標）,顔の位置（Y座標）,顔の横幅,顔の縦幅     /
+//				PI.note = "(" + rect.x + "," + rect.y + ")[" + rect.width + "×" + rect.height;
+//				retArray.add(PI);
+//			}
+//			dbMsg += ",retArray=" + retArray.size();
+//			myLog(TAG , dbMsg);
+//		} catch (Exception er) {
+//			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+//			isCompletion = true;
+//		}
+//		return retArray;
+//	}
 
 	/**
 	 * 　認証枠の書き込み
@@ -1050,7 +1046,7 @@ public class OCVFaceRecognitionVeiw extends View {
 				RectF r = new RectF(fLeft , fTop , fRight , fBottom);
 				dbMsg += ",r(" + r.left + "," + r.top + ")～（" + r.right + "," + r.bottom + "）carentColor=" + carentColor;
 				canvas.drawRect(r , paint);
-				paint.setTextSize(32);
+				paint.setTextSize(48);
 				paint.setStrokeWidth(2);
 				if ( faces.size() < 2 ) {
 					if ( pasonInfoList != null ) {
@@ -1070,10 +1066,11 @@ public class OCVFaceRecognitionVeiw extends View {
 //							paint = new Paint();
 							paint.setColor(objColor);
 //							paint.setStyle(Paint.Style.STROKE);
+							dbMsg += "\n" + info.division;
 							canvas.drawText(info.division , drX , drY , paint);
-							drY += 32;
+							drY += 50;
 							canvas.drawText(info.note , drX , drY , paint);
-							drY += 32;
+							drY += 50;
 							fLeft = 1.0f * info.area.x;
 							fTop = 1.0f * info.area.y;
 							fRight = 1.0f * fLeft + info.area.width;
