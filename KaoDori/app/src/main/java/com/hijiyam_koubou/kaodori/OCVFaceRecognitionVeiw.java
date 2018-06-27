@@ -118,7 +118,7 @@ public class OCVFaceRecognitionVeiw extends View {
 	 */
 	public class pasonInfo {
 		String division;
-		Rect area;
+		RectF face;
 		String note;
 	}
 
@@ -256,7 +256,6 @@ public class OCVFaceRecognitionVeiw extends View {
 				detectosFIles.put("haarcascade_smile.xml" , detectorSmile);                                       //笑顔";
 				detectosFIles.put("haarcascade_frontalcatface" , detectorFrontalcatface);         //正面か";
 				detectosFIles.put("haarcascade_frontalcatface_extended" , detectorFrontalcatface_extended);        //正面(拡張)";
-				detectosFIles.put("haarcascade_frontalface_alt_tree" , detectorFrontalface_alt_tree);       //正面の顔高い木";
 				detectosFIles.put("haarcascade_frontalface_alt2" , detectorFrontalface_alt2);      //正面顔全体2";
 				detectosFIles.put("haarcascade_frontalface_default" , detectorFrontalface_default);   //正面デフォルト";
 				detectosFIles.put("haarcascade_russian_plate_number" , detectorRussian_plate_number);         //ナンバープレート・ロシア";
@@ -279,10 +278,7 @@ public class OCVFaceRecognitionVeiw extends View {
 					if ( rFile.exists() ) {
 						cfs = new CascadeClassifier(path);
 						dbMsg += "=" + cfs;
-						if ( rDetectorFile.equals("haarcascade_frontalface_alt_tree") ) {                 //正面の顔高い木";
-							detectorFrontalface_alt_tree = new CascadeClassifier(path);
-							dbMsg += "=" + detectorFrontalface_alt_tree;
-						} else if ( rDetectorFile.equals("haarcascade_frontalface_alt2") ) {                //正面顔全体2";
+						if ( rDetectorFile.equals("haarcascade_frontalface_alt2") ) {                //正面顔全体2";
 							detectorFrontalface_alt2 = new CascadeClassifier(path);
 							dbMsg += "=" + detectorFrontalface_alt2;
 						} else if ( rDetectorFile.equals("haarcascade_frontalface_alt") ) {      //標準顔検出
@@ -321,9 +317,7 @@ public class OCVFaceRecognitionVeiw extends View {
 						}
 					} else {
 						dbMsg += "," + rDetectorFile + "読み込めず";
-						if ( rDetectorFile.equals("haarcascade_frontalface_alt_tree") ) {                 //正面の顔高い木";
-							is_detector_frontalface_alt_tree = false;
-						} else if ( rDetectorFile.equals("haarcascade_frontalface_alt2") ) {                //正面顔全体2";
+						if ( rDetectorFile.equals("haarcascade_frontalface_alt2") ) {                //正面顔全体2";
 							is_detector_frontalface_alt2 = false;
 						} else if ( rDetectorFile.equals("haarcascade_frontalface_alt") ) {      //標準顔検出
 							is_detector_frontal_face_alt = false;
@@ -358,6 +352,7 @@ public class OCVFaceRecognitionVeiw extends View {
 				detectosDetaileFIles.put("haarcascade_righteye_2splits" , detectorRighteye_2splits);      //右目";
 				detectosDetaileFIles.put("haarcascade_lefteye_2splits" , detectorLefteye_2splits);         //左目";
 				detectosDetaileFIles.put("haarcascade_eye_tree_eyeglasses" , detectorEyeglasses);         //眼鏡";
+				detectosDetaileFIles.put("haarcascade_frontalface_alt_tree" , detectorFrontalface_alt_tree);       //正面の顔高い木";
 				setCount = 0;
 				for ( Map.Entry< String, CascadeClassifier > entry : detectosDetaileFIles.entrySet() ) {
 					String rDetectorFile = entry.getKey();
@@ -383,6 +378,9 @@ public class OCVFaceRecognitionVeiw extends View {
 						} else if ( rDetectorFile.equals("haarcascade_lefteye_2splits") ) {            //左目";
 							detectorLefteye_2splits = new CascadeClassifier(path);
 							dbMsg += "=" + detectorLefteye_2splits;
+						} else if ( rDetectorFile.equals("haarcascade_frontalface_alt_tree") ) {                 //正面の顔高い木";
+							detectorFrontalface_alt_tree = new CascadeClassifier(path);
+							dbMsg += "=" + detectorFrontalface_alt_tree;
 						}
 					} else {
 						dbMsg += "," + rDetectorFile + "読み込めず";
@@ -394,6 +392,8 @@ public class OCVFaceRecognitionVeiw extends View {
 							is_detector_lefteye_2splits = false;
 						} else if ( rDetectorFile.equals("haarcascade_eye_tree_eyeglasses") ) {          //眼鏡";
 							is_detector_eyeglasses = false;
+						} else if ( rDetectorFile.equals("haarcascade_frontalface_alt_tree") ) {                 //正面の顔高い木";
+							is_detector_frontalface_alt_tree = false;
 						}
 					}
 					setCount++;
@@ -544,16 +544,13 @@ public class OCVFaceRecognitionVeiw extends View {
 			if ( viewAspect == null ) {
 				setCondition();
 			}
-			List< detectos >detectionList = new ArrayList< detectos >();
+			List< detectos > detectionList = new ArrayList< detectos >();
 			for ( Map.Entry< String, CascadeClassifier > entry : detectosFIles.entrySet() ) {
 				String rDetectorFile = entry.getKey();
 				CascadeClassifier cfs = entry.getValue();
 				detectos dInfo = new detectos();
 				dInfo.note = "";
-				if ( rDetectorFile.equals("haarcascade_frontalface_alt_tree") && is_detector_frontalface_alt_tree ) {                 //正面の顔高い木";
-					dInfo.note = getResources().getString(R.string.mm_detector_frontalface_alt_tree);                    //正面の顔高い木？
-					dInfo.detector = detectorFrontalface_alt_tree;
-				} else if ( rDetectorFile.equals("haarcascade_frontalface_alt2") && is_detector_frontalface_alt2 ) {                //正面顔全体2";
+if ( rDetectorFile.equals("haarcascade_frontalface_alt2") && is_detector_frontalface_alt2 ) {                //正面顔全体2";
 					dInfo.note = getResources().getString(R.string.mm_detector_frontalface_alt2);
 					dInfo.detector = detectorFrontalface_alt2;
 				} else if ( rDetectorFile.equals("haarcascade_frontalface_alt") && is_detector_frontal_face_alt ) {      //標準顔検出
@@ -664,12 +661,12 @@ public class OCVFaceRecognitionVeiw extends View {
 					int detectionCount = objects.toArray().length;
 					dbMsg += ";=" + detectionCount + "件検出";
 					if ( 0 < detectionCount ) {
-						int oCount =0;
+						int oCount = 0;
 						for ( org.opencv.core.Rect rect : objects.toArray() ) {
 							oCount++;
-							dbMsg += "("+oCount+"(" + rect.x + "," + rect.y + ")[" + rect.width + "×" + rect.height + "]";
+							dbMsg += "(" + oCount + "(" + rect.x + "," + rect.y + ")[" + rect.width + "×" + rect.height + "]";
 							//  new org.opencv.core.Rect( rect.x , rect.y, rect.width, rect.height)
-							facesList.put(tInfo.note+oCount , rect);   //keyにする側はユニーク名が必要
+							facesList.put(tInfo.note + oCount , rect);   //keyにする側はユニーク名が必要
 						}
 					}
 				} else {
@@ -700,7 +697,7 @@ public class OCVFaceRecognitionVeiw extends View {
 				int pHight = ( int ) (faces.get(0).bottom - faces.get(0).top);    //*8;
 				org.opencv.core.Rect wRect = new org.opencv.core.Rect(pX , pY , pWidth , pHight);
 				pasonInfoList = new ArrayList< pasonInfo >();
-				pasonInfoList = detailedPersonFace(imageMat , dWidth, dHight, correctionH, correctionV, correctionSH, correctionSV);
+				pasonInfoList = detailedPersonFace(imageMat , dWidth , dHight , correctionH , correctionV , correctionSH , correctionSV);
 				retArray.add(new android.graphics.Rect(pX , pY , pX + pWidth , pY + pHight));
 
 			}
@@ -735,7 +732,7 @@ public class OCVFaceRecognitionVeiw extends View {
 		try {
 			int facesSize = retArray.size();
 			dbMsg += ",合計=" + facesSize + "件";
-			List<String> removeKeys =new ArrayList<String>();
+			List< String > removeKeys = new ArrayList< String >();
 			for ( Iterator< Map.Entry< String, org.opencv.core.Rect > > iterator = retArray.entrySet().iterator() ; iterator.hasNext() ; ) {
 				Map.Entry< String, org.opencv.core.Rect > entry = iterator.next();
 				String faceName = entry.getKey();
@@ -745,12 +742,12 @@ public class OCVFaceRecognitionVeiw extends View {
 				int faceTop = face.y;
 				int facerRight = faceLeft + face.width;
 				int faceBottom = faceTop + face.height;
-				dbMsg +=  "(" + faceLeft + "," + faceTop + ")～（" + facerRight + "," + faceBottom + "）と";
-				for(Map.Entry<String, org.opencv.core.Rect> cEntry: retArray.entrySet()) {
+				dbMsg += "(" + faceLeft + "," + faceTop + ")～（" + facerRight + "," + faceBottom + "）と";
+				for ( Map.Entry< String, org.opencv.core.Rect > cEntry : retArray.entrySet() ) {
 //					Map.Entry< String, org.opencv.core.Rect > cEntry = iterator.next();
 //					dCount++;
 					String comparName = cEntry.getKey();
-					if(! faceName.equals(comparName)) {
+					if ( !faceName.equals(comparName) ) {
 						org.opencv.core.Rect comparR = cEntry.getValue();//retArray.get(dCount);
 						int comparLeft = comparR.x;
 						int comparTop = comparR.y;
@@ -773,40 +770,90 @@ public class OCVFaceRecognitionVeiw extends View {
 							delPatarn += 8;
 							dbMsg += ",右上";
 						}
-//						if ( ((comparLeft <= faceLeft && faceLeft <= comparRight) && (comparTop <= faceTop && faceTop <= comparBottom)) && ((comparLeft <= faceLeft && faceLeft <= comparRight) && (comparTop <= faceBottom && faceBottom <= comparBottom)) ) {
-//							delPatarn += 16;
-//							dbMsg += ",左内側";
-//						}
-//						if ( ((comparLeft <= facerRight && facerRight <= comparRight) && (comparTop <= faceTop && faceTop <= comparBottom)) && ((comparLeft <= facerRight && facerRight <= comparRight) && (comparTop <= faceBottom && faceBottom <= comparBottom)) ) {
-//							delPatarn += 32;
-//							dbMsg += ",右内側";
-//						}
-//						if ( ((comparLeft <= faceLeft && faceLeft <= comparRight) && (comparTop <= faceTop && faceTop <= comparBottom)) && ((comparLeft <= facerRight && facerRight <= comparRight) && (comparTop <= faceTop && faceTop <= comparBottom)) ) {
-//							delPatarn += 64;
-//							dbMsg += ",上内側";            //top が　faceTop～ <faceBottom　の中   でcomparBottom が　faceTop～ <faceBottom　の中
-//						}
-//						if ( ((comparLeft <= faceLeft && faceLeft <= comparRight) && (comparTop <= faceTop && faceTop <= comparBottom)) && ((comparLeft <= facerRight && facerRight <= comparRight) && (comparTop <= faceTop && faceTop <= comparBottom)) ) {
-//							delPatarn += 128;
-//							dbMsg += ",下内側";            //top が　faceTop～ <faceBottom　の中   でcomparBottom が　faceTop～ <faceBottom　の中
-//						}
-//						if ( ((comparLeft <= faceLeft && faceLeft <= comparRight) && (comparTop <= faceBottom && faceBottom <= comparBottom)) && ((comparLeft <= facerRight && facerRight <= comparRight) && (comparTop <= faceBottom && faceBottom <= comparBottom)) ) {
+
+						if ( ((comparLeft <= faceLeft && faceLeft <= comparRight) && (comparBottom <= faceTop && faceTop <= comparTop)) ) {
+							delPatarn += 16;
+							dbMsg += ",左上外";
+						}
+						if ( ((comparLeft <= faceLeft && faceLeft <= comparRight) && (comparBottom <= faceBottom && faceBottom <= comparTop)) ) {
+							delPatarn += 32;
+							dbMsg += ",左下外";
+						}
+						if ( ((comparLeft <= facerRight && facerRight <= comparRight) && (comparBottom <= faceBottom && faceBottom <= comparTop)) ) {
+							delPatarn += 64;
+							dbMsg += ",右下外";
+						}
+						if ( ((comparLeft <= facerRight && facerRight <= comparRight) && (comparBottom <= faceTop && faceTop <= comparTop)) ) {
+							delPatarn += 128;
+							dbMsg += ",右上外";
+						}
+
+//						if ( ((comparLeft <= faceLeft && faceLeft <= comparRight) && (comparTop <= faceTop && faceTop <= comparBottom)) &&
+//									 ((comparLeft <= faceLeft && faceLeft <= comparRight) && (comparTop <= faceBottom && faceBottom <= comparBottom)) ) {
 //							delPatarn += 256;
+//							dbMsg += ",左辺内";
+//						}
+//						if ( ((comparLeft <= faceLeft && faceLeft <= comparRight) && (comparTop <= faceTop && faceTop <= comparBottom)) &&
+//									 ((comparLeft <= facerRight && facerRight <= comparRight) && (comparTop <= faceTop && faceTop <= comparBottom)) ) {
+//							delPatarn += 512;
+//							dbMsg += ",下辺内";
+//						}
+//						if ( ((comparLeft <= faceLeft && faceLeft <= comparRight) && (comparTop <= faceTop && faceTop <= comparBottom)) &&
+//									 ((comparLeft <= facerRight && facerRight <= comparRight) && (comparTop <= faceTop && faceTop <= comparBottom)) ) {
+//							delPatarn += 1024;
+//							dbMsg += ",上辺内";
+//						}
+//						if ( ((comparLeft <= facerRight && facerRight <= comparRight) && (comparTop <= faceTop && faceTop <= comparBottom)) &&
+//									 ((comparLeft <= facerRight && facerRight <= comparRight) && (comparTop <= faceBottom && faceBottom <= comparBottom)) ) {
+//							delPatarn += 2048;
+//							dbMsg += ",右辺内";
+//						}
+//
+//						if ( ((faceLeft <= comparLeft && comparLeft <= facerRight) && (faceTop <= comparTop && comparTop <= faceBottom)) &&
+//									 ((faceLeft <= comparLeft && comparLeft <= facerRight) &&(faceTop <= comparTop && comparTop <= faceBottom)) ) {
+//							delPatarn += 4096;
+//							dbMsg += ",左辺外";
+//						}
+//						if ( ((faceLeft <= comparLeft && comparLeft <= facerRight) && (faceTop <= comparBottom && comparBottom <= faceBottom)) &&
+//									 ((faceLeft <= comparRight && comparRight <= facerRight) &&(faceTop <= comparBottom && comparBottom <= faceBottom)) ) {
+//							delPatarn += 8182;
+//							dbMsg += ",下辺外";
+//						}
+//						if ( ((faceLeft <= comparLeft && comparLeft <= facerRight) && (faceTop <= comparTop && comparTop <= faceBottom)) &&
+//									 ((faceLeft <= comparRight && comparRight <= facerRight) &&(faceTop <= comparTop && comparTop <= faceBottom)) ) {
+//							delPatarn += 16364;
+//							dbMsg += ",上辺外";
+//						}
+//						if ( ((faceLeft <= comparRight && comparRight <= facerRight) && (faceTop <= comparTop && comparTop <= faceBottom)) &&
+//									 ((faceLeft <= comparRight && comparRight <= facerRight) &&(faceTop <= comparBottom && comparBottom <= faceBottom)) ) {
+//							delPatarn += 32728;
+//							dbMsg += ",右辺外";
+//						}
+//
+//						if ( ((comparLeft <= faceLeft && faceLeft <= comparRight) && (comparTop <= faceTop && faceTop <= comparBottom)) &&
+//									 ((comparLeft <= facerRight && facerRight <= comparRight) && (comparTop <= faceBottom && faceBottom <= comparBottom)) ) {
+//							delPatarn += 65536;
+//							dbMsg += ",全点外側";
+//						}
+//						if ( ((faceLeft <= comparLeft && comparLeft <= facerRight) && (faceTop <= comparTop && comparTop <= faceBottom)) &&
+//									 ((faceLeft <= comparRight && comparRight <= facerRight) &&(faceTop <= comparBottom && comparBottom <= faceBottom)) ) {
+//							delPatarn += 131072;
 //							dbMsg += ",全点内側";
 //						}
 
 						if ( 0 < delPatarn ) {
-							dbMsg += "で" + comparName+ "(" + comparLeft + "," + comparTop + ")～（" + comparRight + "," + comparBottom + "）delPatarn=" + delPatarn;
+							dbMsg += "で" + comparName + "(" + comparLeft + "," + comparTop + ")～（" + comparRight + "," + comparBottom + "）delPatarn=" + delPatarn;
 							removeKeys.add(comparName);
 						}
 					}
 				}
 			}
 			dbMsg += ",removeKeys=" + removeKeys.size() + "件";
-			for(String dalName: removeKeys) {
+			for ( String dalName : removeKeys ) {
 				dbMsg += ",=" + dalName;
 				retArray.remove(dalName);
 			}
-				facesSize = retArray.size();
+			facesSize = retArray.size();
 			dbMsg += ">重複確認後>=" + facesSize + "件";
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
@@ -839,7 +886,7 @@ public class OCVFaceRecognitionVeiw extends View {
 				rDetecto.andriodtArray = new ArrayList< android.graphics.Rect >();
 				rDetecto.faces = new ArrayList< RectF >();
 				String detectorName = entry.getKey();
-				dbMsg += "；" + detectorName;
+				dbMsg += "\n；" + detectorName;
 				rDetecto.note = detectorName;
 				org.opencv.core.Rect rect = entry.getValue();
 //			for ( org.opencv.core.Rect rect : moRect.toArray() ) {
@@ -889,7 +936,7 @@ public class OCVFaceRecognitionVeiw extends View {
 	}
 
 
-	public List< pasonInfo > detailedPersonFace(Mat pasonMat ,int dWidth,int dHight,double correctionH,double correctionV,double correctionSH,	double correctionSV ) {
+	public List< pasonInfo > detailedPersonFace(Mat pasonMat , int dWidth , int dHight , double correctionH , double correctionV , double correctionSH , double correctionSV) {
 		final String TAG = "detailedPersonFace[OCVFR]";
 		String dbMsg = "";
 		List< pasonInfo > retArray = new ArrayList();
@@ -919,6 +966,9 @@ public class OCVFaceRecognitionVeiw extends View {
 				} else if ( rDetectorFile.equals("haarcascade_lefteye_2splits") && is_detector_lefteye_2splits ) {            //左目";
 					dInfo.note = getResources().getString(R.string.mm_detector_lefteye_2splits);
 					dInfo.detector = detectorLefteye_2splits;
+				} else if ( rDetectorFile.equals("haarcascade_frontalface_alt_tree") && is_detector_frontalface_alt_tree ) {                 //正面の顔高い木";
+					dInfo.note = getResources().getString(R.string.mm_detector_frontalface_alt_tree);                    //正面の顔高い木？
+					dInfo.detector = detectorFrontalface_alt_tree;
 				}
 				if ( !dInfo.note.equals("") && dInfo.detector != null ) {
 					dbMsg += "\n" + rDetectorFile + "=" + dInfo.note + "=" + dInfo.detector;
@@ -940,12 +990,12 @@ public class OCVFaceRecognitionVeiw extends View {
 					int detectionCount = objects.toArray().length;
 					dbMsg += ";" + detectionCount + "件検出";
 					if ( 0 < detectionCount ) {
-						int oCount =0;
+						int oCount = 0;
 						for ( org.opencv.core.Rect rect : objects.toArray() ) {
 							oCount++;
-							dbMsg += "("+oCount+"(" + rect.x + "," + rect.y + ")[" + rect.width + "×" + rect.height + "]";
+							dbMsg += "(" + oCount + "(" + rect.x + "," + rect.y + ")[" + rect.width + "×" + rect.height + "]";
 							//  new org.opencv.core.Rect( rect.x , rect.y, rect.width, rect.height)
-							facesList.put(tInfo.note+oCount , rect);   //keyにする側はユニーク名が必要
+							facesList.put(tInfo.note + oCount , rect);   //keyにする側はユニーク名が必要
 						}
 					}
 				} else {
@@ -955,7 +1005,7 @@ public class OCVFaceRecognitionVeiw extends View {
 			int facesSize = facesList.size();
 			dbMsg += ",検出合計=" + facesSize + "件";
 //			faces.clear();
-			if ( 2<= facesSize ) {                            //顔が検出できない時は
+			if ( 2 <= facesSize ) {                            //顔が検出できない時は
 				facesList = deleteOverlapp(facesList);
 				facesSize = facesList.size();
 				dbMsg += ">重複確認後>=" + facesSize + "件";
@@ -965,17 +1015,18 @@ public class OCVFaceRecognitionVeiw extends View {
 			int infCount = 0;
 
 			for ( detectos tInfo : rInfo ) {
-				dbMsg += "(" + tInfo.note + ")" + tInfo.faces.size() + "件";
+				dbMsg += "\n(" + tInfo.note + ")" + tInfo.faces.size() + "件";
 //				faces.addAll(tInfo.faces);
 				pasonInfo PI = new pasonInfo();
-				PI.division = infCount + ")" + tInfo.note + ";";
-				int rectX = ( int ) tInfo.andriodtArray.get(0).left;
-				int rectY = ( int )  tInfo.andriodtArray.get(0).top;
-				int rectWidth = ( int )  tInfo.andriodtArray.get(0).width();
-				int rectHeight = tInfo.andriodtArray.get(0).width();
-				dbMsg += "(" + rectX + "," + rectY + ")[" + rectWidth + "×" + rectHeight + "]";
-				PI.area = new Rect(rectX , rectY , rectWidth ,rectHeight);//顔の位置（X座標）,顔の位置（Y座標）,顔の横幅,顔の縦幅     /
-				PI.note = "(" + rectX+ "," + rectY+ ")[" + rectWidth + "×" + rectHeight+"]";
+				PI.division = tInfo.note + ";";
+				float rectLeft = tInfo.faces.get(0).left;
+				float rectTop = tInfo.faces.get(0).top;
+				float rectRight = tInfo.faces.get(0).right;
+				float rectBottom = tInfo.faces.get(0).bottom;
+				dbMsg += "(" + rectLeft + "," + rectTop + ")～(" + rectRight + "×" + rectBottom + ")";
+				PI.face = new RectF(rectLeft , rectTop , rectRight , rectBottom);//顔の位置（X座標）,顔の位置（Y座標）,顔の横幅,顔の縦幅     /
+				PI.note = "(" + ( int ) (rectLeft * dWidth) + "," + ( int ) (rectTop * dHight) + ")[" + ( int ) (rectRight * dWidth) + "×" + ( int ) (rectBottom * dHight) + "]";
+				dbMsg += PI.note;
 				retArray.add(PI);
 			}
 
@@ -1027,6 +1078,9 @@ public class OCVFaceRecognitionVeiw extends View {
 			int carentColor = Color.GREEN;
 			int width = getWidth();              // canvas.getWidth()と同じ
 			int height = getHeight();
+			int drX = 12;
+			int drY = 50;        //先頭行
+			int dRowSpan = 50;    //行間
 			dbMsg += "canvas[" + width + "×" + height + "]faces=" + faces.size();
 			int fCount = 0;
 			for ( RectF face : faces ) {
@@ -1044,13 +1098,14 @@ public class OCVFaceRecognitionVeiw extends View {
 				float fRight = width * face.right;
 				float fBottom = height * face.bottom;
 				RectF r = new RectF(fLeft , fTop , fRight , fBottom);
-				dbMsg += ",r(" + r.left + "," + r.top + ")～（" + r.right + "," + r.bottom + "）carentColor=" + carentColor;
+				dbMsg += ",r(" + r.left + "," + r.top + ")～（" + r.right + "," + r.bottom + "）Color=" + carentColor;
 				canvas.drawRect(r , paint);
-				paint.setTextSize(48);
+				paint.setTextSize(42);
 				paint.setStrokeWidth(2);
 				if ( faces.size() < 2 ) {
 					if ( pasonInfoList != null ) {
-						int drX = 5;
+						canvas.drawText("(" + r.left + "," + r.top + ")～（" + r.right + "," + r.bottom + "）" , drX , drY , paint);
+						drY += dRowSpan;
 						float objWidhtHalf = (fRight - fLeft) / 2;
 						dbMsg += ",objWidhtHalf=" + objWidhtHalf;
 						float objCenterY = width / 2 - (fLeft + objWidhtHalf);
@@ -1059,7 +1114,6 @@ public class OCVFaceRecognitionVeiw extends View {
 							drX = ( int ) (fRight + 5);
 						}
 						dbMsg += ",drX=" + drX;
-						int drY = 5;
 						for ( pasonInfo info : pasonInfoList ) {
 							mCurrentColorIndex = (mCurrentColorIndex + 1) % COLOR_CHOICES.length;
 							final int objColor = COLOR_CHOICES[mCurrentColorIndex];
@@ -1068,28 +1122,28 @@ public class OCVFaceRecognitionVeiw extends View {
 //							paint.setStyle(Paint.Style.STROKE);
 							dbMsg += "\n" + info.division;
 							canvas.drawText(info.division , drX , drY , paint);
-							drY += 50;
+							drY += dRowSpan;
 							canvas.drawText(info.note , drX , drY , paint);
-							drY += 50;
-							fLeft = 1.0f * info.area.x;
-							fTop = 1.0f * info.area.y;
-							fRight = 1.0f * fLeft + info.area.width;
-							fBottom = 1.0f * fTop + info.area.height;
+							drY += dRowSpan;
+							fLeft = width * info.face.left;
+							fTop = height * info.face.top;
+							fRight = width * info.face.right;
+							fBottom = height * info.face.bottom;
+							dbMsg += "(" + fLeft + "," + fTop + ")～（" + fRight + "," + fBottom + "）Color=" + objColor;
 							RectF foRect = new RectF(fLeft , fTop , fRight , fBottom);
-							dbMsg += ",r(" + foRect.left + "," + foRect.top + ")～（" + foRect.right + "," + foRect.bottom + "）objColor=" + objColor;
 							canvas.drawRect(foRect , paint);
 						}
 					} else {
 						if ( fLeft == 0 && fTop == 0 ) {
-							canvas.drawText("検出できない時は検出対象を変えてお試しください。" , width * face.left + 8 , height * face.top + 40 , paint);
+							canvas.drawText("検出できない時はメニューから検出対象を変えてお試しください。" , width * face.left + 8 , height * face.top + 40 , paint);
 						} else {
-							canvas.drawText(fLeft + " , " + fTop , width * face.left + 8 , height * face.top + 40 , paint);
+							canvas.drawText((( int ) fLeft) + " , " + (( int ) fTop) , width * face.left + 8 , height * face.top + 40 , paint);
 						}
 						float sRight = fRight - 250;
 						if ( fRight < sRight ) {
 							sRight = fLeft + (fRight - fLeft) / 2;
 						}
-						canvas.drawText(fRight + " , " + fBottom , sRight , fBottom - 32 , paint);
+						canvas.drawText((( int ) fRight) + " , " + fBottom , sRight , fBottom - 32 , paint);
 					}
 				} else {
 					canvas.drawText(fCount + "" , width * face.left + 8 , height * face.top + 40 , paint);
