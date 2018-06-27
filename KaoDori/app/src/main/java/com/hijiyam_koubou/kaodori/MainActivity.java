@@ -141,7 +141,7 @@ MainActivity extends Activity implements View.OnClickListener,View.OnLongClickLi
 	public boolean is_detector_smile = false;               //笑顔
 	public boolean is_detector_russian_plate_number = false;                //ナンバープレート・ロシア
 	public boolean is_detector_ricence_plate_rus_16stages = false;     //ナンバープレートRUS
-
+	public boolean is_overlap_rejection = true;     //重複棄却
 
 	/**
 	 * このアプリケーションの設定ファイル読出し
@@ -173,6 +173,8 @@ MainActivity extends Activity implements View.OnClickListener,View.OnLongClickLi
 			prefs.readPref(this);
 			isFaceRecognition = prefs.isFaceRecognition;
 			dbMsg += ",顔検出実行中=" + isFaceRecognition;
+			is_overlap_rejection = prefs.is_overlap_rejection;
+			dbMsg += ",重複棄却=" + is_overlap_rejection;
 			isChaseFocus = prefs.isChaseFocus;
 			dbMsg += ",追跡フォーカス=" + isChaseFocus;
 
@@ -724,8 +726,8 @@ MainActivity extends Activity implements View.OnClickListener,View.OnLongClickLi
 				menuItems = new CharSequence[]{getResources().getString(R.string.mm_detector_select)};
 				menuItemChecks = new boolean[]{isChaseFocus , false};      //顔検出 ,追跡フォーカス
 			} else if ( menuId == menuID_effect_onnoff ) {          //エフェクト
-				menuItems = new CharSequence[]{getResources().getString(R.string.mm_effect_face_recgnition) , getResources().getString(R.string.mm_effect_chase_focus) , getResources().getString(R.string.mm_effect_preview_tv)};
-				menuItemChecks = new boolean[]{isFaceRecognition , isChaseFocus , false};      //顔検出 ,追跡フォーカス
+				menuItems = new CharSequence[]{getResources().getString(R.string.mm_effect_face_recgnition) , getResources().getString(R.string.mm_effect_overlap_rejection) ,getResources().getString(R.string.mm_effect_chase_focus) , getResources().getString(R.string.mm_effect_preview_tv)};
+				menuItemChecks = new boolean[]{isFaceRecognition ,is_overlap_rejection, isChaseFocus , false};      //顔検出 ,重複棄却,追跡フォーカス  , = true;     //
 			} else if ( menuId == menuID_detector_select ) {          //検出対象選択
 
 				detectosSelect = new LinkedHashMap< CharSequence, Boolean >();
@@ -734,13 +736,12 @@ MainActivity extends Activity implements View.OnClickListener,View.OnLongClickLi
 				detectosSelect.put(getResources().getString(R.string.mm_detector_profileface) , is_detector_profileface);                                    //横顔
 				detectosSelect.put(getResources().getString(R.string.mm_detector_frontalcatface) , is_detector_frontalcatface);                                //正面のみ？
 				detectosSelect.put(getResources().getString(R.string.mm_detector_frontalcatface_extended) , is_detector_frontalcatface_extended);            //正面(拡張)？string>
-				detectosSelect.put(getResources().getString(R.string.mm_detector_frontalface_alt_tree) , is_detector_frontalface_alt_tree);                    //正面の顔高い木？
 				detectosSelect.put(getResources().getString(R.string.mm_detector_frontalface_alt2) , is_detector_frontalface_alt2);                            //正面顔全体2
 				detectosSelect.put(getResources().getString(R.string.mm_detector_frontalface_default) , is_detector_frontalface_default);                    //正面デフォルト
-				detectosSelect.put(getResources().getString(R.string.mm_detector_smile) , is_detector_smile);                                                //笑顔
 				detectosSelect.put(getResources().getString(R.string.mm_detector_lowerbody) , is_detector_lowerbody);                                        //下半身
 				detectosSelect.put(getResources().getString(R.string.mm_detector_upperbody) , is_detector_upperbody);                                        //上半身
 				detectosSelect.put(getResources().getString(R.string.mm_detector_fullbody) , is_detector_fullbody);                                            //全身
+				detectosSelect.put(getResources().getString(R.string.mm_detector_smile) , is_detector_smile);                                                //笑顔
 				detectosSelect.put(getResources().getString(R.string.mm_detector_russian_plate_number) , is_detector_russian_plate_number);                    //ナンバープレート・ロシア
 				detectosSelect.put(getResources().getString(R.string.mm_detector_ricence_plate_rus_16stages) , is_detector_ricence_plate_rus_16stages);         //ナンバープレートRUS
 
@@ -748,6 +749,7 @@ MainActivity extends Activity implements View.OnClickListener,View.OnLongClickLi
 				detectosSelect.put(getResources().getString(R.string.mm_detector_righteye_2splits) , is_detector_righteye_2splits);                            //右目
 				detectosSelect.put(getResources().getString(R.string.mm_detector_lefteye_2splits) , is_detector_lefteye_2splits);                            //左目
 				detectosSelect.put(getResources().getString(R.string.mm_detector_eyeglasses) , is_detector_eyeglasses);                                        //眼鏡
+				detectosSelect.put(getResources().getString(R.string.mm_detector_frontalface_alt_tree) , is_detector_frontalface_alt_tree);                    //正面の顔高い木？
 
 				menuItems = new CharSequence[detectosSelect.size()];
 				menuItemChecks = new boolean[detectosSelect.size()];
@@ -873,6 +875,18 @@ MainActivity extends Activity implements View.OnClickListener,View.OnLongClickLi
 				showMenuDialog(menuID_detector_select);
 			} else if ( selctItem.equals(getResources().getString(R.string.mm_effect_face_recgnition)) ) {
 				detecterBTClick();
+
+			} else if ( selctItem.equals(getResources().getString(R.string.mm_effect_overlap_rejection)) ) {
+				dbMsg += ",is_overlap_rejection=" + is_overlap_rejection;
+				is_overlap_rejection = !is_overlap_rejection;
+				dbMsg += ">>" + is_overlap_rejection;
+				myEditor.putBoolean("is_is_overlap_rejection" , is_overlap_rejection);
+				dbMsg += ",更新";
+				myEditor.commit();
+				dbMsg += "完了";
+				if(OCVFRV != null){
+					OCVFRV.is_overlap_rejection = is_overlap_rejection;
+				}
 			} else if ( selctItem.equals(getResources().getString(R.string.mm_effect_chase_focus)) ) {
 				dbMsg += ",isChaseFocus=" + isChaseFocus;
 				isChaseFocus = !isChaseFocus;
@@ -983,8 +997,6 @@ MainActivity extends Activity implements View.OnClickListener,View.OnLongClickLi
 						toastText += ","+ getResources().getString(R.string.mm_detector_frontalcatface);
 					} else if ( is_detector_frontalcatface_extended ) {                    //正面(拡張)？
 						toastText += ","+ getResources().getString(R.string.mm_detector_frontalcatface_extended);
-					} else if (is_detector_frontalface_alt_tree  ) {                    //正面の顔高い木？
-						toastText += ","+ getResources().getString(R.string.mm_detector_frontalface_alt_tree);
 					} else if (is_detector_frontalface_alt2 ) {                    //正面顔全体2
 						toastText += ","+ getResources().getString(R.string.mm_detector_frontalface_alt2);
 					} else if (is_detector_frontalface_default ) {                    //正面デフォルト
@@ -1001,6 +1013,8 @@ MainActivity extends Activity implements View.OnClickListener,View.OnLongClickLi
 						toastText += ","+ getResources().getString(R.string.mm_detector_lefteye_2splits);
 					} else if ( is_detector_eyeglasses) {                    //眼鏡
 						toastText += ","+ getResources().getString(R.string.mm_detector_eyeglasses);
+					} else if (is_detector_frontalface_alt_tree  ) {                    //正面の顔高い木？
+						toastText += ","+ getResources().getString(R.string.mm_detector_frontalface_alt_tree);
 					}
 //					setEffectView();
 //					is_detector_frontal_face_alt = true;   //顔検出(標準)</string>

@@ -32,6 +32,10 @@
 			android:defaultValue="false"
 			android:key="is_face_recognition_key"
 			android:title="@string/mm_effect_face_recgnition"/>
+		<CheckBoxPreference
+			android:defaultValue="false"
+			android:key="is_overlap_rejection_key"
+			android:title="@string/mm_effect_overlap_rejection"/>
 
 
 		<PreferenceScreen

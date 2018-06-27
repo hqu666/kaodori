@@ -13,6 +13,7 @@
 
 	<string name="mm_effect">エフェクト</string>
 	<string name="mm_effect_face_recgnition">検出</string>
+	<string name="mm_effect_overlap_rejection">重複棄却</string>
 	<string name="mm_effect_chase_focus">追跡フォーカス</string>
 	<string name="mm_effect_preview_tv">高速プレビュ－</string>
 	<string name="mm_effect_preview_sufece">省電力プレビュ－</string>

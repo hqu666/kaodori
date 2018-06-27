@@ -48,13 +48,15 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 	public CheckBoxPreference is_detector_smile_key;                 //笑顔
 	public CheckBoxPreference is_detector_russian_plate_number_key;                 //ナンバープレート・ロシア
 	public CheckBoxPreference is_detector_ricence_plate_rus_16stages_key;                 //ナンバープレートRUS
+	public CheckBoxPreference is_overlap_rejection_key ;     //重複棄却
 
-	 	 	public CheckBoxPreference is_chase_focus_key ;                 //追跡フォーカス
+	public CheckBoxPreference is_chase_focus_key ;                 //追跡フォーカス
 	public EditTextPreference write_folder_key;                    //書込みルートフォルダ
 	public EditTextPreference up_scale_key;                        //顔から何割増しの枠で保存するか
 	public Preference haarcascades_last_modified_key;            //顔認証プロファイルの最新更新日
 
 	public boolean isFaceRecognition = true;                 //顔検出実行中
+	public boolean is_overlap_rejection = true;     //重複棄却
 	public boolean isChaseFocus = false;                 //追跡フォーカス
 	public String write_folder="";            //書込みルートフォルダ
 	public String up_scale = "1.2";            //顔から何割増しの枠で保存するか
@@ -153,6 +155,12 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 			dbMsg = dbMsg + ",顔検出実行中=" + isFaceRecognition;
 			if ( findPreference("is_face_recognition_key") != null ) {
 				is_face_recognition_key.setChecked(isFaceRecognition);
+			}
+
+			is_overlap_rejection_key = ( CheckBoxPreference ) sps.findPreference("is_overlap_rejection_key");        // = true;     //
+			dbMsg = dbMsg + ",重複棄却=" + is_overlap_rejection;
+			if ( findPreference("is_overlap_rejection_key") != null ) {
+				is_overlap_rejection_key.setChecked(is_overlap_rejection);
 			}
 
 			is_detector_frontal_face_alt_key = ( CheckBoxPreference ) sps.findPreference("is_detector_frontal_face_alt_key");
@@ -259,7 +267,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 
 			is_chase_focus_key = ( CheckBoxPreference ) sps.findPreference("is_chase_focus_key");        //追跡フォーカス
 			dbMsg = dbMsg + ",追跡フォーカス=" + isChaseFocus;
-			if ( findPreference("is_face_recognition_key") != null ) {
+			if ( findPreference("is_chase_focus_key") != null ) {
 				is_chase_focus_key.setChecked(isChaseFocus);
 			}
 
@@ -609,6 +617,9 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 				if ( key.equals("is_face_recognition_key") ) {
 					isFaceRecognition = sharedPref.getBoolean(key , isFaceRecognition);
 					dbMsg += ",顔検出実行中=" + isFaceRecognition;
+				}else if ( key.equals("is_overlap_rejection_key") ) {
+					is_overlap_rejection = sharedPref.getBoolean(key , is_overlap_rejection);
+					dbMsg +=  ",重複棄却=" + is_overlap_rejection;
 				}else if ( key.equals("is_detector_frontal_face_alt_key") ) {
 					is_detector_frontal_face_alt = sharedPref.getBoolean(key , is_detector_frontal_face_alt);
 					dbMsg +=  ",顔検出(標準)=" + is_detector_frontal_face_alt;

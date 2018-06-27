@@ -79,11 +79,18 @@ public class OCVFaceRecognitionVeiw extends View {
 	//	public String writeFolder = "";
 //	public float upScale = 1.2f;
 	public long haarcascadesLastModified = 0;
+	public boolean is_overlap_rejection = true;     //重複棄却
+	public boolean isFaceRecognition = true;                 //顔検出実行中
 	public boolean is_detector_frontal_face_alt = false;   //顔検出(標準)</string>
 	public boolean is_detector_fullbody = false;                //全身
 	public boolean is_detector_upperbody = false;                //上半身
 	public boolean is_detector_lowerbody = false;                // 下半身
 	public boolean is_detector_profileface = true;               //横顔
+	public boolean is_detector_frontalcatface = false;               //正面のみ？
+	public boolean is_detector_frontalcatface_extended = false;                //正面(拡張)？string>
+	public boolean is_detector_frontalface_alt_tree = false;               //正面の顔高い木？
+	public boolean is_detector_frontalface_alt2 = false;                //正面顔全体2
+	public boolean is_detector_frontalface_default = false;                //正面デフォルト
 	public boolean is_detector_smile = false;               //笑顔
 	public boolean is_detector_russian_plate_number = false;                //ナンバープレート・ロシア
 	public boolean is_detector_ricence_plate_rus_16stages = false;     //ナンバープレートRUS
@@ -92,11 +99,6 @@ public class OCVFaceRecognitionVeiw extends View {
 	public boolean is_detector_righteye_2splits = false;        //右目
 	public boolean is_detector_lefteye_2splits = false;                //左目
 	public boolean is_detector_eyeglasses = false;                //眼鏡
-	public boolean is_detector_frontalcatface = false;               //正面のみ？
-	public boolean is_detector_frontalcatface_extended = false;                //正面(拡張)？string>
-	public boolean is_detector_frontalface_alt_tree = false;               //正面の顔高い木？
-	public boolean is_detector_frontalface_alt2 = false;                //正面顔全体2
-	public boolean is_detector_frontalface_default = false;                //正面デフォルト
 
 
 	private MatOfRect objects;
@@ -179,7 +181,10 @@ public class OCVFaceRecognitionVeiw extends View {
 
 			MyPreferenceFragment prefs = new MyPreferenceFragment();
 			prefs.readPref(context);
-
+			isFaceRecognition = prefs.isFaceRecognition;
+			dbMsg += ",顔検出実行中=" + isFaceRecognition;
+			is_overlap_rejection = prefs.is_overlap_rejection;
+			dbMsg += ",重複棄却=" + is_overlap_rejection;
 			is_detector_frontal_face_alt = prefs.is_detector_frontal_face_alt;
 			dbMsg += ",顔検出(標準)=" + is_detector_frontal_face_alt;
 			is_detector_profileface = prefs.is_detector_profileface;
@@ -675,10 +680,11 @@ if ( rDetectorFile.equals("haarcascade_frontalface_alt2") && is_detector_frontal
 			}
 			int facesSize = facesList.size();
 			dbMsg += ",検出合計=" + facesSize + "件";
+			dbMsg += ",重複棄却=" + is_overlap_rejection;
 			faces.clear();
 			if ( 0 == facesSize ) {                            //顔が検出できない時は
 				faces.add(new RectF(0 , 0 , 1 , 1));            //プレビュー全体選択に戻す
-			} else {
+			} else if(is_overlap_rejection){
 				facesList = deleteOverlapp(facesList);
 				facesSize = facesList.size();
 				dbMsg += ">重複確認後>=" + facesSize + "件";
