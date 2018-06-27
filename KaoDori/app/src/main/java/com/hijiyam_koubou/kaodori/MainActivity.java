@@ -310,15 +310,18 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 			dbMsg += ",haarcascadesLastModified=" + haarcascadesLastModified;
 			LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(PREVIEW_WIDTH , PREVIEW_HEIGHT);
 			layoutParams.weight = 1.0f;
-			layoutParams.gravity = android.view.Gravity.CENTER;			dbMsg += ",isTexturView=" + isTexturView;                 //高速プレビュー
+			layoutParams.gravity = android.view.Gravity.CENTER;
+			dbMsg += ",isTexturView=" + isTexturView;                 //高速プレビュー
 			if ( isTexturView ) {
 				mTextureView = new AutoFitTextureView(this);
 				mTextureView.setLayoutParams(layoutParams);
 				ma_preview_fl.addView(mTextureView);
+				dbMsg += ",mTextureView生成=";
 			} else {
 				ma_sarface_view = new SurfaceView(this);       //  プレビュー用サーフェス
 				ma_sarface_view.setLayoutParams(layoutParams);
 				ma_preview_fl.addView(ma_sarface_view);
+				dbMsg += ",ma_sarface_view生成=";
 			}
 
 			setViewState();
@@ -376,7 +379,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				dbMsg += ",mBackgroundThread=" + mBackgroundThread.isAlive();
 			}
 			if ( mTextureView != null ) {
-				dbMsg += ",isAvailable=" + mTextureView.isAvailable();
+				dbMsg += ",mTextureView;isAvailable=" + mTextureView.isAvailable();
 				if ( mTextureView.isAvailable() ) {                //orgでは既にプレビューが機能していたら    openCamera
 					int TVWIdht = mTextureView.getWidth();
 					int TVHight = mTextureView.getHeight();
@@ -384,6 +387,16 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 					openCamera(TVWIdht , TVHight);                  //org このタイミングで起動出来ず onSurfaceTextureAvailable　へ
 				} else {                                            //org プレビューが機能していなければリスナー設定
 					mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
+				}
+			} else if ( ma_sarface_view != null ) {
+				dbMsg += ",ma_sarface_view.isActivated=" + ma_sarface_view.isActivated();
+				if ( ma_sarface_view.isActivated() ) {
+					int TVWIdht = ma_sarface_view.getWidth();
+					int TVHight = ma_sarface_view.getHeight();
+					dbMsg += "[" + TVWIdht + "×" + TVHight + "]";
+					openCamera(TVWIdht , TVHight);                  //org このタイミングで起動出来ず onSurfaceTextureAvailable　へ
+				} else {
+//					ma_sarface_view.set
 				}
 			} else {
 				dbMsg += "mTextureView== null";
@@ -1116,7 +1129,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				PREVIEW_WIDTH = mTextureView.getWidth();
 				PREVIEW_HEIGHT = mTextureView.getHeight();
 				dbMsg += "mTextureView";
-			} else if(ma_sarface_view != null){
+			} else if ( ma_sarface_view != null ) {
 				PREVIEW_WIDTH = ma_sarface_view.getWidth();
 				PREVIEW_HEIGHT = ma_sarface_view.getHeight();
 				dbMsg += "ma_sarface_view";
@@ -1641,7 +1654,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 			final String TAG = "onSurfaceTextureAvailable[MA]";
 			String dbMsg = "";
 			try {
-				dbMsg = "[" + width + "×" + height + "]";
+				dbMsg = "[" + width + "×" + height + "]";                   // [1920×1080]
 				openCamera(width , height);
 				myLog(TAG , dbMsg);
 			} catch (Exception er) {
@@ -1656,7 +1669,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 			try {
 				PREVIEW_WIDTH = width;                    //mTextureView.getWidth();
 				PREVIEW_HEIGHT = height;                //mTextureView.getHeight();
-				dbMsg = "[" + width + "×" + height + "]DISP_DEGREES=" + DISP_DEGREES;
+				dbMsg = "[" + width + "×" + height + "]DISP_DEGREES=" + DISP_DEGREES;    // [810×1080]DISP_DEGREES=0
 				configureTransform(width , height);
 				if ( OCVFRV != null ) {
 					dbMsg += ",camera=" + mSensorOrientation + "dig";
@@ -2556,13 +2569,45 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 		final String TAG = "createCameraPreviewSession[MA]";
 		String dbMsg = "";
 		try {
-			SurfaceTexture texture = mTextureView.getSurfaceTexture();
-			assert texture != null;
 			int tWidth = mPreviewSize.getWidth();
 			int tHight = mPreviewSize.getHeight();
 			dbMsg = "PreviewSize[" + tWidth + "×" + tHight + "]mSensorOrientation=" + mSensorOrientation;
-			texture.setDefaultBufferSize(tWidth , tHight);     // バッファサイズを、プレビューサイズに合わせる
-			surface = new Surface(texture);   // プレビューが描画されるSurface	This is the output Surface we need to start preview.
+			if ( mTextureView != null ) {
+				FrameLayout.LayoutParams sParams = ( FrameLayout.LayoutParams ) mTextureView.getLayoutParams();// ViewGroup.MarginLayoutParams だとyoutParams.width' on a null object reference
+				if ( sParams != null ) {
+					dbMsg += ",mTextureView;layoutParams(" + sParams.leftMargin + "×" + sParams.topMargin + ")[" + sParams.width + "×" + sParams.height + "]";
+					dbMsg += ",gravity=" + sParams.gravity;
+					int sLeft = ( sParams.width-tWidth) ;
+					if(0<sLeft){
+						sLeft=sLeft/ 2;
+					} else{
+						sLeft=0;
+					}
+
+					int sTop = ( sParams.height-tHight);
+					if(0<sTop){
+						sTop=sTop/ 2;
+					} else{
+						sTop=0;
+					}
+					dbMsg += ",shift(" + sLeft + "," + sTop + ")";
+					sParams.leftMargin = sLeft;
+					sParams.topMargin = sTop;
+					sParams.width = tWidth;
+					sParams.height = tHight;
+					mTextureView.setLayoutParams(sParams);
+					mTextureView.requestLayout();
+					sParams = ( FrameLayout.LayoutParams ) mTextureView.getLayoutParams();
+					dbMsg += ",>mTextureView>(" + sParams.leftMargin + "×" + sParams.topMargin + ")[" + sParams.width + "×" + sParams.height + "]";
+				}
+				SurfaceTexture texture = mTextureView.getSurfaceTexture();
+				assert texture != null;
+				texture.setDefaultBufferSize(tWidth , tHight);     // バッファサイズを、プレビューサイズに合わせる
+				surface = new Surface(texture);   // プレビューが描画されるSurface	This is the output Surface we need to start preview.
+			} else if ( ma_sarface_view != null ) {
+
+
+			}
 			mPreviewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);    //(5)CaptureRequest作成	 カメラのプレビューウィンドウに適した;We set up a CaptureRequest.Builder with the output Surface.
 			mPreviewRequestBuilder.addTarget(surface);
 			dbMsg += ",surface=" + surface.toString();
