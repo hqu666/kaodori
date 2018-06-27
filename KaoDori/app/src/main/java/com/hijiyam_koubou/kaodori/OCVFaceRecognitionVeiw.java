@@ -1046,31 +1046,6 @@ if ( rDetectorFile.equals("haarcascade_frontalface_alt2") && is_detector_frontal
 		return retArray;
 	}
 
-
-//	public List< pasonInfo > detailList(List< pasonInfo > retArray , MatOfRect moRect , String division) {
-//		final String TAG = "detailList[OCVFR]";
-//		String dbMsg = "";
-//		try {
-//			int detectionCount = moRect.toArray().length;
-//			dbMsg += ",検出=" + detectionCount + "件";
-//			int infCount = 0;
-//			for ( org.opencv.core.Rect rect : moRect.toArray() ) {
-//				infCount++;
-//				pasonInfo PI = new pasonInfo();
-//				PI.division = infCount + ")" + division + ";";
-//				PI.area = new Rect(rect.x , rect.y , rect.width , rect.height);//顔の位置（X座標）,顔の位置（Y座標）,顔の横幅,顔の縦幅     /
-//				PI.note = "(" + rect.x + "," + rect.y + ")[" + rect.width + "×" + rect.height;
-//				retArray.add(PI);
-//			}
-//			dbMsg += ",retArray=" + retArray.size();
-//			myLog(TAG , dbMsg);
-//		} catch (Exception er) {
-//			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-//			isCompletion = true;
-//		}
-//		return retArray;
-//	}
-
 	/**
 	 * 　認証枠の書き込み
 	 */
@@ -1107,7 +1082,7 @@ if ( rDetectorFile.equals("haarcascade_frontalface_alt2") && is_detector_frontal
 				dbMsg += ",r(" + r.left + "," + r.top + ")～（" + r.right + "," + r.bottom + "）Color=" + carentColor;
 				canvas.drawRect(r , paint);
 				paint.setTextSize(42);
-				paint.setStrokeWidth(2);
+				paint.setStrokeWidth(1);
 				if ( faces.size() < 2 ) {
 					if ( pasonInfoList != null ) {
 						canvas.drawText("(" + r.left + "," + r.top + ")～（" + r.right + "," + r.bottom + "）" , drX , drY , paint);

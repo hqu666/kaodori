@@ -49,6 +49,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 	public CheckBoxPreference is_detector_russian_plate_number_key;                 //ナンバープレート・ロシア
 	public CheckBoxPreference is_detector_ricence_plate_rus_16stages_key;                 //ナンバープレートRUS
 	public CheckBoxPreference is_overlap_rejection_key ;     //重複棄却
+	public CheckBoxPreference isTexturView_key;
 
 	public CheckBoxPreference is_chase_focus_key ;                 //追跡フォーカス
 	public EditTextPreference write_folder_key;                    //書込みルートフォルダ
@@ -58,6 +59,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 	public boolean isFaceRecognition = true;                 //顔検出実行中
 	public boolean is_overlap_rejection = true;     //重複棄却
 	public boolean isChaseFocus = false;                 //追跡フォーカス
+	public boolean isTexturView = true;                 //高速プレビュー
 	public String write_folder="";            //書込みルートフォルダ
 	public String up_scale = "1.2";            //顔から何割増しの枠で保存するか
 	public String haarcascades_last_modified = "0";
@@ -161,6 +163,12 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 			dbMsg = dbMsg + ",重複棄却=" + is_overlap_rejection;
 			if ( findPreference("is_overlap_rejection_key") != null ) {
 				is_overlap_rejection_key.setChecked(is_overlap_rejection);
+			}
+
+			isTexturView_key = ( CheckBoxPreference ) sps.findPreference("isTexturView_key");        //  = true;                 //
+			dbMsg = dbMsg + ",高速プレビュー=" + isTexturView;
+			if ( findPreference("isTexturView_key") != null ) {
+				isTexturView_key.setChecked(isTexturView);
 			}
 
 			is_detector_frontal_face_alt_key = ( CheckBoxPreference ) sps.findPreference("is_detector_frontal_face_alt_key");
@@ -480,8 +488,13 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 					String key = pref.getKey();
 					boolean pVal = pref.isChecked();
 					dbMsg += ";" + key + ";" + pVal;
-					pref.setSummaryOn("現在 On");      					// CheckBox が On の時のサマリーを設定
-					pref.setSummaryOff("現在 Off");      					// CheckBox が Off の時のサマリーを設定
+					if(key.equals("isTexturView_key")){
+						pref.setSummaryOn( getResources().getString(R.string.mm_effect_preview_tv));
+						pref.setSummaryOff(getResources().getString(R.string.mm_effect_preview_sufece));
+					} else {
+						pref.setSummaryOn("現在 On");                        // CheckBox が On の時のサマリーを設定
+						pref.setSummaryOff("現在 Off");                        // CheckBox が Off の時のサマリーを設定
+					}
 				} else if ( item instanceof ListPreference ) {
 					ListPreference pref = ( ListPreference ) item;
 					String key = pref.getKey();
@@ -620,6 +633,9 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 				}else if ( key.equals("is_overlap_rejection_key") ) {
 					is_overlap_rejection = sharedPref.getBoolean(key , is_overlap_rejection);
 					dbMsg +=  ",重複棄却=" + is_overlap_rejection;
+				}else if ( key.equals("isTexturView_key") ) {
+					isTexturView = sharedPref.getBoolean(key , isTexturView);
+					dbMsg +=  ",高速プレビュー=" + isTexturView;
 				}else if ( key.equals("is_detector_frontal_face_alt_key") ) {
 					is_detector_frontal_face_alt = sharedPref.getBoolean(key , is_detector_frontal_face_alt);
 					dbMsg +=  ",顔検出(標準)=" + is_detector_frontal_face_alt;

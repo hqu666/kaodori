@@ -6,16 +6,32 @@
 			  android:orientation="horizontal"
 			  tools:context="com.hijiyam_koubou.kaodori.MainActivity">
 
-
-	<com.hijiyam_koubou.kaodori.AutoFitTextureView
-		android:id="@+id/ma_aft"
+	<FrameLayout
+		android:id="@+id/ma_preview_fl"
 		android:layout_width="match_parent"
 		android:layout_height="match_parent"
 		android:layout_alignParentBottom="false"
-		android:layout_alignParentStart="false"
+		android:layout_alignParentEnd="false"
 		android:layout_alignParentTop="false"
 		android:layout_gravity="center"
-		android:layout_weight="1"/>
+		android:orientation="horizontal"
+		android:textAlignment="center">
+		<!--<com.hijiyam_koubou.kaodori.AutoFitTextureView-->
+		<!--android:id="@+id/ma_aft"-->
+		<!--android:layout_width="match_parent"-->
+		<!--android:layout_height="match_parent"-->
+		<!--android:layout_alignParentBottom="false"-->
+		<!--android:layout_alignParentStart="false"-->
+		<!--android:layout_alignParentTop="false"-->
+		<!--android:layout_gravity="center"-->
+		<!--android:layout_weight="1"/>-->
+		<SurfaceView
+			android:id="@+id/ma_sarface_view"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:minHeight="320dp"
+			android:minWidth="240dp"/>
+	</FrameLayout>
 
 	<FrameLayout
 		android:id="@+id/ma_effect_fl"
