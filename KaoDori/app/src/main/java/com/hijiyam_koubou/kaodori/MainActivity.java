@@ -2645,8 +2645,8 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 			dbMsg += ",view[" + viewWidth + "×" + viewHeight + "]";   //正しい値が与えられていない
 			Activity activity = MainActivity.this;                //getActivity();
 			if ( (null != mTextureView || ma_sarface_view != null) && null != mPreviewSize && null != activity ) {
-				int vgWIDTH = ma_preview_fl.getWidth();            //baceParams.width;
-				int vgHEIGHT = ma_preview_fl.getHeight();        //baceParams.height;
+				int vgWIDTH = ma_preview_fl.getWidth();
+				int vgHEIGHT = ma_preview_fl.getHeight();
 				int pvWidth = mPreviewSize.getWidth();
 				int pvHeight = mPreviewSize.getHeight();
 				int orientation = getResources().getConfiguration().orientation;
@@ -2665,8 +2665,8 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				dbMsg += ",読込みViewGroup[" + vgWIDTH + "×" + vgHEIGHT + "]";
 				dbMsg += ",最大プレビューサイズ[" + pvWidth + "×" + pvHeight + "]";
 				Matrix matrix = new Matrix();            //org
-				RectF viewRect = new RectF(0 , 0 , vgWIDTH , vgHEIGHT);        //org viewWidth , viewHeight
-				RectF bufferRect = new RectF(0 , 0 , pvWidth, pvHeight );
+				RectF viewRect = new RectF(0 , 0 , viewWidth , viewHeight);        //org viewWidth , viewHeight        vgWIDTH , vgHEIGHT
+				RectF bufferRect = new RectF(0 , 0 , pvWidth , pvHeight);
 				float centerX = viewRect.centerX();
 				float centerY = viewRect.centerY();
 				dbMsg += ",center;ViewGrupe(" + centerX + "," + centerY + ")とpreview(" + bufferRect.centerX() + "," + bufferRect.centerY() + ")";
@@ -2678,8 +2678,8 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				if ( Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation ) {   //1||3
 					bufferRect.offset(dx , dy);
 					matrix.setRectToRect(viewRect , bufferRect , Matrix.ScaleToFit.FILL);       //org;	FILL		START   ,    CENTER,    END
-					float scale = Math.max(( float ) vgHEIGHT / pvHeight , ( float ) vgWIDTH / pvWidth);        //org;viewHeight / pvHeight , ( float ) viewWidth / pvHeight);
-//		org			float scale = Math.max(( float )viewHeight / pvHeight , ( float ) viewWidth / pvWidth);
+//					float scale = Math.max(( float ) vgHEIGHT / pvHeight , ( float ) vgWIDTH / pvWidth);        //		org;viewHeight / pvHeight , ( float ) viewWidth / pvHeight);
+					float scale = Math.max(( float ) viewHeight / pvHeight , ( float ) viewWidth / pvWidth);        //	org
 					dbMsg += ",scale=" + scale;
 					matrix.postScale(scale , scale , centerX , centerY);
 					matrix.postRotate(90 * (rotation - 2) , centerX , centerY);
@@ -2704,22 +2704,22 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 //				dbMsg += ",Preview（" + sLeft + "、" + sTop + ")[" + pvWidth + "×" + pvHeight + "]";
 				if ( mTextureView != null ) {
 					dbMsg += ",isAvailable=" + mTextureView.isAvailable();
-					FrameLayout.LayoutParams sParams = ( FrameLayout.LayoutParams ) mTextureView.getLayoutParams();// ViewGroup.MarginLayoutParams だとyoutParams.width' on a null object reference
-					if ( sParams != null ) {
-						dbMsg += ",mTextureViewのlayoutParams(" + sParams.leftMargin + "×" + sParams.topMargin + ")[" + sParams.width + "×" + sParams.height + "]";
-						dbMsg += ",gravity=" + sParams.gravity;     //MATCH_PARENTのままだと(0×0)[-1×-1
+//					FrameLayout.LayoutParams sParams = ( FrameLayout.LayoutParams ) mTextureView.getLayoutParams();// ViewGroup.MarginLayoutParams だとyoutParams.width' on a null object reference
+//					if ( sParams != null ) {
+//						dbMsg += ",mTextureViewのlayoutParams(" + sParams.leftMargin + "×" + sParams.topMargin + ")[" + sParams.width + "×" + sParams.height + "]";
+//						dbMsg += ",gravity=" + sParams.gravity;     //MATCH_PARENTのままだと(0×0)[-1×-1
 //						sParams.width = pvWidth;
 //						sParams.height =pvHeight;
-//						sParams.leftMargin = ( int ) dx;
-//						sParams.topMargin = ( int ) dy;
-						sParams.gravity = Gravity.CENTER;
-						mTextureView.setLayoutParams(sParams);
-						mTextureView.requestLayout();
-					}
+////						sParams.leftMargin = ( int ) dx;
+////						sParams.topMargin = ( int ) dy;
+//						sParams.gravity = Gravity.CENTER;
+//						mTextureView.setLayoutParams(sParams);
+//						mTextureView.requestLayout();
+//					}
 					mTextureView.setTransform(matrix);
-					sParams = ( FrameLayout.LayoutParams ) mTextureView.getLayoutParams();
-					dbMsg += ",>変更結果>(" + sParams.leftMargin + "×" + sParams.topMargin + ")[" + sParams.width + "×" + sParams.height + "]";
-					dbMsg += ",gravity=" + sParams.gravity;
+//					sParams = ( FrameLayout.LayoutParams ) mTextureView.getLayoutParams();
+//					dbMsg += ",>変更結果>(" + sParams.leftMargin + "×" + sParams.topMargin + ")[" + sParams.width + "×" + sParams.height + "]";
+//					dbMsg += ",gravity=" + sParams.gravity;
 				} else if ( ma_sarface_view != null ) {
 
 
