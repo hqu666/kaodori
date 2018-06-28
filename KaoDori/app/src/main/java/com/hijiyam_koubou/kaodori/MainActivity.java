@@ -51,6 +51,7 @@ import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.MenuItem;
 import android.view.Surface;
@@ -265,7 +266,6 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 		}
 	}
 
-
 	//Life Cycle// //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -279,12 +279,16 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 //			mTextureView = ( AutoFitTextureView ) findViewById(R.id.ma_aft);
 			ma_preview_fl = ( FrameLayout ) findViewById(R.id.ma_preview_fl);        //pereviewVの呼び込み枠       ViewGroup
 			ma_effect_fl = ( FrameLayout ) findViewById(R.id.ma_effect_fl);        //OpenCVの呼び込み枠       ViewGroup
-//			ma_sarface_view = ( SurfaceView ) findViewById(R.id.ma_sarface_view);        //  プレビュー用サーフェス
+			float maxID = Math.max(( float ) R.id.ma_preview_fl , ( float ) R.id.ma_effect_fl);
 
 			ma_shot_bt = ( ImageButton ) findViewById(R.id.ma_shot_bt);      //キャプチャーボタン
+			maxID = Math.max(( float ) R.id.ma_shot_bt , ( float ) maxID);
 			ma_func_bt = ( ImageButton ) findViewById(R.id.ma_func_bt);      //設定ボタン
+			maxID = Math.max(( float ) R.id.ma_func_bt , ( float ) maxID);
 			ma_detecter_bt = ( ImageButton ) findViewById(R.id.ma_detecter_bt);      //検出ボタン
+			maxID = Math.max(( float ) R.id.ma_detecter_bt , ( float ) maxID);
 			ma_iv = ( ImageView ) findViewById(R.id.ma_iv);                    //撮影結果
+			maxID = Math.max(( float ) R.id.ma_iv , ( float ) maxID);
 			ma_shot_bt.setOnClickListener(this);
 			ma_func_bt.setOnClickListener(this);
 			ma_detecter_bt.setOnClickListener(this);
@@ -308,20 +312,22 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 			readPref();                    //同期させないとインストール時にパーミッションエラー発生 ?
 			copyAssets("haarcascades");                    // assetsの内容を /data/data/*/files/ にコピーします。
 			dbMsg += ",haarcascadesLastModified=" + haarcascadesLastModified;
-			LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(PREVIEW_WIDTH , PREVIEW_HEIGHT);
-			layoutParams.weight = 1.0f;
-			layoutParams.gravity = android.view.Gravity.CENTER;
+			FrameLayout.LayoutParams layoutParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT , ViewGroup.LayoutParams.MATCH_PARENT);
+//			layoutParams.weight = 1.0f;
+			layoutParams.gravity = Gravity.CENTER;           //17;効いてない？
 			dbMsg += ",isTexturView=" + isTexturView;                 //高速プレビュー
 			if ( isTexturView ) {
 				mTextureView = new AutoFitTextureView(this);
 				mTextureView.setLayoutParams(layoutParams);
 				ma_preview_fl.addView(mTextureView);
-				dbMsg += ",mTextureView生成=";
+				mTextureView.setId(( int ) (maxID + 7));       //生成したViewのIDは-1なので付与が必要
+				dbMsg += ",mTextureView生成=" + mTextureView.getId();
 			} else {
 				ma_sarface_view = new SurfaceView(this);       //  プレビュー用サーフェス
 				ma_sarface_view.setLayoutParams(layoutParams);
 				ma_preview_fl.addView(ma_sarface_view);
-				dbMsg += ",ma_sarface_view生成=";
+				ma_sarface_view.setId(( int ) (maxID + 8));
+				dbMsg += ",ma_sarface_view生成=" + ma_sarface_view.getId();
 			}
 
 			setViewState();
@@ -337,40 +343,6 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 		final String TAG = "onResume[MA]";
 		String dbMsg = "";
 		try {
-//			dbMsg += ",isTexturView=" + isTexturView;                 //高速プレビュー
-//			FrameLayout.LayoutParams baceParams = ( FrameLayout.LayoutParams ) ma_preview_fl.getLayoutParams();// ViewGroup.MarginLayoutParams だとyoutParams.width' on a null object reference
-//			int vgWIDTH =baceParams.width;
-//			int vgHEIGHT =baceParams.height;
-//			dbMsg += "ma_preview_fl[" + vgWIDTH + "×" + vgHEIGHT + "]";
-//			if ( mTextureView != null ) {
-//				FrameLayout.LayoutParams sParams = ( FrameLayout.LayoutParams ) mTextureView.getLayoutParams();// ViewGroup.MarginLayoutParams だとyoutParams.width' on a null object reference
-//				if ( sParams != null ) {
-//					dbMsg += ",mTextureView;layoutParams(" + sParams.leftMargin + "×" + sParams.topMargin + ")[" + sParams.width + "×" + sParams.height + "]";
-//					dbMsg += ",gravity=" + sParams.gravity;
-//					int sLeft = (vgWIDTH - sParams.width) ;
-//					if(0<sLeft){
-//						sLeft=sLeft/ 2;
-//					} else{
-//						sLeft=0;
-//					}
-//
-//					int sTop = (vgHEIGHT - sParams.height);
-//					if(0<sTop){
-//						sTop=sTop/ 2;
-//					} else{
-//						sTop=0;
-//					}
-//					dbMsg += ",shift(" + sLeft + "," + sTop + ")";
-//					sParams.leftMargin = sLeft;
-//					sParams.topMargin = sTop;
-////								   sParams.width = PREVIEW_WIDTH;
-////								   sParams.height = PREVIEW_HEIGHT;
-//					mTextureView.setLayoutParams(sParams);
-//					mTextureView.requestLayout();
-//					sParams = ( FrameLayout.LayoutParams ) mTextureView.getLayoutParams();
-//					dbMsg += ",>>(" + sParams.leftMargin + "×" + sParams.topMargin + ")[" + sParams.width + "×" + sParams.height + "]";
-//				}
-//   			}
 			isReWriteNow = false;                        //書き換え終了
 			dbMsg += ",mBackgroundThread=" + mBackgroundThread;
 			if ( mBackgroundThread == null ) {
@@ -1483,29 +1455,33 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 		String dbMsg = "";
 		try {
 			dbMsg += ",顔検出実行中=" + isFaceRecognition;
-			if ( isFaceRecognition ) {               // ;                 //
+			dbMsg += ",targetViewID=" + targetViewID;
+			if ( -1 < targetViewID ) {               // ;                 //
+				if ( isFaceRecognition ) {               // ;                 //
 //				dbMsg += "isReWriteNow=" + isReWriteNow;
 //				if ( !isReWriteNow ) {                                    // //書き換え終了(onResume～onPause)
-				if ( OCVFRV != null ) {
-					fpsCount++;
-					dbMsg += "(" + fpsCount + "/" + fpsLimi + ")";          //実測 8回で送信
-					dbMsg += ",completion=" + OCVFRV.getCompletion();
-					if ( OCVFRV.getCompletion() ) {    //onDrawが終了するまでfalseが返る     && fpsLimi < fpsCount
-						fpsCount = 0;
-						shotBitmap = (( TextureView ) findViewById(targetViewID)).getBitmap();
-						if ( shotBitmap != null ) {
-							dbMsg += ",bitmap[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]";
-							int byteCount = shotBitmap.getByteCount();
-							dbMsg += "" + byteCount + "バイト";
-							dbMsg += ",disp=" + DISP_DEGREES + "dig";
-							mSensorOrientation = getOrientation(DISP_DEGREES);
-							dbMsg += ",camera=" + mSensorOrientation + "dig";
+					if ( OCVFRV != null ) {
+						fpsCount++;
+						dbMsg += "(" + fpsCount + "/" + fpsLimi + ")";          //実測 8回で送信
+						dbMsg += ",completion=" + OCVFRV.getCompletion();
+						if ( OCVFRV.getCompletion() ) {    //onDrawが終了するまでfalseが返る     && fpsLimi < fpsCount
+							fpsCount = 0;
+							if ( targetViewID == mTextureView.getId() ) {
+								shotBitmap = (( TextureView ) findViewById(targetViewID)).getBitmap();
+							}
+							if ( shotBitmap != null ) {
+								dbMsg += ",bitmap[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]";
+								int byteCount = shotBitmap.getByteCount();
+								dbMsg += "" + byteCount + "バイト";
+								dbMsg += ",disp=" + DISP_DEGREES + "dig";
+								mSensorOrientation = getOrientation(DISP_DEGREES);
+								dbMsg += ",camera=" + mSensorOrientation + "dig";
 //							EffectSendData ESD= new EffectSendData();
 //							ESD.sendBitmap = shotBitmap;
 //							ESD.sensorOrientation =  mSensorOrientation;
 //							new EffectSendTask().execute(ESD);
 
-							//	MainActivity.this.runOnUiThread(new Runnable() {   だとプレビューに干渉
+								//	MainActivity.this.runOnUiThread(new Runnable() {   だとプレビューに干渉
 // 	new Thread(new Runnable() {   だと縦持ちで縦にプレビューが引き延ばされる
 //								//   	だと重複生成とクラッシュ発生
 //								@Override
@@ -1513,10 +1489,10 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 //									final String TAG = "sendPreviewBitMap.run[MA]";
 //									String dbMsg = "";
 //									try {
-							List< Rect > retArray = OCVFRV.readFrameRGB(shotBitmap , mSensorOrientation);
-							if ( retArray != null ) {
-								dbMsg += ",=" + retArray.size() + "箇所検出";
-							}
+								List< Rect > retArray = OCVFRV.readFrameRGB(shotBitmap , mSensorOrientation);
+								if ( retArray != null ) {
+									dbMsg += ">結果>" + retArray.size() + "箇所検出";
+								}
 
 //										myLog(TAG , dbMsg);
 //									} catch (Exception er) {
@@ -1524,18 +1500,19 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 //									}
 //								}
 //							}).start();
+							} else {
+								dbMsg += ",shotBitmap = null";
+							}
 						} else {
-							dbMsg += ",shotBitmap = null";
+							dbMsg = "";    //余計なコメントを出さない
 						}
 					} else {
-						dbMsg = "";    //余計なコメントを出さない
+						dbMsg += ",OCVFRV = null>>view追加";
+						setEffectView();
 					}
-				} else {
-					dbMsg += ",OCVFRV = null>>view追加";
-					setEffectView();
+				} else {                            //顔検出中で無ければ
+					removetEffectView();            //viewを破棄
 				}
-			} else {                            //顔検出中で無ければ
-				removetEffectView();            //viewを破棄
 			}
 			if ( !dbMsg.equals("") ) {
 				myLog(TAG , dbMsg);
@@ -2097,10 +2074,12 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				dbMsg += "mState=" + mState;
 				switch ( mState ) {
 					case STATE_PREVIEW: {                //0 ＜＜初期値とunlockFocus() 、We have nothing to do when the camera preview is working normally.
-						if ( mTextureView != null ) {
-							sendPreviewBitMap(mTextureView.getId());     //ここから送ると回転動作にストレス発生
-						}
 						dbMsg = "";    //余計なコメントを出さない
+						if ( mTextureView != null ) {
+							sendPreviewBitMap(mTextureView.getId());     //ここから送ると回転動作にストレス発生？ ？
+						} else if ( ma_sarface_view != null ) {
+							sendPreviewBitMap(ma_sarface_view.getId());
+						}
 						break;
 					}
 					case STATE_WAITING_LOCK: {        //1<<lockFocus()から
@@ -2294,9 +2273,11 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 	}
 
 	/**
+	 * 回転方向によって変化する利用可能な撮影サイズとプレビューサイズを取得する
 	 * Sets up member variables related to camera.
 	 * @param width  The width of available size for camera preview
 	 * @param height The height of available size for camera preview
+	 *               openCamera　から呼ばれる
 	 */
 	@SuppressWarnings ( "SuspiciousNameCombination" )
 	private void setUpCameraOutputs(int width , int height) {
@@ -2305,110 +2286,116 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 		try {
 			Activity activity = MainActivity.this;                //getActivity();
 			CameraManager manager = ( CameraManager ) activity.getSystemService(Context.CAMERA_SERVICE);
-			try {
-				for ( String cameraId : manager.getCameraIdList() ) {
-					dbMsg += ",cameraId=" + cameraId;
-					CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
+//			try {
+			for ( String cameraId : manager.getCameraIdList() ) {
+				dbMsg += ",cameraId=" + cameraId;
+				CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
 
-					Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);                        // We don't use a front facing camera in this sample.
-					dbMsg += ",facing=" + facing + "0;FRONT";
-					if ( facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT ) {
-						continue;
-					}
+				Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);                        // We don't use a front facing camera in this sample.
+				dbMsg += ",facing=" + facing + "0;FRONT";
+				if ( facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT ) {
+					continue;
+				}
 
-					StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
-					if ( map == null ) {
-						continue;
-					}
+				StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
+				if ( map == null ) {
+					continue;
+				}
 
-					// For still image captures, we use the largest available size.
-					Size largest = Collections.max(Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)) , ( Comparator< ? super Size > ) new CompareSizesByArea());
-					dbMsg += "m,largest[" + largest.getWidth() + "×" + largest.getHeight() + "]";
-					mImageReader = ImageReader.newInstance(largest.getWidth() , largest.getHeight() , ImageFormat.JPEG , mMaxImages);
-					//目的のサイズとフォーマットの画像用の新しいリーダーを作成
-					mImageReader.setOnImageAvailableListener(mOnImageAvailableListener , mBackgroundHandler);
-					//ImageReaderから新しいイメージが利用可能になったときに呼び出されるリスナーを登録
+				// For still image captures, we use the largest available size.
+				Size largest = Collections.max(Arrays.asList(map.getOutputSizes(ImageFormat.JPEG)) , ( Comparator< ? super Size > ) new CompareSizesByArea());
+				dbMsg += "m,largest[" + largest.getWidth() + "×" + largest.getHeight() + "]";
+				mImageReader = ImageReader.newInstance(largest.getWidth() , largest.getHeight() , ImageFormat.JPEG , mMaxImages);
+				//目的のサイズ（利用可能な最大撮影サイズ）とフォーマットの画像用の新しいリーダーを作成
+				mImageReader.setOnImageAvailableListener(mOnImageAvailableListener , mBackgroundHandler);
+				//ImageReaderから新しいイメージが利用可能になったときに呼び出されるリスナーを登録
 //					mImageReader.setOnImageAvailableListener(mOnPreviwListener , mBackgroundHandler);            //プレビューの画像取得
 
-					// Find out if we need to swap dimension to get the preview size relative to sensor coordinate.
-					int displayRotation = activity.getWindowManager().getDefaultDisplay().getRotation();
-					dbMsg += ",displayRotation=" + displayRotation;
-					//noinspection ConstantConditions
-					mSensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
-					dbMsg += ",mSensorOrientation=" + mSensorOrientation;
-					boolean swappedDimensions = false;
-					switch ( displayRotation ) {
-						case Surface.ROTATION_0:
-						case Surface.ROTATION_180:
-							if ( mSensorOrientation == 90 || mSensorOrientation == 270 ) {
-								swappedDimensions = true;
-							}
-							break;
-						case Surface.ROTATION_90:
-						case Surface.ROTATION_270:
-							if ( mSensorOrientation == 0 || mSensorOrientation == 180 ) {
-								swappedDimensions = true;
-							}
-							break;
-						default:
-							dbMsg += "Display rotation is invalid: " + displayRotation;
-					}
-
-					Point displaySize = new Point();
-					activity.getWindowManager().getDefaultDisplay().getSize(displaySize);
-					int rotatedPreviewWidth = width;
-					int rotatedPreviewHeight = height;
-					int maxPreviewWidth = displaySize.x;
-					int maxPreviewHeight = displaySize.y;
-
-					if ( swappedDimensions ) {
-						rotatedPreviewWidth = height;
-						rotatedPreviewHeight = width;
-						maxPreviewWidth = displaySize.y;
-						maxPreviewHeight = displaySize.x;
-					}
-
-					if ( maxPreviewWidth > MAX_PREVIEW_WIDTH ) {
-						maxPreviewWidth = MAX_PREVIEW_WIDTH;
-					}
-
-					if ( maxPreviewHeight > MAX_PREVIEW_HEIGHT ) {
-						maxPreviewHeight = MAX_PREVIEW_HEIGHT;
-					}
-					dbMsg += ",rotatedPreview[" + rotatedPreviewWidth + "×" + rotatedPreviewHeight + "]";
-					dbMsg += ",maxPreview[" + maxPreviewWidth + "×" + maxPreviewHeight + "]";
-
-					// Danger, W.R.! Attempting to use too large a preview size could  exceed the camera
-					// bus' bandwidth limitation, resulting in gorgeous previews but the storage of garbage capture data.
-					mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class) , rotatedPreviewWidth , rotatedPreviewHeight , maxPreviewWidth , maxPreviewHeight , largest);
-
-					// We fit the aspect ratio of TextureView to the size of preview we picked.
-					int orientation = getResources().getConfiguration().orientation;
-					dbMsg += ",orientation=" + orientation;
-					if ( orientation == Configuration.ORIENTATION_LANDSCAPE ) {
-						mTextureView.setAspectRatio(mPreviewSize.getWidth() , mPreviewSize.getHeight());
-					} else {
-						mTextureView.setAspectRatio(mPreviewSize.getHeight() , mPreviewSize.getWidth());
-					}
-					dbMsg += ",Preview[" + mPreviewSize.getWidth() + "×" + mPreviewSize.getHeight() + "]";
-
-					// Check if the flash is supported.
-					Boolean available = characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
-					mFlashSupported = available == null ? false : available;
-					dbMsg += ",mFlashSupported=" + mFlashSupported;
-
-					mCameraId = cameraId;
-					return;
+				// Find out if we need to swap dimension to get the preview size relative to sensor coordinate.
+				int displayRotation = activity.getWindowManager().getDefaultDisplay().getRotation();
+				dbMsg += ",displayRotation=" + displayRotation;
+				//noinspection ConstantConditions
+				mSensorOrientation = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION);
+				dbMsg += ",mSensorOrientation=" + mSensorOrientation;
+				boolean swappedDimensions = false;
+				switch ( displayRotation ) {
+					case Surface.ROTATION_0:
+					case Surface.ROTATION_180:
+						if ( mSensorOrientation == 90 || mSensorOrientation == 270 ) {
+							swappedDimensions = true;
+						}
+						break;
+					case Surface.ROTATION_90:
+					case Surface.ROTATION_270:
+						if ( mSensorOrientation == 0 || mSensorOrientation == 180 ) {
+							swappedDimensions = true;
+						}
+						break;
+					default:
+						dbMsg += "Display rotation is invalid: " + displayRotation;
 				}
-			} catch (CameraAccessException er) {
-				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-			} catch (NullPointerException er) {
-				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-				// Currently an NPE is thrown when the Camera2API is used but not supported on the
-				// device this code runs.
-//				ErrorDialog.newInstance(getString(R.string.camera_error)).show(getChildFragmentManager() , FRAGMENT_DIALOG);
+
+				Point displaySize = new Point();
+				activity.getWindowManager().getDefaultDisplay().getSize(displaySize);
+				int rotatedPreviewWidth = width;
+				int rotatedPreviewHeight = height;
+				int maxPreviewWidth = displaySize.x;
+				int maxPreviewHeight = displaySize.y;
+
+				if ( swappedDimensions ) {
+					rotatedPreviewWidth = height;
+					rotatedPreviewHeight = width;
+					maxPreviewWidth = displaySize.y;
+					maxPreviewHeight = displaySize.x;
+				}
+
+				if ( maxPreviewWidth > MAX_PREVIEW_WIDTH ) {
+					maxPreviewWidth = MAX_PREVIEW_WIDTH;
+				}
+
+				if ( maxPreviewHeight > MAX_PREVIEW_HEIGHT ) {
+					maxPreviewHeight = MAX_PREVIEW_HEIGHT;
+				}
+				dbMsg += ",rotatedPreview[" + rotatedPreviewWidth + "×" + rotatedPreviewHeight + "]";
+				dbMsg += ",maxPreview[" + maxPreviewWidth + "×" + maxPreviewHeight + "]";
+
+				// Danger, W.R.! Attempting to use too large a preview size could  exceed the camera
+				// bus' bandwidth limitation, resulting in gorgeous previews but the storage of garbage capture data.
+				mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class) , rotatedPreviewWidth , rotatedPreviewHeight , maxPreviewWidth , maxPreviewHeight , largest);
+				// We fit the aspect ratio of TextureView to the size of preview we picked.
+				int setWidth = mPreviewSize.getWidth();
+				int setHeight = mPreviewSize.getHeight();
+				dbMsg += ",最大プレビューサイズ[" + setWidth + "×" + setHeight + "]";
+				int orientation = getResources().getConfiguration().orientation;
+				dbMsg += ",orientation=" + orientation;
+				if ( orientation == Configuration.ORIENTATION_LANDSCAPE ) {
+				} else {
+					int retention = setWidth;
+					setWidth = setHeight;
+					setHeight = retention;
+				}
+				if ( mTextureView != null ) {
+					mTextureView.setAspectRatio(setWidth , setHeight);
+				} else if ( ma_sarface_view != null ) {
+				}
+//
+				// Check if the flash is supported.
+				Boolean available = characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
+				mFlashSupported = available == null ? false : available;
+				dbMsg += ",mFlashSupported=" + mFlashSupported;
+
+				mCameraId = cameraId;
+				myLog(TAG , dbMsg);
+				return;
 			}
-			myLog(TAG , dbMsg);
+		} catch (CameraAccessException er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		} catch (NullPointerException er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+			// Currently an NPE is thrown when the Camera2API is used but not supported on the
+			// device this code runs.
+//				ErrorDialog.newInstance(getString(R.string.camera_error)).show(getChildFragmentManager() , FRAGMENT_DIALOG);
+//			}
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
@@ -2417,8 +2404,9 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 	// Opens the camera specified by {@link Camera2BasicFragment#mCameraId}.
 
 	/**
-	 * mCameraIdで指定されたカメラを開けます
-	 * onResumeから呼ばれる
+	 * 指定されたサイズと設定されているCameraIdで指定されたカメラの動作を開始させる
+	 * onSurfaceTextureAvailable、onResumeから呼ばれる
+	 * 受け取るサイズは意味込み初期値
 	 */
 	private void openCamera(int width , int height) {
 		final String TAG = "openCamera[MA]";
@@ -2457,6 +2445,8 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 	}
 
 	/**
+	 * カメラの終了動作
+	 * Session、Session ,ImageReaderと使用したリソースの破棄
 	 * Closes the current {@link CameraDevice}.
 	 */
 	private void closeCamera() {
@@ -2476,7 +2466,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				if ( null != mCameraDevice ) {          //org②
 					mCameraDevice.close();
 					mCameraDevice = null;
-					dbMsg += ",mCameraDevice 破棄";
+					dbMsg += ",mCameraSession 破棄";
 				}
 				if ( null != mImageReader ) {                  //org
 					mImageReader.close();         // ImageReaderに関連するすべてのリソースを解放
@@ -2562,8 +2552,10 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 	}
 
 	/**
+	 * プレビューの生成
 	 * Creates a new {@link CameraCaptureSession} for camera preview.
-	 * onOpened	から
+	 * 　onOpene	から呼ばれる
+	 * 各ViewはonCreateで追加する
 	 */
 	private void createCameraPreviewSession() {
 		final String TAG = "createCameraPreviewSession[MA]";
@@ -2572,34 +2564,8 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 			int tWidth = mPreviewSize.getWidth();
 			int tHight = mPreviewSize.getHeight();
 			dbMsg = "PreviewSize[" + tWidth + "×" + tHight + "]mSensorOrientation=" + mSensorOrientation;
+			dbMsg += ",isTexturView=" + isTexturView;                 //高速プレビュー
 			if ( mTextureView != null ) {
-				FrameLayout.LayoutParams sParams = ( FrameLayout.LayoutParams ) mTextureView.getLayoutParams();// ViewGroup.MarginLayoutParams だとyoutParams.width' on a null object reference
-				if ( sParams != null ) {
-					dbMsg += ",mTextureView;layoutParams(" + sParams.leftMargin + "×" + sParams.topMargin + ")[" + sParams.width + "×" + sParams.height + "]";
-					dbMsg += ",gravity=" + sParams.gravity;
-					int sLeft = ( sParams.width-tWidth) ;
-					if(0<sLeft){
-						sLeft=sLeft/ 2;
-					} else{
-						sLeft=0;
-					}
-
-					int sTop = ( sParams.height-tHight);
-					if(0<sTop){
-						sTop=sTop/ 2;
-					} else{
-						sTop=0;
-					}
-					dbMsg += ",shift(" + sLeft + "," + sTop + ")";
-					sParams.leftMargin = sLeft;
-					sParams.topMargin = sTop;
-					sParams.width = tWidth;
-					sParams.height = tHight;
-					mTextureView.setLayoutParams(sParams);
-					mTextureView.requestLayout();
-					sParams = ( FrameLayout.LayoutParams ) mTextureView.getLayoutParams();
-					dbMsg += ",>mTextureView>(" + sParams.leftMargin + "×" + sParams.topMargin + ")[" + sParams.width + "×" + sParams.height + "]";
-				}
 				SurfaceTexture texture = mTextureView.getSurfaceTexture();
 				assert texture != null;
 				texture.setDefaultBufferSize(tWidth , tHight);     // バッファサイズを、プレビューサイズに合わせる
@@ -2676,30 +2642,89 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 		final String TAG = "configureTransform[MA]";
 		String dbMsg = "";
 		try {
+			dbMsg += ",view[" + viewWidth + "×" + viewHeight + "]";   //正しい値が与えられていない
 			Activity activity = MainActivity.this;                //getActivity();
-			if ( null == mTextureView || null == mPreviewSize || null == activity ) {
-				return;
+			if ( (null != mTextureView || ma_sarface_view != null) && null != mPreviewSize && null != activity ) {
+				int vgWIDTH = ma_preview_fl.getWidth();            //baceParams.width;
+				int vgHEIGHT = ma_preview_fl.getHeight();        //baceParams.height;
+				int pvWidth = mPreviewSize.getWidth();
+				int pvHeight = mPreviewSize.getHeight();
+				int orientation = getResources().getConfiguration().orientation;
+				dbMsg += ",orientation=" + orientation;
+				if ( orientation == Configuration.ORIENTATION_LANDSCAPE ) {
+					dbMsg += ";横";
+				} else {
+					dbMsg += ";縦";
+					int retention = vgWIDTH;
+					vgWIDTH = vgHEIGHT;
+					vgHEIGHT = retention;
+					retention = pvWidth;
+					pvWidth = pvHeight;
+					pvHeight = retention;
+				}
+				dbMsg += ",読込みViewGroup[" + vgWIDTH + "×" + vgHEIGHT + "]";
+				dbMsg += ",最大プレビューサイズ[" + pvWidth + "×" + pvHeight + "]";
+				Matrix matrix = new Matrix();            //org
+				RectF viewRect = new RectF(0 , 0 , vgWIDTH , vgHEIGHT);        //org viewWidth , viewHeight
+				RectF bufferRect = new RectF(0 , 0 , pvWidth, pvHeight );
+				float centerX = viewRect.centerX();
+				float centerY = viewRect.centerY();
+				dbMsg += ",center;ViewGrupe(" + centerX + "," + centerY + ")とpreview(" + bufferRect.centerX() + "," + bufferRect.centerY() + ")";
+				float dx = centerX - bufferRect.centerX();
+				float dy = centerY - bufferRect.centerY();
+				dbMsg += ",shift(" + dx + "," + dy + ")";
+				int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
+				dbMsg += ",rotation=" + rotation;
+				if ( Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation ) {   //1||3
+					bufferRect.offset(dx , dy);
+					matrix.setRectToRect(viewRect , bufferRect , Matrix.ScaleToFit.FILL);       //org;	FILL		START   ,    CENTER,    END
+					float scale = Math.max(( float ) vgHEIGHT / pvHeight , ( float ) vgWIDTH / pvWidth);        //org;viewHeight / pvHeight , ( float ) viewWidth / pvHeight);
+//		org			float scale = Math.max(( float )viewHeight / pvHeight , ( float ) viewWidth / pvWidth);
+					dbMsg += ",scale=" + scale;
+					matrix.postScale(scale , scale , centerX , centerY);
+					matrix.postRotate(90 * (rotation - 2) , centerX , centerY);
+				} else if ( Surface.ROTATION_180 == rotation ) {                                                  //org
+					matrix.postRotate(180 , centerX , centerY);
+				} else if ( Surface.ROTATION_0 == rotation ) {           //追加  ;下向き対応	効かず         ｋ
+					matrix.postRotate(0 , centerX , centerY);
+				}
+
+//				int sLeft = (vgWIDTH - pvWidth);
+//				if ( 0 < sLeft ) {
+//					sLeft = sLeft / 2;
+//				} else {
+//					sLeft = 0;
+//				}
+//				int sTop = (vgHEIGHT - pvHeight);
+//				if ( 0 < sTop ) {
+//					sTop = sTop / 2;
+//				} else {
+//					sTop = 0;
+//				}
+//				dbMsg += ",Preview（" + sLeft + "、" + sTop + ")[" + pvWidth + "×" + pvHeight + "]";
+				if ( mTextureView != null ) {
+					dbMsg += ",isAvailable=" + mTextureView.isAvailable();
+					FrameLayout.LayoutParams sParams = ( FrameLayout.LayoutParams ) mTextureView.getLayoutParams();// ViewGroup.MarginLayoutParams だとyoutParams.width' on a null object reference
+					if ( sParams != null ) {
+						dbMsg += ",mTextureViewのlayoutParams(" + sParams.leftMargin + "×" + sParams.topMargin + ")[" + sParams.width + "×" + sParams.height + "]";
+						dbMsg += ",gravity=" + sParams.gravity;     //MATCH_PARENTのままだと(0×0)[-1×-1
+//						sParams.width = pvWidth;
+//						sParams.height =pvHeight;
+//						sParams.leftMargin = ( int ) dx;
+//						sParams.topMargin = ( int ) dy;
+						sParams.gravity = Gravity.CENTER;
+						mTextureView.setLayoutParams(sParams);
+						mTextureView.requestLayout();
+					}
+					mTextureView.setTransform(matrix);
+					sParams = ( FrameLayout.LayoutParams ) mTextureView.getLayoutParams();
+					dbMsg += ",>変更結果>(" + sParams.leftMargin + "×" + sParams.topMargin + ")[" + sParams.width + "×" + sParams.height + "]";
+					dbMsg += ",gravity=" + sParams.gravity;
+				} else if ( ma_sarface_view != null ) {
+
+
+				}
 			}
-			int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
-			dbMsg += ",rotation=" + rotation;
-			Matrix matrix = new Matrix();
-			RectF viewRect = new RectF(0 , 0 , viewWidth , viewHeight);
-			RectF bufferRect = new RectF(0 , 0 , mPreviewSize.getHeight() , mPreviewSize.getWidth());
-			float centerX = viewRect.centerX();
-			float centerY = viewRect.centerY();
-			dbMsg += ",center(" + centerX + "," + centerY + ")";
-			if ( Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation ) {
-				bufferRect.offset(centerX - bufferRect.centerX() , centerY - bufferRect.centerY());
-				matrix.setRectToRect(viewRect , bufferRect , Matrix.ScaleToFit.FILL);
-				float scale = Math.max(( float ) viewHeight / mPreviewSize.getHeight() , ( float ) viewWidth / mPreviewSize.getWidth());
-				matrix.postScale(scale , scale , centerX , centerY);
-				matrix.postRotate(90 * (rotation - 2) , centerX , centerY);
-			} else if ( Surface.ROTATION_180 == rotation ) {
-				matrix.postRotate(180 , centerX , centerY);
-			}
-			dbMsg += ",isAvailable=" + mTextureView.isAvailable();
-			mTextureView.setTransform(matrix);
-//			dbMsg += ">>"+ mTextureView.isAvailable() ;
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -2717,7 +2742,9 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 	private int fState;
 	private int mSameAFStateCount;
 	private int mPreAFState;
-
+	/**
+	 * オートフォーカスの動作リスナー
+	 */
 	CameraCaptureSession.CaptureCallback mAFListener = new CameraCaptureSession.CaptureCallback() {
 		@Override
 		public void onCaptureCompleted(CameraCaptureSession session , CaptureRequest request , TotalCaptureResult result) {
