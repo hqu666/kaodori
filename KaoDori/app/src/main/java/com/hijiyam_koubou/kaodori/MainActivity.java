@@ -1835,7 +1835,6 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 		}
 	};
 
-
 	/**
 	 * This a callback object for the {@link ImageReader}. "onImageAvailable" will be called when a still image is ready to be saved.
 	 * setUpCameraOutputsで設定
@@ -2643,8 +2642,24 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 		String dbMsg = "";
 		try {
 			dbMsg += ",view[" + viewWidth + "×" + viewHeight + "]";   //正しい値が与えられていない
+			int targetViewId ;
+			View targetView ;        //pereviewVの呼び込み枠       ViewGroup
+			if(isTexturView){
+				dbMsg += ",TextureView" ;
+				targetViewId = mTextureView.getId();
+				targetView = ( AutoFitTextureView ) findViewById(targetViewId);        //pereviewVの呼び込み枠       ViewGroup
+			}else{
+				targetViewId = ma_sarface_view.getId();
+				targetView = ( SurfaceView ) findViewById(targetViewId);        //pereviewVの呼び込み枠       ViewGroup
+			}
+			dbMsg += ";Id=" + targetViewId;
 			Activity activity = MainActivity.this;                //getActivity();
-			if ( (null != mTextureView || ma_sarface_view != null) && null != mPreviewSize && null != activity ) {
+			if ( null != targetView && null != mPreviewSize && null != activity ) {
+				int targetViewLeft =targetView.getLeft() ;
+				int targetViewTop = targetView.getTop();
+				int targetViewWidth = targetView.getWidth();
+				int targetViewHeight = targetView.getHeight();
+				dbMsg += ",変更前(" +targetViewLeft + "×" + targetViewTop + ")[" + targetViewWidth + "×" + targetViewHeight+ "]";
 				int vgWIDTH = ma_preview_fl.getWidth();
 				int vgHEIGHT = ma_preview_fl.getHeight();
 				int pvWidth = mPreviewSize.getWidth();
@@ -2653,14 +2668,14 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				dbMsg += ",orientation=" + orientation;
 				if ( orientation == Configuration.ORIENTATION_LANDSCAPE ) {
 					dbMsg += ";横";
+					int retention = pvWidth;
+					pvWidth = pvHeight;
+					pvHeight = retention;
 				} else {
 					dbMsg += ";縦";
 					int retention = vgWIDTH;
 					vgWIDTH = vgHEIGHT;
 					vgHEIGHT = retention;
-					retention = pvWidth;
-					pvWidth = pvHeight;
-					pvHeight = retention;
 				}
 				dbMsg += ",読込みViewGroup[" + vgWIDTH + "×" + vgHEIGHT + "]";
 				dbMsg += ",最大プレビューサイズ[" + pvWidth + "×" + pvHeight + "]";
@@ -2682,11 +2697,9 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 					float scale = Math.max(( float ) viewHeight / pvHeight , ( float ) viewWidth / pvWidth);        //	org
 					dbMsg += ",scale=" + scale;
 					matrix.postScale(scale , scale , centerX , centerY);
-					matrix.postRotate(90 * (rotation - 2) , centerX , centerY);
-				} else if ( Surface.ROTATION_180 == rotation ) {                                                  //org
-					matrix.postRotate(180 , centerX , centerY);
-				} else if ( Surface.ROTATION_0 == rotation ) {           //追加  ;下向き対応	効かず         ｋ
-					matrix.postRotate(0 , centerX , centerY);
+					matrix.postRotate(90 * (rotation - 2) , centerX , centerY); 					//  270 || 90
+				} else if ( Surface.ROTATION_0 == rotation|| Surface.ROTATION_180 == rotation ) {			//    0 || 2                                               //org
+					matrix.postRotate(180 * (rotation - 2)  , centerX , centerY);					// -180 || 0
 				}
 
 //				int sLeft = (vgWIDTH - pvWidth);
@@ -2717,13 +2730,14 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 //						mTextureView.requestLayout();
 //					}
 					mTextureView.setTransform(matrix);
-//					sParams = ( FrameLayout.LayoutParams ) mTextureView.getLayoutParams();
-//					dbMsg += ",>変更結果>(" + sParams.leftMargin + "×" + sParams.topMargin + ")[" + sParams.width + "×" + sParams.height + "]";
-//					dbMsg += ",gravity=" + sParams.gravity;
 				} else if ( ma_sarface_view != null ) {
-
-
+					// 					ma_sarface_view.setTransform(matrix);    //SurfaceViewではできない
 				}
+				dbMsg += ",>変更結果>(" +targetViewLeft + "×" + targetViewTop + ")[" + targetViewWidth + "×" + targetViewHeight+ "]";
+				FrameLayout.LayoutParams sParams = ( FrameLayout.LayoutParams ) targetView.getLayoutParams();
+				dbMsg += "=(" + sParams.leftMargin + "×" + sParams.topMargin + ")[" + sParams.width + "×" + sParams.height + "]";
+				dbMsg += ",gravity=" + sParams.gravity;
+				dbMsg += "=(" +targetView.getLeft() + "×" + targetView.getTop() + ")[" + targetView.getWidth() + "×" + targetView.getHeight() + "]";
 			}
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
