@@ -174,6 +174,8 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 //			dbMsg += ",isReadPref=" + isReadPref;
 			MyPreferenceFragment prefs = new MyPreferenceFragment();
 			prefs.readPref(this);
+			isTexturView = prefs.isTexturView;     // = true;                 //
+			dbMsg += ",高速プレビュー=" + isTexturView;
 			isFaceRecognition = prefs.isFaceRecognition;
 			dbMsg += ",顔検出実行中=" + isFaceRecognition;
 			is_overlap_rejection = prefs.is_overlap_rejection;
@@ -327,6 +329,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				ma_sarface_view.setLayoutParams(layoutParams);
 				ma_preview_fl.addView(ma_sarface_view);
 				ma_sarface_view.setId(( int ) (maxID + 8));
+				//					ma_sarface_view.getHolder().setFixedSize(640, 320);			// SurfaceViewにプレビューサイズを設定する(サンプルなので適当な値です)
 				dbMsg += ",ma_sarface_view生成=" + ma_sarface_view.getId();
 			}
 
@@ -1461,13 +1464,15 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 //				if ( !isReWriteNow ) {                                    // //書き換え終了(onResume～onPause)
 					if ( OCVFRV != null ) {
 						fpsCount++;
-						dbMsg += "(" + fpsCount + "/" + fpsLimi + ")";          //実測 8回で送信
-						dbMsg += ",completion=" + OCVFRV.getCompletion();
+						dbMsg += "(" + fpsCount + "/" + fpsLimi + "フレーム)";          //実測 8回で送信
+						dbMsg += ",前回処理終了=" + OCVFRV.getCompletion();
 						if ( OCVFRV.getCompletion() ) {    //onDrawが終了するまでfalseが返る     && fpsLimi < fpsCount
 							fpsCount = 0;
-							if ( targetViewID == mTextureView.getId() ) {
+//							if ( targetViewID == mTextureView.getId() ) {
 								shotBitmap = (( TextureView ) findViewById(targetViewID)).getBitmap();
-							}
+//							} else{
+//								shotBitmap =  findViewById(targetViewID).getBitmap();
+//							}
 							if ( shotBitmap != null ) {
 								dbMsg += ",bitmap[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]";
 								int byteCount = shotBitmap.getByteCount();
@@ -2569,7 +2574,58 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				texture.setDefaultBufferSize(tWidth , tHight);     // バッファサイズを、プレビューサイズに合わせる
 				surface = new Surface(texture);   // プレビューが描画されるSurface	This is the output Surface we need to start preview.
 			} else if ( ma_sarface_view != null ) {
-
+				ArrayList<Surface> surfaceList = new ArrayList();
+				surfaceList.add(ma_sarface_view.getHolder().getSurface());				// プレビュー用のSurfaceViewをリストに登録
+				surface = ma_sarface_view.getHolder().getSurface();
+//				try {
+//					// プレビューリクエストの設定（SurfaceViewをターゲットに）
+//					mPreviewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+//					mPreviewRequestBuilder.addTarget(ma_sarface_view.getHolder().getSurface());
+//
+//					// キャプチャーセッションの開始(セッション開始後に第2引数のコールバッククラスが呼ばれる)
+//					mCameraDevice.createCaptureSession(surfaceList, new CameraCaptureSession.StateCallback() {
+//						@Override
+//						public void onConfigured(CameraCaptureSession cameraCaptureSession) {
+//							final String TAG = "CCPS.onConfigured[MA]";
+//							String dbMsg = "";
+//							try {
+//								if ( null != mCameraDevice ) {  // カメラが閉じていなければ	// The camera is already closed
+//									mCaptureSession = cameraCaptureSession;        // When the session is ready, we start displaying the preview.
+//									dbMsg += ",getId=" + mCaptureSession.getDevice().getId();
+//									try {
+//										PointF[] focusPoints = {new PointF(mPreviewSize.getWidth() / 2 , mPreviewSize.getHeight() / 2)};
+//										dbMsg += ",focusPoints(" + focusPoints[0].x + "," + focusPoints[0].y + ")";
+//										startAutoFocus(focusPoints , MainActivity.this);
+//										mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE , CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
+//										// オートフォーカスを設定する// Auto focus should be continuous for camera preview.
+//										setAutoFlash(mPreviewRequestBuilder);        // Flash is automatically enabled when necessary.
+//										mPreviewRequest = mPreviewRequestBuilder.build();        // リクエスト作成// Finally, we start displaying the camera preview.
+//										mCaptureSession.setRepeatingRequest(mPreviewRequest , mCaptureCallback , mBackgroundHandler);
+//										//(7)RepeatSession作成 カメラプレビューを表示する	//APIL21;このキャプチャセッションで、イメージのキャプチャを無限に繰り返すように要求:ここの他は unlockFocus()
+//									} catch (CameraAccessException er) {
+//										myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+//									}
+//								} else {
+//									dbMsg += "mCameraDevice = null";
+//								}
+//								myLog(TAG , dbMsg);
+//							} catch (Exception er) {
+//								myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+//							}
+//						}
+//
+//						@Override
+//						public void onConfigureFailed(CameraCaptureSession cameraCaptureSession) {
+//							final String TAG = "CCPS.onConfigureFailed[MA]";
+//							String dbMsg = "";
+//							dbMsg += ",getId=" + cameraCaptureSession.getDevice().getId();
+//							showToast("Failed");
+//							myErrorLog(TAG , dbMsg + "発生；");
+//						}
+//					} , null);
+//				} catch (CameraAccessException e) {
+//					// エラー時の処理を記載
+//				}
 
 			}
 			mPreviewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);    //(5)CaptureRequest作成	 カメラのプレビューウィンドウに適した;We set up a CaptureRequest.Builder with the output Surface.
