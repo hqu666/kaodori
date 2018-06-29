@@ -4,8 +4,12 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.Surface;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 
 public class CS_Util {
@@ -103,6 +107,24 @@ public class CS_Util {
 
 
 	////汎用関数///////////////////////////////////////////////////////////////////////
+	public String retDateStr(long dateTimeVar , String patten) {
+		final String TAG = "retDateStr[util}";
+		String dbMsg = "";
+		String retStr = "";
+		try {
+			dbMsg = "dateTimeVar="+dateTimeVar;
+			dbMsg += ",patten="+patten;
+			SimpleDateFormat simpleDateFormat = new SimpleDateFormat(patten);
+			retStr = simpleDateFormat.format(dateTimeVar);
+			dbMsg += ">>"+retStr;
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+		return retStr;
+	}
+
+
 	public boolean isIntVar(String val) {
 		try {
 			Integer.parseInt(val);

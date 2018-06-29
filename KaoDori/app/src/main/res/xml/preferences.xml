@@ -23,6 +23,11 @@
 			android:singleLine="true"
 			android:summary="1.2"
 			android:title="@string/up_scale"/>
+
+		<CheckBoxPreference
+			android:defaultValue="false"
+			android:key="isTexturView_key"
+			android:title="@string/mm_effect_preview_tv"/>
 	</PreferenceScreen>
 
 	<PreferenceScreen
@@ -43,106 +48,113 @@
 			android:key="detector_select_key"
 			android:selectable="true"
 			android:title="@string/mm_detector_select">
-			<CheckBoxPreference
-				android:defaultValue="false"
-				android:key="is_detector_frontal_face_alt_key"
-				android:title="@string/mm_detector_frontal_face_alt"/>
-			<CheckBoxPreference
-				android:defaultValue="false"
-				android:key="is_detector_profileface_key"
-				android:title="@string/mm_detector_profileface"/>
-			<CheckBoxPreference
-				android:defaultValue="false"
-				android:key="is_detector_upperbody_key"
-				android:title="@string/mm_detector_upperbody"/>
-			<CheckBoxPreference
-				android:defaultValue="false"
-				android:key="is_detector_fullbody_key"
-				android:title="@string/mm_detector_fullbody"/>
-			<CheckBoxPreference
-				android:defaultValue="false"
-				android:key="is_detector_lowerbody_key"
-				android:title="@string/mm_detector_lowerbody"/>        <!--//下半身-->
-			<CheckBoxPreference
-				android:defaultValue="false"
-				android:key="is_detector_eye_key"
-				android:title="@string/mm_detector_eye"/>
-			<CheckBoxPreference
-				android:defaultValue="false"
-				android:key="is_detector_righteye_2splits_key"
-				android:title="@string/mm_detector_righteye_2splits"/>
-			<CheckBoxPreference
-				android:defaultValue="false"
-				android:key="is_detector_lefteye_2splitss_key"
-				android:title="@string/mm_detector_lefteye_2splits"/>
-			<CheckBoxPreference
-				android:defaultValue="false"
-				android:key="is_detector_eyeglasses_key"
-				android:title="@string/mm_detector_eyeglasses"/>
-			<CheckBoxPreference
-				android:defaultValue="false"
-				android:key="is_detector_frontalcatface_key"
-				android:title="@string/mm_detector_frontalcatface"/>
-			<CheckBoxPreference
-				android:defaultValue="false"
-				android:key="is_detector_frontalcatface_extended_key"
-				android:title="@string/mm_detector_frontalcatface_extended"/>
-			<CheckBoxPreference
-				android:defaultValue="false"
-				android:key="is_detector_frontalface_alt_tree_key"
-				android:title="@string/mm_detector_frontalface_alt_tree"/>
-			<CheckBoxPreference
-				android:defaultValue="false"
-				android:key="is_detector_frontalface_alt2_key"
-				android:title="@string/mm_detector_frontalface_alt2"/>
-			<CheckBoxPreference
-				android:defaultValue="false"
-				android:key="is_detector_frontalface_default_key"
-				android:title="@string/mm_detector_frontalface_default"/>
-			<CheckBoxPreference
-				android:defaultValue="false"
-				android:key="is_detector_smile_key"
-				android:title="@string/mm_detector_smile"/>
-			<CheckBoxPreference
-				android:defaultValue="false"
-				android:key="is_detector_russian_plate_number_key"
-				android:title="@string/mm_detector_russian_plate_number"/>
-			<CheckBoxPreference
-				android:defaultValue="false"
-				android:key="is_detector_ricence_plate_rus_16stages_key"
-				android:title="@string/mm_detector_ricence_plate_rus_16stages"/>
+			<PreferenceCategory
+				android:title="@string/mm_detector_root">
+
+				<CheckBoxPreference
+					android:defaultValue="false"
+					android:key="is_detector_frontal_face_alt_key"
+					android:title="@string/mm_detector_frontal_face_alt"/>
+				<CheckBoxPreference
+					android:defaultValue="false"
+					android:key="is_detector_profileface_key"
+					android:title="@string/mm_detector_profileface"/>
+				<CheckBoxPreference
+					android:defaultValue="false"
+					android:key="is_detector_upperbody_key"
+					android:title="@string/mm_detector_upperbody"/>
+				<CheckBoxPreference
+					android:defaultValue="false"
+					android:key="is_detector_fullbody_key"
+					android:title="@string/mm_detector_fullbody"/>
+				<CheckBoxPreference
+					android:defaultValue="false"
+					android:key="is_detector_lowerbody_key"
+					android:title="@string/mm_detector_lowerbody"/>
+				<CheckBoxPreference
+					android:defaultValue="false"
+					android:key="is_detector_frontalcatface_key"
+					android:title="@string/mm_detector_frontalcatface"/>
+				<CheckBoxPreference
+					android:defaultValue="false"
+					android:key="is_detector_frontalcatface_extended_key"
+					android:title="@string/mm_detector_frontalcatface_extended"/>
+				<CheckBoxPreference
+					android:defaultValue="false"
+					android:key="is_detector_frontalface_alt2_key"
+					android:title="@string/mm_detector_frontalface_alt2"/>
+				<CheckBoxPreference
+					android:defaultValue="false"
+					android:key="is_detector_frontalface_default_key"
+					android:title="@string/mm_detector_frontalface_default"/>
+				<CheckBoxPreference
+					android:defaultValue="false"
+					android:key="is_detector_smile_key"
+					android:title="@string/mm_detector_smile"/>
+				<CheckBoxPreference
+					android:defaultValue="false"
+					android:key="is_detector_russian_plate_number_key"
+					android:title="@string/mm_detector_russian_plate_number"/>
+				<CheckBoxPreference
+					android:defaultValue="false"
+					android:key="is_detector_ricence_plate_rus_16stages_key"
+					android:title="@string/mm_detector_ricence_plate_rus_16stages"/>
+			</PreferenceCategory>
+			<!--//下半身-->
+			<PreferenceCategory
+				android:title="@string/mm_detector_detaile">
+
+				<CheckBoxPreference
+					android:defaultValue="false"
+					android:key="is_detector_eye_key"
+					android:title="@string/mm_detector_eye"/>
+				<CheckBoxPreference
+					android:defaultValue="false"
+					android:key="is_detector_righteye_2splits_key"
+					android:title="@string/mm_detector_righteye_2splits"/>
+				<CheckBoxPreference
+					android:defaultValue="false"
+					android:key="is_detector_lefteye_2splitss_key"
+					android:title="@string/mm_detector_lefteye_2splits"/>
+				<CheckBoxPreference
+					android:defaultValue="false"
+					android:key="is_detector_eyeglasses_key"
+					android:title="@string/mm_detector_eyeglasses"/>
+				<CheckBoxPreference
+					android:defaultValue="false"
+					android:key="is_detector_frontalface_alt_tree_key"
+					android:title="@string/mm_detector_frontalface_alt_tree"/>
+			</PreferenceCategory>
 		</PreferenceScreen>
+
 		<CheckBoxPreference
 			android:defaultValue="false"
 			android:key="is_chase_focus_key"
 			android:title="@string/mm_effect_chase_focus"/>
-
-		<CheckBoxPreference
-			android:defaultValue="false"
-			android:key="isTexturView_key"
-			android:title="@string/mm_effect_preview_tv"/>
 	</PreferenceScreen>
 
+	<PreferenceScreen
+		android:key="other_key"
+		android:title="@string/mm_ohter">
+		<EditTextPreference
+			android:key="write_folder_key"
+			android:defaultValue="12345native"
+			android:inputType="text"
+			android:summary="9999999999"
+			android:title="@string/write_folder"/>
 
-	<EditTextPreference
-		android:defaultValue="12345native"
-		android:inputType="text"
-		android:key="write_folder_key"
-		android:summary="9999999999"
-		android:title="@string/write_folder"/>
-
-	<Preference
-		android:defaultValue="0"
-		android:key="haarcascades_last_modified_key"
-		android:selectable="false"
-		android:summary="0"
-		android:title="@string/haarcascades_last_modified"/>
+		<Preference
+			android:key="haarcascades_last_modified_key"
+			android:selectable="false"
+			android:defaultValue="0"
+			android:summary="0"
+			android:title="@string/haarcascades_last_modified"/>
+	</PreferenceScreen>
 
 	<!--<SwitchPreference-->
 	<!--android:defaultValue="false"-->
 	<!--android:inputType="none"-->
 	<!--android:key="accountName_cbp"-->
-
 
 
 </PreferenceScreen>

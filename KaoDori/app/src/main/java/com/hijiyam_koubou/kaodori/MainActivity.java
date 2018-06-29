@@ -754,16 +754,15 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 			} else if ( menuId == menuID_phot ) {          //撮影設定
 				menuItems = new CharSequence[]{getResources().getString(R.string.mm_phot_array_size)};
 			} else if ( menuId == menuID_phot_onoff ) {          //撮影設定
-				menuItems = new CharSequence[]{getResources().getString(R.string.mm_phot_sub_main) , getResources().getString(R.string.mm_phot_flash) , getResources().getString(R.string.mm_phot_rumbling)};
-				menuItemChecks = new boolean[]{isSubCamera , isAutoFlash , isRumbling};      //オートフラッシュ、シャッター音の鳴動
+				menuItems = new CharSequence[]{getResources().getString(R.string.mm_phot_sub_main) , getResources().getString(R.string.mm_phot_flash) , getResources().getString(R.string.mm_phot_rumbling), getResources().getString(R.string.mm_effect_preview_tv)};
+				menuItemChecks = new boolean[]{isSubCamera , isAutoFlash , isRumbling, isTexturView};      //オートフラッシュ、シャッター音の鳴動
 			} else if ( menuId == menuID_effect ) {          //エフェクト
 				menuItems = new CharSequence[]{getResources().getString(R.string.mm_detector_select)};
-				menuItemChecks = new boolean[]{isChaseFocus , false};      //顔検出 ,追跡フォーカス
+//				menuItemChecks = new boolean[]{isChaseFocus , false};      //顔検出 ,追跡フォーカス
 			} else if ( menuId == menuID_effect_onnoff ) {          //エフェクト
-				menuItems = new CharSequence[]{getResources().getString(R.string.mm_effect_face_recgnition) , getResources().getString(R.string.mm_effect_overlap_rejection) , getResources().getString(R.string.mm_effect_chase_focus) , getResources().getString(R.string.mm_effect_preview_tv)};
-				menuItemChecks = new boolean[]{isFaceRecognition , is_overlap_rejection , isChaseFocus , false};      //顔検出 ,重複棄却,追跡フォーカス  , = true;     //
+				menuItems = new CharSequence[]{getResources().getString(R.string.mm_effect_face_recgnition) , getResources().getString(R.string.mm_effect_overlap_rejection) , getResources().getString(R.string.mm_effect_chase_focus) };
+				menuItemChecks = new boolean[]{isFaceRecognition , is_overlap_rejection , isChaseFocus };      //顔検出 ,重複棄却,追跡フォーカス  , = true;     //
 			} else if ( menuId == menuID_detector_select ) {          //検出対象選択
-
 				detectosSelect = new LinkedHashMap< CharSequence, Boolean >();
 //				detectosSelect.clear();
 				detectosSelect.put(getResources().getString(R.string.mm_detector_frontal_face_alt) , is_detector_frontal_face_alt);                            //顔検出(標準)</string>
@@ -2693,7 +2692,6 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				if ( Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation ) {   //1||3
 					bufferRect.offset(dx , dy);
 					matrix.setRectToRect(viewRect , bufferRect , Matrix.ScaleToFit.FILL);       //org;	FILL		START   ,    CENTER,    END
-//					float scale = Math.max(( float ) vgHEIGHT / pvHeight , ( float ) vgWIDTH / pvWidth);        //		org;viewHeight / pvHeight , ( float ) viewWidth / pvHeight);
 					float scale = Math.max(( float ) viewHeight / pvHeight , ( float ) viewWidth / pvWidth);        //	org
 					dbMsg += ",scale=" + scale;
 					matrix.postScale(scale , scale , centerX , centerY);
@@ -2701,20 +2699,6 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				} else if ( Surface.ROTATION_0 == rotation|| Surface.ROTATION_180 == rotation ) {			//    0 || 2                                               //org
 					matrix.postRotate(180 * (rotation - 2)  , centerX , centerY);					// -180 || 0
 				}
-
-//				int sLeft = (vgWIDTH - pvWidth);
-//				if ( 0 < sLeft ) {
-//					sLeft = sLeft / 2;
-//				} else {
-//					sLeft = 0;
-//				}
-//				int sTop = (vgHEIGHT - pvHeight);
-//				if ( 0 < sTop ) {
-//					sTop = sTop / 2;
-//				} else {
-//					sTop = 0;
-//				}
-//				dbMsg += ",Preview（" + sLeft + "、" + sTop + ")[" + pvWidth + "×" + pvHeight + "]";
 				if ( mTextureView != null ) {
 					dbMsg += ",isAvailable=" + mTextureView.isAvailable();
 //					FrameLayout.LayoutParams sParams = ( FrameLayout.LayoutParams ) mTextureView.getLayoutParams();// ViewGroup.MarginLayoutParams だとyoutParams.width' on a null object reference
