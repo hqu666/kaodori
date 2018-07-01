@@ -44,6 +44,7 @@ public class FdActivity extends Activity {
 	public C1SurfaceView mySurfaceView;                //Surfaceのプレビュークラス
 	public MyTextureView myTextureView;            //TextureViewのプレビュークラス
 	public C2SurfaceView c2SufaceView;                //camera2でSurfaceのプレビュークラス
+
 	public int sensorOrientation;    //カメラの向き
 	public int displayRotation;            //端末の位置番号（上端；上＝、右=1 , 左＝,下= ）
 	public boolean isCrated = false;
