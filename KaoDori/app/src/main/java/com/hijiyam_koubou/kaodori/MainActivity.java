@@ -1850,7 +1850,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 //				dbMsg += ">svlp>[" + svlp.width + "×" + svlp.height + "]";
 ////				ma_sarface_view.setLayoutParams(svlp);          //Viewサイズを合わせる
 //// 		ma_sarfaceeHolder.setFixedSize(PREVIEW_WIDTH , PREVIEW_HEIGHT);	//	ma_sarface_view.getHolder().setFixedSize(PREVIEW_WIDTH, PREVIEW_HEIGHT);			// SurfaceViewにプレビューサイズを設定する(サンプルなので適当な値です)
-				configureTransform(surfaceWidth , surfaceHeight);
+//				configureTransform(surfaceWidth , surfaceHeight);
 
 				if ( OCVFRV != null ) {
 					dbMsg += ",camera=" + mSensorOrientation + "dig";
@@ -1950,6 +1950,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 	 * Max preview height that is guaranteed by Camera2 API
 	 */
 	private static final int MAX_PREVIEW_HEIGHT = 1080;
+	private static Double MAX_PREVIEW_ASPECT;
 	/**
 	 * 実際に配置できたプレビュー幅
 	 */
@@ -2545,17 +2546,18 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				}
 
 				if ( maxPreviewWidth > MAX_PREVIEW_WIDTH ) {
-					maxPreviewWidth = MAX_PREVIEW_WIDTH;
+					maxPreviewWidth = MAX_PREVIEW_WIDTH;    //定数；1920
 				}
 
 				if ( maxPreviewHeight > MAX_PREVIEW_HEIGHT ) {
-					maxPreviewHeight = MAX_PREVIEW_HEIGHT;
+					maxPreviewHeight = MAX_PREVIEW_HEIGHT;        //定数；1080
 				}
 				mCameraId = cameraId;
 
 				dbMsg += ",rotatedPreview[" + rotatedPreviewWidth + "×" + rotatedPreviewHeight + "]";
 				dbMsg += ",maxPreview[" + maxPreviewWidth + "×" + maxPreviewHeight + "]";
-
+				MAX_PREVIEW_ASPECT = 1.0* maxPreviewWidth /maxPreviewHeight ;
+				dbMsg += ",MAX_PREVIEW_ASPECT=" + MAX_PREVIEW_ASPECT;
 				// Danger, W.R.! Attempting to use too large a preview size could  exceed the camera
 				// bus' bandwidth limitation, resulting in gorgeous previews but the storage of garbage capture data.
 				mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class) , rotatedPreviewWidth , rotatedPreviewHeight , maxPreviewWidth , maxPreviewHeight , largest);
@@ -2566,7 +2568,9 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				int orientation = getResources().getConfiguration().orientation;
 				dbMsg += ",orientation=" + orientation;
 				if ( orientation == Configuration.ORIENTATION_LANDSCAPE ) {
+					dbMsg += ";横;" ;
 				} else {
+					dbMsg += ";縦;" ;
 					int retention = setWidth;
 					setWidth = setHeight;
 					setHeight = retention;
@@ -2906,8 +2910,6 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				dbMsg += ",sarfaceView";
 				targetViewId = ma_sarface_view.getId();
 				targetView = ( SurfaceView ) findViewById(targetViewId);        //pereviewVの呼び込み枠       ViewGroup
-//								ma_sarface_view.getHolder().setFixedSize(viewWidth, viewHeight);			// SurfaceViewにプレビューサイズを設定する(サンプルなので適当な値です)
-
 			}
 			dbMsg += ";Id=" + targetViewId;
 			Activity activity = MainActivity.this;                //getActivity();
@@ -2973,16 +2975,16 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 //						pvHeight = retention;
 					} else {
 						dbMsg += ";縦";
-						int retention = pvWidth;
-						pvWidth = pvHeight;
-						pvHeight = retention;
+//						int retention = pvWidth;
+//						pvWidth = pvHeight;
+						pvHeight =(int) (pvWidth *MAX_PREVIEW_ASPECT);		//retention;
 					}
-					dbMsg += ",>>プレビューサイズ[" + pvWidth + "×" + pvHeight + "]";
-//					ma_sarfaceeHolder.setFixedSize(pvWidth , pvHeight);
-					dbMsg += ",ScaleX[" + ma_sarface_view.getScaleX() + "×" + ma_sarface_view.getScaleY() + "]";
+						dbMsg += ",>>プレビューサイズ[" + pvWidth + "×" + pvHeight + "]";
+					ma_sarfaceeHolder.setFixedSize(pvWidth , pvHeight);
+					dbMsg += ",Scale[" + ma_sarface_view.getScaleX() + "×" + ma_sarface_view.getScaleY() + "]";
 
 				}
-				dbMsg += ",>変更結果>(" + targetViewLeft + "×" + targetViewTop + ")[" + targetViewWidth + "×" + targetViewHeight + "]";
+				dbMsg += ">変更結果>(" + targetViewLeft + "×" + targetViewTop + ")[" + targetViewWidth + "×" + targetViewHeight + "]";
 				FrameLayout.LayoutParams sParams = ( FrameLayout.LayoutParams ) targetView.getLayoutParams();
 				dbMsg += "=(" + sParams.leftMargin + "×" + sParams.topMargin + ")[" + sParams.width + "×" + sParams.height + "]";
 				dbMsg += ",gravity=" + sParams.gravity;
