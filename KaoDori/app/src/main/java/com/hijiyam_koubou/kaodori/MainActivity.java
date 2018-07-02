@@ -105,6 +105,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 
 	public FrameLayout ma_preview_fl;        //pereviewVの呼び込み枠       ViewGroup
 	public AutoFitTextureView mTextureView;
+	public int mTextureViewID = -1;
 	public SurfaceView ma_sarface_view;        //  プレビュー用サーフェス
 	public SurfaceHolder ma_sarfaceeHolder;
 
@@ -181,6 +182,9 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 			prefs.readPref(this);
 			isTexturView = prefs.isTexturView;     // = true;                 //
 			dbMsg += ",高速プレビュー=" + isTexturView;
+			isTexturView = prefs.isTexturView;     // = true;                 //
+			dbMsg += ",高速プレビュー=" + isTexturView;
+
 			isFaceRecognition = prefs.isFaceRecognition;
 			dbMsg += ",顔検出実行中=" + isFaceRecognition;
 			is_overlap_rejection = prefs.is_overlap_rejection;
@@ -283,7 +287,6 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 			getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 			requestWindowFeature(Window.FEATURE_NO_TITLE);
 			setContentView(R.layout.activity_main);
-//			mTextureView = ( AutoFitTextureView ) findViewById(R.id.ma_aft);
 			ma_preview_fl = ( FrameLayout ) findViewById(R.id.ma_preview_fl);        //pereviewVの呼び込み枠       ViewGroup
 			ma_effect_fl = ( FrameLayout ) findViewById(R.id.ma_effect_fl);        //OpenCVの呼び込み枠       ViewGroup
 			float maxID = Math.max(( float ) R.id.ma_preview_fl , ( float ) R.id.ma_effect_fl);
@@ -312,6 +315,8 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				if ( OCVFRV != null || mCameraDevice != null ) {            //再設定が必要なリソースが残っていたら
 					laterDestroy();                                        //破棄動作に入る
 				}
+			} else {                                                        //2階目以降は
+//				ma_preview_fl.removeAllViews();                                //プレビュー削除
 			}
 			mFile = new File(writeFolder , "pic.jpg");                 //getActivity().getExternalFilesDir(null)
 			dbMsg += ",mFile=" + mFile.getParent();
@@ -324,29 +329,41 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 			layoutParams.gravity = Gravity.CENTER;           //17;効いてない？
 			dbMsg += ",isTexturView=" + isTexturView;                 //高速プレビュー
 			if ( isTexturView ) {
+				ma_preview_fl.removeAllViews();                                //プレビュー削除
 				mTextureView = new AutoFitTextureView(this);
 				mTextureView.setLayoutParams(layoutParams);
 				ma_preview_fl.addView(mTextureView);
 				mTextureView.setId(( int ) (maxID + 7));       //生成したViewのIDは-1なので付与が必要
-				dbMsg += ",mTextureView生成=" + mTextureView.getId();
+				mTextureViewID = mTextureView.getId();
+				dbMsg += ",mTextureView生成=" + mTextureViewID;
 			} else {
+//				ma_sarface_view = ( SurfaceView ) findViewById(R.id.ma_sarface_view);
 				ma_sarface_view = new SurfaceView(this);       //  プレビュー用サーフェス
 				ma_sarface_view.setLayoutParams(layoutParams);
-				ma_preview_fl.addView(ma_sarface_view);
-				ma_sarface_view.setId(( int ) (maxID + 8));
 				Display display = getWindowManager().getDefaultDisplay();                // 画面サイズ;HardwareSize;を取得する
 				Point p = new Point();
 				display.getSize(p);
-				int lpWidth = p.x;
-				int lpHeight = p.y;
-				dbMsg += ",this[" + lpWidth + "×" + lpHeight + "]";
-				if ( lpHeight < lpWidth ) {
-					lpWidth = lpHeight * 4 / 3;
+				int hsWidth = p.x;
+				int hsHeight = p.y;
+				dbMsg += ",this[" + hsWidth + "×" + hsHeight + "]";
+				ViewGroup.LayoutParams svlp = ma_sarface_view.getLayoutParams();
+//				dbMsg += ",LayoutParams[" + svlp.width + "×" + svlp.height + "]";
+				svlp.width = hsWidth;    //ma_sarface_view.getWidth();
+				svlp.height = hsHeight;        // ma_sarface_view.getWidth() * PREVIEW_HEIGHT / PREVIEW_WIDTH;
+				if ( hsHeight < hsWidth ) {
+					hsWidth = hsHeight * 4 / 3;
+					svlp.width = hsWidth;
 				} else {
-					lpHeight = lpWidth * 4 / 3;
+					hsHeight = hsWidth * 4 / 3;
+					svlp.height = hsHeight;
 				}
-				dbMsg += ">>[" + lpWidth + "×" + lpHeight + "]";
-				ma_sarface_view.getHolder().setFixedSize(lpWidth , lpHeight);            // SurfaceViewにプレビューサイズを設定する(サンプルなので適当な値です)
+				dbMsg += ">>[" + hsWidth + "×" + hsHeight + "]";
+				dbMsg += ">LayoutParams>[" + svlp.width + "×" + svlp.height + "]";
+				ma_sarface_view.setLayoutParams(svlp);                //ここではviewにサイズを与えるだけ。   Holderはカメラセッション開始以降で設定
+				svlp = ma_sarface_view.getLayoutParams();
+				ma_preview_fl.addView(ma_sarface_view);
+				ma_sarface_view.setId(( int ) (maxID + 8));            //生成時のみ付与する必要有り
+//				ma_sarface_view.getHolder().setFixedSize(hsWidth , hsHeight);            // SurfaceViewにプレビューサイズを設定する(サンプルなので適当な値です)
 				// 画面縦横比設定のためViewTreeObserverにリスナー設定    	https://qiita.com/fslasht/items/be41e84cfbc4bbb91af7
 //				ma_preview_fl.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
 //					// レイアウト完了時
@@ -428,7 +445,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				dbMsg += ",mBackgroundThread=" + mBackgroundThread.isAlive();
 			}
 
-
+			//ここに来るときはどちらも未稼働で、登録したリスナーからカメラを起動する
 			if ( mTextureView != null ) {
 				dbMsg += ",mTextureView;isAvailable=" + mTextureView.isAvailable();
 				if ( mTextureView.isAvailable() ) {                //orgでは既にプレビューが機能していたら    openCamera
@@ -447,8 +464,8 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 					dbMsg += "[" + TVWIdht + "×" + TVHight + "]";
 					openCamera(TVWIdht , TVHight);                  //org このタイミングで起動出来ず onSurfaceTextureAvailable　へ
 				} else {
-					SurfaceHolder holder = ma_sarface_view.getHolder();                    //SurfaceHolder(SVの制御に使うInterface）
-					holder.addCallback(sarfacCallback);                        //コールバックを設定
+					ma_sarfaceeHolder = ma_sarface_view.getHolder();                    //SurfaceHolder(SVの制御に使うInterface）
+					ma_sarfaceeHolder.addCallback(sarfacCallback);                        //コールバックを設定
 				}
 			} else {
 				dbMsg += "Camera View== null";
@@ -1009,7 +1026,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				dbMsg += "完了";
 				messageShow(titolStr , mggStr);
 			} else if ( selctItem.equals(getResources().getString(R.string.mm_effect_preview_tv)) ) {
-				messageShow(titolStr , mggStr);
+//				messageShow(titolStr , mggStr);
 				dbMsg += ",isTexturView=" + isTexturView;
 				isTexturView = !isTexturView;
 				dbMsg += ">>" + isTexturView;
@@ -1544,19 +1561,20 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 						dbMsg += ",前回処理終了=" + OCVFRV.getCompletion();
 						if ( OCVFRV.getCompletion() ) {    //onDrawが終了するまでfalseが返る     && fpsLimi < fpsCount
 							fpsCount = 0;
-							if ( targetViewID == mTextureView.getId() ) {
+							shotBitmap = null;
+							if ( targetViewID == mTextureViewID ) {
 								shotBitmap = (( TextureView ) findViewById(targetViewID)).getBitmap();
 							} else {
-								if ( ma_sarfaceeHolder != null ) {
-									Canvas canvas = ma_sarfaceeHolder.lockCanvas();
-									int surfaceWidth = ma_sarfaceeHolder.getSurfaceFrame().width();
-									int surfaceHeight = ma_sarfaceeHolder.getSurfaceFrame().height();
-									dbMsg += "[" + surfaceWidth + "×" + surfaceHeight + "]";
-									shotBitmap = Bitmap.createBitmap(surfaceWidth , surfaceHeight , Bitmap.Config.ARGB_8888);          //別途BitmapとCanvasを用意する
-//								Canvas tmpCanvas = new Canvas(shotBitmap);
-//								canvas.drawBitmap(shotBitmap, null, mScreenRect, null); 								//TODO tmpCanvasに対して描画処理を行う
-//								ma_sarfaceeHolder.unlockCanvasAndPost(canvas); //反映
-								}
+//								if ( ma_sarfaceeHolder != null ) {
+//									Canvas canvas = ma_sarfaceeHolder.lockCanvas();
+//									int surfaceWidth = ma_sarfaceeHolder.getSurfaceFrame().width();
+//									int surfaceHeight = ma_sarfaceeHolder.getSurfaceFrame().height();
+//									dbMsg += "[" + surfaceWidth + "×" + surfaceHeight + "]";
+//									shotBitmap = Bitmap.createBitmap(surfaceWidth , surfaceHeight , Bitmap.Config.ARGB_8888);          //別途BitmapとCanvasを用意する
+////								Canvas tmpCanvas = new Canvas(shotBitmap);
+////								canvas.drawBitmap(shotBitmap, null, mScreenRect, null); 								//TODO tmpCanvasに対して描画処理を行う
+////								ma_sarfaceeHolder.unlockCanvasAndPost(canvas); //反映
+//								}
 							}
 							if ( shotBitmap != null ) {
 								dbMsg += ",bitmap[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]";
@@ -1582,7 +1600,6 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 								if ( retArray != null ) {
 									dbMsg += ">結果>" + retArray.size() + "箇所検出";
 								}
-
 //										myLog(TAG , dbMsg);
 //									} catch (Exception er) {
 //										myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -1736,7 +1753,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				PREVIEW_WIDTH = width;                    //mTextureView.getWidth();
 				PREVIEW_HEIGHT = height;                //mTextureView.getHeight();
 				dbMsg = "[" + width + "×" + height + "]DISP_DEGREES=" + DISP_DEGREES;    // [810×1080]DISP_DEGREES=0
-				configureTransform(width , height);
+//				configureTransform(width , height);
 				if ( OCVFRV != null ) {
 					dbMsg += ",camera=" + mSensorOrientation + "dig";
 //					OCVFRV.setCondition();
@@ -1808,33 +1825,33 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				ma_sarfaceeHolder = surfaceHolder;
 				PREVIEW_WIDTH = surfaceWidth;                    //mTextureView.getWidth();
 				PREVIEW_HEIGHT = surfaceHeight;                //mTextureView.getHeight();
-				dbMsg = "[" + surfaceWidth + "×" + surfaceHeight + "]DISP_DEGREES=" + DISP_DEGREES;    // [810×1080]DISP_DEGREES=0
-//				configureTransform(surfaceWidth , surfaceHeight);
-											int pvWidth = surfaceWidth;
-							int pvHeight =surfaceHeight;
-
-				ViewGroup.LayoutParams svlp = ma_sarface_view.getLayoutParams();
-				dbMsg += "[" + svlp.width + "×" + svlp.height + "]";
+				dbMsg += "[" + surfaceWidth + "×" + surfaceHeight + "]DISP_DEGREES=" + DISP_DEGREES;    // [810×1080]DISP_DEGREES=0
+//				int pvWidth = surfaceWidth;
+//				int pvHeight = surfaceHeight;
+//
+//				ViewGroup.LayoutParams svlp = ma_sarface_view.getLayoutParams();
+//				dbMsg += "[" + svlp.width + "×" + svlp.height + "]";
 				if ( surfaceHeight < surfaceWidth ) {
 					dbMsg += ">横画面";
-//					pvWidth = surfaceHeight * 4 / 3;
-////					dbMsg += ">>[" + pvWidth + "×" + pvHeight + "]";
-////					svlp.width = pvWidth;        // ma_sarface_view.getHeight() * PREVIEW_WIDTH / PREVIEW_HEIGHT;
-////					svlp.height = pvHeight;// ma_sarface_view.getHeight();
+////					pvWidth = surfaceHeight * 4 / 3;
+//////					dbMsg += ">>[" + pvWidth + "×" + pvHeight + "]";
+//////					svlp.width = pvWidth;        // ma_sarface_view.getHeight() * PREVIEW_WIDTH / PREVIEW_HEIGHT;
+//////					svlp.height = pvHeight;// ma_sarface_view.getHeight();
 				} else {
 					dbMsg += ">縦画面";
-//					pvHeight = surfaceWidth * 4 / 3;
-////					dbMsg += ">>[" + pvWidth + "×" + pvHeight + "]";
-////					svlp.width = pvHeight;    //ma_sarface_view.getWidth();
-////					svlp.height =pvWidth ;        // ma_sarface_view.getWidth() * PREVIEW_HEIGHT / PREVIEW_WIDTH;
+////					pvHeight = surfaceWidth * 4 / 3;
+//////					dbMsg += ">>[" + pvWidth + "×" + pvHeight + "]";
+//////					svlp.width = pvHeight;    //ma_sarface_view.getWidth();
+//////					svlp.height =pvWidth ;        // ma_sarface_view.getWidth() * PREVIEW_HEIGHT / PREVIEW_WIDTH;
 				}
-				dbMsg += ">pv>[" + pvWidth + "×" + pvHeight + "]";
-				svlp.width = pvWidth;		//pvWidth;        // ma_sarface_view.getHeight() * PREVIEW_WIDTH / PREVIEW_HEIGHT;
-				svlp.height = pvHeight;		//pvHeight;// ma_sarface_view.getHeight();
-				dbMsg += ">svlp>[" + svlp.width + "×" + svlp.height + "]";
-				ma_sarface_view.setLayoutParams(svlp);          //Viewサイズを合わせる
-				ma_sarfaceeHolder.setFixedSize(PREVIEW_WIDTH, PREVIEW_HEIGHT);
-//				ma_sarface_view.getHolder().setFixedSize(PREVIEW_WIDTH, PREVIEW_HEIGHT);			// SurfaceViewにプレビューサイズを設定する(サンプルなので適当な値です)
+//				dbMsg += ">pv>[" + pvWidth + "×" + pvHeight + "]";
+//				svlp.width = pvWidth;        //pvWidth;        // ma_sarface_view.getHeight() * PREVIEW_WIDTH / PREVIEW_HEIGHT;
+//				svlp.height = pvHeight;        //pvHeight;// ma_sarface_view.getHeight();
+//				dbMsg += ">svlp>[" + svlp.width + "×" + svlp.height + "]";
+////				ma_sarface_view.setLayoutParams(svlp);          //Viewサイズを合わせる
+//// 		ma_sarfaceeHolder.setFixedSize(PREVIEW_WIDTH , PREVIEW_HEIGHT);	//	ma_sarface_view.getHolder().setFixedSize(PREVIEW_WIDTH, PREVIEW_HEIGHT);			// SurfaceViewにプレビューサイズを設定する(サンプルなので適当な値です)
+				configureTransform(surfaceWidth , surfaceHeight);
+
 				if ( OCVFRV != null ) {
 					dbMsg += ",camera=" + mSensorOrientation + "dig";
 					setEffectViewSize();
@@ -2467,9 +2484,12 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
 
 				Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);                        // We don't use a front facing camera in this sample.
-				dbMsg += ",facing=" + facing + "0;FRONT";
-				if ( facing != null && facing == CameraCharacteristics.LENS_FACING_FRONT ) {
-					continue;
+				dbMsg += ",facing=" + facing + "(0;FRONT)";
+				if ( facing != null) {
+					if ( (! isSubCamera && facing == CameraCharacteristics.LENS_FACING_FRONT ) ||  				//0
+								 ( isSubCamera && facing == CameraCharacteristics.LENS_FACING_BACK )	) { 	//1
+						continue;
+					}
 				}
 
 				StreamConfigurationMap map = characteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
@@ -2531,6 +2551,8 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				if ( maxPreviewHeight > MAX_PREVIEW_HEIGHT ) {
 					maxPreviewHeight = MAX_PREVIEW_HEIGHT;
 				}
+				mCameraId = cameraId;
+
 				dbMsg += ",rotatedPreview[" + rotatedPreviewWidth + "×" + rotatedPreviewHeight + "]";
 				dbMsg += ",maxPreview[" + maxPreviewWidth + "×" + maxPreviewHeight + "]";
 
@@ -2548,21 +2570,26 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 					int retention = setWidth;
 					setWidth = setHeight;
 					setHeight = retention;
+					mPreviewSize = new Size(setWidth,setHeight);
+					dbMsg += ">mPreviewSize>[" + mPreviewSize.getWidth() + "×" + mPreviewSize.getHeight() + "]";
 				}
 				if ( mTextureView != null ) {
 					mTextureView.setAspectRatio(setWidth , setHeight);
 				} else if ( ma_sarface_view != null ) {
+//					ma_sarfaceeHolder.setFixedSize(setWidth , setHeight);
 				}
-//
-				// Check if the flash is supported.
-				Boolean available = characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);
+				Boolean available = characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);                // Check if the flash is supported.
 				mFlashSupported = available == null ? false : available;
 				dbMsg += ",mFlashSupported=" + mFlashSupported;
 
 				mCameraId = cameraId;
-				myLog(TAG , dbMsg);
-				return;
+//				myLog(TAG , dbMsg);
+//				return;
 			}
+		//縦;displayRotation=0,mSensorOrientation=90,rotatedPreview[1440×1080],maxPreview[1776×1080],orientation=1,mFlashSupported=true
+		//横;displayRotation=1,mSensorOrientation=90,rotatedPreview[1440×1080],maxPreview[1776×1080],orientation=2,mFlashSupported=true
+			//どちらも   largest[4608×3456],  最大プレビューサイズ[1440×1080],
+			myLog(TAG , dbMsg);
 		} catch (CameraAccessException er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		} catch (NullPointerException er) {
@@ -2876,6 +2903,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				targetViewId = mTextureView.getId();
 				targetView = ( AutoFitTextureView ) findViewById(targetViewId);        //pereviewVの呼び込み枠       ViewGroup
 			} else {
+				dbMsg += ",sarfaceView";
 				targetViewId = ma_sarface_view.getId();
 				targetView = ( SurfaceView ) findViewById(targetViewId);        //pereviewVの呼び込み枠       ViewGroup
 //								ma_sarface_view.getHolder().setFixedSize(viewWidth, viewHeight);			// SurfaceViewにプレビューサイズを設定する(サンプルなので適当な値です)
@@ -2883,6 +2911,9 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 			}
 			dbMsg += ";Id=" + targetViewId;
 			Activity activity = MainActivity.this;                //getActivity();
+			ViewGroup.LayoutParams svlp = targetView.getLayoutParams();
+			dbMsg += ",変更前LayoutParams[" + svlp.width + "×" + svlp.height + "]";
+
 			if ( null != targetView && null != mPreviewSize && null != activity ) {
 				int targetViewLeft = targetView.getLeft();
 				int targetViewTop = targetView.getTop();
@@ -2897,20 +2928,20 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				dbMsg += ",最大プレビューサイズ[" + pvWidth + "×" + pvHeight + "]";
 				int orientation = getResources().getConfiguration().orientation;
 				dbMsg += ",orientation=" + orientation;
-				if ( orientation == Configuration.ORIENTATION_LANDSCAPE ) {
-					dbMsg += ";横";
-					int retention = pvWidth;
-					pvWidth = pvHeight;
-					pvHeight = retention;
-				} else {
-					dbMsg += ";縦";
-					int retention = vgWIDTH;
-					vgWIDTH = vgHEIGHT;
-					vgHEIGHT = retention;
-				}
-				dbMsg += ",読込みViewGroup[" + vgWIDTH + "×" + vgHEIGHT + "]";
-				dbMsg += ",最大プレビューサイズ[" + pvWidth + "×" + pvHeight + "]";
 				if ( mTextureView != null ) {
+					if ( orientation == Configuration.ORIENTATION_LANDSCAPE ) {
+						dbMsg += ";横";
+						int retention = pvWidth;
+						pvWidth = pvHeight;
+						pvHeight = retention;
+					} else {
+						dbMsg += ";縦";
+						int retention = vgWIDTH;
+						vgWIDTH = vgHEIGHT;
+						vgHEIGHT = retention;
+					}
+					dbMsg += ",読込みViewGroup[" + vgWIDTH + "×" + vgHEIGHT + "]";
+					dbMsg += ",>>プレビューサイズ[" + pvWidth + "×" + pvHeight + "]";
 					dbMsg += ",isAvailable=" + mTextureView.isAvailable();
 					Matrix matrix = new Matrix();            //org
 					RectF viewRect = new RectF(0 , 0 , viewWidth , viewHeight);        //org viewWidth , viewHeight        vgWIDTH , vgHEIGHT
@@ -2935,20 +2966,21 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 					}
 					mTextureView.setTransform(matrix);
 				} else if ( ma_sarfaceeHolder != null ) {      //ma_sarfaceeHolder	    ma_sarface_view
-//					ma_sarfaceeHolder.setFixedSize(pvWidth,pvHeight);
-//					FrameLayout.LayoutParams sParams = ( FrameLayout.LayoutParams ) ma_sarface_view.getLayoutParams();// ViewGroup.MarginLayoutParams だとyoutParams.width' on a null object reference
-//  								if ( sParams != null ) {
-//						dbMsg += ",ma_sarface_viewのlayoutParams(" + sParams.leftMargin + "×" + sParams.topMargin + ")";
-//						dbMsg += "[" + sParams.width + "×" + sParams.height + "]";
-//						dbMsg += ",gravity=" + sParams.gravity;     //MATCH_PARENTのままだと(0×0)[-1×-1
-//						sParams.width = pvWidth;
-//						sParams.height =pvHeight;
-////						sParams.leftMargin = ( int ) dx;
-////						sParams.topMargin = ( int ) dy;
-//						sParams.gravity = Gravity.CENTER;
-//						ma_sarface_view.setLayoutParams(sParams);
-//						ma_sarface_view.requestLayout();
-//					}
+					if ( orientation == Configuration.ORIENTATION_LANDSCAPE ) {
+						dbMsg += ";横";
+//						int retention = pvWidth;
+//						pvWidth = pvHeight;
+//						pvHeight = retention;
+					} else {
+						dbMsg += ";縦";
+						int retention = pvWidth;
+						pvWidth = pvHeight;
+						pvHeight = retention;
+					}
+					dbMsg += ",>>プレビューサイズ[" + pvWidth + "×" + pvHeight + "]";
+//					ma_sarfaceeHolder.setFixedSize(pvWidth , pvHeight);
+					dbMsg += ",ScaleX[" + ma_sarface_view.getScaleX() + "×" + ma_sarface_view.getScaleY() + "]";
+
 				}
 				dbMsg += ",>変更結果>(" + targetViewLeft + "×" + targetViewTop + ")[" + targetViewWidth + "×" + targetViewHeight + "]";
 				FrameLayout.LayoutParams sParams = ( FrameLayout.LayoutParams ) targetView.getLayoutParams();
