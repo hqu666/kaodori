@@ -1822,9 +1822,9 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 			try {
 				dbMsg += "surfaceHolder=" + surfaceHolder;
 				dbMsg += ",format=" + format;
-				ma_sarfaceeHolder = surfaceHolder;
-				PREVIEW_WIDTH = surfaceWidth;                    //mTextureView.getWidth();
-				PREVIEW_HEIGHT = surfaceHeight;                //mTextureView.getHeight();
+//				ma_sarfaceeHolder = surfaceHolder;
+//				PREVIEW_WIDTH = surfaceWidth;                    //mTextureView.getWidth();
+//				PREVIEW_HEIGHT = surfaceHeight;                //mTextureView.getHeight();
 				dbMsg += "[" + surfaceWidth + "×" + surfaceHeight + "]DISP_DEGREES=" + DISP_DEGREES;    // [810×1080]DISP_DEGREES=0
 //				int pvWidth = surfaceWidth;
 //				int pvHeight = surfaceHeight;
@@ -2486,9 +2486,9 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 
 				Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);                        // We don't use a front facing camera in this sample.
 				dbMsg += ",facing=" + facing + "(0;FRONT)";
-				if ( facing != null) {
-					if ( (! isSubCamera && facing == CameraCharacteristics.LENS_FACING_FRONT ) ||  				//0
-								 ( isSubCamera && facing == CameraCharacteristics.LENS_FACING_BACK )	) { 	//1
+				if ( facing != null ) {
+					if ( (!isSubCamera && facing == CameraCharacteristics.LENS_FACING_FRONT) ||                //0
+								 (isSubCamera && facing == CameraCharacteristics.LENS_FACING_BACK) ) {    //1
 						continue;
 					}
 				}
@@ -2556,7 +2556,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 
 				dbMsg += ",rotatedPreview[" + rotatedPreviewWidth + "×" + rotatedPreviewHeight + "]";
 				dbMsg += ",maxPreview[" + maxPreviewWidth + "×" + maxPreviewHeight + "]";
-				MAX_PREVIEW_ASPECT = 1.0* maxPreviewWidth /maxPreviewHeight ;
+				MAX_PREVIEW_ASPECT = 1.0 * maxPreviewWidth / maxPreviewHeight;
 				dbMsg += ",MAX_PREVIEW_ASPECT=" + MAX_PREVIEW_ASPECT;
 				// Danger, W.R.! Attempting to use too large a preview size could  exceed the camera
 				// bus' bandwidth limitation, resulting in gorgeous previews but the storage of garbage capture data.
@@ -2568,13 +2568,13 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				int orientation = getResources().getConfiguration().orientation;
 				dbMsg += ",orientation=" + orientation;
 				if ( orientation == Configuration.ORIENTATION_LANDSCAPE ) {
-					dbMsg += ";横;" ;
+					dbMsg += ";横;";
 				} else {
-					dbMsg += ";縦;" ;
+					dbMsg += ";縦;";
 					int retention = setWidth;
 					setWidth = setHeight;
 					setHeight = retention;
-					mPreviewSize = new Size(setWidth,setHeight);
+					mPreviewSize = new Size(setWidth , setHeight);
 					dbMsg += ">mPreviewSize>[" + mPreviewSize.getWidth() + "×" + mPreviewSize.getHeight() + "]";
 				}
 				if ( mTextureView != null ) {
@@ -2590,8 +2590,8 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 //				myLog(TAG , dbMsg);
 //				return;
 			}
-		//縦;displayRotation=0,mSensorOrientation=90,rotatedPreview[1440×1080],maxPreview[1776×1080],orientation=1,mFlashSupported=true
-		//横;displayRotation=1,mSensorOrientation=90,rotatedPreview[1440×1080],maxPreview[1776×1080],orientation=2,mFlashSupported=true
+			//縦;displayRotation=0,mSensorOrientation=90,rotatedPreview[1440×1080],maxPreview[1776×1080],orientation=1,mFlashSupported=true
+			//横;displayRotation=1,mSensorOrientation=90,rotatedPreview[1440×1080],maxPreview[1776×1080],orientation=2,mFlashSupported=true
 			//どちらも   largest[4608×3456],  最大プレビューサイズ[1440×1080],
 			myLog(TAG , dbMsg);
 		} catch (CameraAccessException er) {
@@ -2975,11 +2975,18 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 //						pvHeight = retention;
 					} else {
 						dbMsg += ";縦";
+//						svlp.width = pvWidth;        //pvWidth;        // ma_sarface_view.getHeight() * PREVIEW_WIDTH / PREVIEW_HEIGHT;
+//						svlp.height = ( int ) (pvHeight * MAX_PREVIEW_ASPECT);        //pvHeight;// ma_sarface_view.getHeight();
+//						dbMsg += ">svlp>[" + svlp.width + "×" + svlp.height + "]";
+//				ma_sarface_view.setLayoutParams(svlp);          //Viewサイズを合わせる
+
 //						int retention = pvWidth;
-//						pvWidth = pvHeight;
-						pvHeight =(int) (pvWidth *MAX_PREVIEW_ASPECT);		//retention;
+//						pvWidth = ( int ) (pvWidth * MAX_PREVIEW_ASPECT);		//1776/1440= 1.233
+						//pvWidth =pvHeight;
+//						pvHeight =(int) (pvWidth *3/4);		//810/1080=0.75
+						//pvHeight =retention; 				//1440/1080=1.33
 					}
-						dbMsg += ",>>プレビューサイズ[" + pvWidth + "×" + pvHeight + "]";
+					dbMsg += ",>>プレビューサイズ[" + pvWidth + "×" + pvHeight + "]";
 					ma_sarfaceeHolder.setFixedSize(pvWidth , pvHeight);
 					dbMsg += ",Scale[" + ma_sarface_view.getScaleX() + "×" + ma_sarface_view.getScaleY() + "]";
 
