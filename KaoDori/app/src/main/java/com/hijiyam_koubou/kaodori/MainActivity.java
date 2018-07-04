@@ -1750,8 +1750,8 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 			final String TAG = "onSurfaceTextureSizeChanged[MA]";
 			String dbMsg = "";
 			try {
-				PREVIEW_WIDTH = width;                    //mTextureView.getWidth();
-				PREVIEW_HEIGHT = height;                //mTextureView.getHeight();
+//				PREVIEW_WIDTH = width;                    //mTextureView.getWidth();
+//				PREVIEW_HEIGHT = height;                //mTextureView.getHeight();
 				dbMsg = "[" + width + "×" + height + "]DISP_DEGREES=" + DISP_DEGREES;    // [810×1080]DISP_DEGREES=0
 //				configureTransform(width , height);
 				if ( OCVFRV != null ) {
@@ -1887,7 +1887,11 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 	private CameraCaptureSession mCaptureSession;
 	private CameraDevice mCameraDevice;            // A reference to the opened {@link CameraDevice}.
 	private String mCameraId;        //ID of the current {@link CameraDevice}.
-	private Surface surface;
+/**
+ *  createCameraPreviewSession で取得
+ *  startAutoFocus でcaptureBuilder.addTarget
+ * */
+		private Surface surface;
 	private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 	private MediaActionSound mSound;    //撮影音のためのMediaActionSound
 
@@ -1970,6 +1974,8 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 
 	/**
 	 * The {@link android.util.Size} of camera preview.
+	 * setUpCameraOutputs で取得したカメラ出力のプレビューサイズ
+	 * createCameraPreviewSession , configureTransform , startAutoFocus　で変数に移して使用
 	 */
 	private Size mPreviewSize;
 	public int mSensorOrientation;
