@@ -2939,21 +2939,20 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				if ( mTextureView != null ) {
 					if ( orientation == Configuration.ORIENTATION_LANDSCAPE ) {
 						dbMsg += ";横";
+						pvWidth = vgHEIGHT;
+
+					} else {
+						dbMsg += ";縦";
 						int retention = pvWidth;
 						pvWidth = pvHeight;
 						pvHeight = retention;
-					} else {
-						dbMsg += ";縦";
-						int retention = vgWIDTH;
-						vgWIDTH = vgHEIGHT;
-						vgHEIGHT = retention;
 					}
 					dbMsg += ",読込みViewGroup[" + vgWIDTH + "×" + vgHEIGHT + "]";
 					dbMsg += ",>>プレビューサイズ[" + pvWidth + "×" + pvHeight + "]";
 					dbMsg += ",isAvailable=" + mTextureView.isAvailable();
 					Matrix matrix = new Matrix();            //org
 					RectF viewRect = new RectF(0 , 0 , viewWidth , viewHeight);        //org viewWidth , viewHeight        vgWIDTH , vgHEIGHT
-					RectF bufferRect = new RectF(0 , 0 , pvWidth , pvHeight);
+					RectF bufferRect = new RectF(0 , 0 , pvWidth , pvHeight);			//pvWidth , pvHeight)
 					float centerX = viewRect.centerX();
 					float centerY = viewRect.centerY();
 					dbMsg += ",center;ViewGrupe(" + centerX + "," + centerY + ")とpreview(" + bufferRect.centerX() + "," + bufferRect.centerY() + ")";
@@ -2979,20 +2978,20 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 //						int retention = pvWidth;
 //						pvWidth = pvHeight;
 //						pvHeight = retention;
+
+						int retention = vgWIDTH;
+						vgWIDTH = vgHEIGHT;
+						vgHEIGHT = retention;
+
 					} else {
 						dbMsg += ";縦";
-//						svlp.width = pvWidth;        //pvWidth;        // ma_sarface_view.getHeight() * PREVIEW_WIDTH / PREVIEW_HEIGHT;
-//						svlp.height = ( int ) (pvHeight * MAX_PREVIEW_ASPECT);        //pvHeight;// ma_sarface_view.getHeight();
-//						dbMsg += ">svlp>[" + svlp.width + "×" + svlp.height + "]";
-//				ma_sarface_view.setLayoutParams(svlp);          //Viewサイズを合わせる
-
-//						int retention = pvWidth;
-//						pvWidth = ( int ) (pvWidth * MAX_PREVIEW_ASPECT);		//1776/1440= 1.233
-						//pvWidth =pvHeight;
-//						pvHeight =(int) (pvWidth *3/4);		//810/1080=0.75
-						//pvHeight =retention; 				//1440/1080=1.33
+						int retention = pvWidth;
+						pvWidth = pvHeight;
+						pvHeight = retention;
 					}
+					dbMsg += ",読込みViewGroup[" + vgWIDTH + "×" + vgHEIGHT + "]";
 					dbMsg += ",>>プレビューサイズ[" + pvWidth + "×" + pvHeight + "]";
+
 					ma_sarfaceeHolder.setFixedSize(pvWidth , pvHeight);
 					dbMsg += ",Scale[" + ma_sarface_view.getScaleX() + "×" + ma_sarface_view.getScaleY() + "]";
 
