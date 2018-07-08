@@ -1423,11 +1423,14 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 					try {
 						if ( OCVFRV != null ) {
 							dbMsg += ",ma_effect_fl(" + ma_effect_fl.getLeft() + "," + ma_effect_fl.getTop() + ")[" + ma_effect_fl.getWidth() + "×" + ma_effect_fl.getHeight() + "]";
-							int sLeft = (ma_effect_fl.getWidth() - PREVIEW_WIDTH);
+							int pvWidth = mPreviewSize.getWidth();
+							int pvHeight = mPreviewSize.getHeight();
+							dbMsg += ",最大プレビューサイズ[" + pvWidth + "×" + pvHeight + "]";
+							int sLeft = (ma_effect_fl.getWidth() - pvWidth);
 							if ( 0 < sLeft ) {
 								sLeft = sLeft / 2;
 							}
-							int sTop = (ma_effect_fl.getHeight() - PREVIEW_HEIGHT);
+							int sTop = (ma_effect_fl.getHeight() - pvHeight);
 							if ( 0 < sTop ) {
 								sTop = sTop / 2;
 							}
@@ -1439,12 +1442,14 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 								dbMsg += ",gravity=" + layoutParams.gravity;
 								layoutParams.leftMargin = sLeft;
 								layoutParams.topMargin = sTop;
-								layoutParams.width = PREVIEW_WIDTH;
-								layoutParams.height = PREVIEW_HEIGHT;
+								layoutParams.width = pvWidth;
+								layoutParams.height = pvHeight;
 								OCVFRV.setLayoutParams(layoutParams);
 								OCVFRV.requestLayout();
 								layoutParams = ( FrameLayout.LayoutParams ) OCVFRV.getLayoutParams();
 								dbMsg += ",>>(" + layoutParams.leftMargin + "×" + layoutParams.topMargin + ")[" + layoutParams.width + "×" + layoutParams.height + "]";
+							}else{
+								dbMsg += ",layoutParams=null" ;
 							}
 
 							dbMsg += ">>OCVFRV(" + OCVFRV.getLeft() + "," + OCVFRV.getTop() + ")[" + OCVFRV.getWidth() + "×" + OCVFRV.getHeight() + "]";
@@ -1453,6 +1458,18 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 						} else {
 							dbMsg = " OCVFRV = null";
 						}
+						/**
+						 * 縦
+						 ma_effect_fl(0,0)[1080×1776],最大プレビューサイズ[1080×1440],shift(0,168)、現在(1.0×1.0%),
+						 layoutParams(0×0)[1080×1776],gravity=-1,>>(0×168)[1080×1440]>>OCVFRV(0,0)[0×0]
+
+						 ,ma_effect_fl(0,0)[1080×1776],最大プレビューサイズ[1080×1440],shift(0,168)、現在(1.0×1.0%),
+						 layoutParams(0×0)[1080×1776],gravity=-1,>>(0×168)[1080×1440]>>OCVFRV(0,0)[0×0]
+
+						 横
+						 ma_effect_fl(0,0)[1776×1080],最大プレビューサイズ[1440×1080],shift(168,0)、現在(1.0×1.0%),
+						 layoutParams(0×0)[1776×1080],gravity=-1,>>(168×0)[1440×1080]>>OCVFRV(0,0)[0×0]
+						 * */
 						myLog(TAG , dbMsg);
 					} catch (Exception er) {
 						myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -1954,7 +1971,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 	 * Max preview height that is guaranteed by Camera2 API
 	 */
 	private static final int MAX_PREVIEW_HEIGHT = 1080;
-	private static Double MAX_PREVIEW_ASPECT;
+	private static float MAX_PREVIEW_ASPECT;
 	/**
 	 * 実際に配置できたプレビュー幅
 	 */
@@ -2562,7 +2579,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 
 				dbMsg += ",rotatedPreview[" + rotatedPreviewWidth + "×" + rotatedPreviewHeight + "]";
 				dbMsg += ",maxPreview[" + maxPreviewWidth + "×" + maxPreviewHeight + "]";
-				MAX_PREVIEW_ASPECT = 1.0 * maxPreviewWidth / maxPreviewHeight;
+				MAX_PREVIEW_ASPECT = 1.0f * maxPreviewWidth / maxPreviewHeight;
 				dbMsg += ",MAX_PREVIEW_ASPECT=" + MAX_PREVIEW_ASPECT;
 				// Danger, W.R.! Attempting to use too large a preview size could  exceed the camera
 				// bus' bandwidth limitation, resulting in gorgeous previews but the storage of garbage capture data.
@@ -2575,16 +2592,18 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				dbMsg += ",orientation=" + orientation;
 				if ( orientation == Configuration.ORIENTATION_LANDSCAPE ) {
 					dbMsg += ";横;";
+//					setWidth = rotatedPreviewWidth;               //7/8
 				} else {
 					dbMsg += ";縦;";
 					int retention = setWidth;
 					setWidth = setHeight;
 					setHeight = retention;
 					mPreviewSize = new Size(setWidth , setHeight);
-					dbMsg += ">mPreviewSize>[" + mPreviewSize.getWidth() + "×" + mPreviewSize.getHeight() + "]";
+//					dbMsg += ">>[" + mPreviewSize.getWidth() + "×" + setHeight + "]";
 				}
 				if ( mTextureView != null ) {
-					mTextureView.setAspectRatio(setWidth , setHeight);
+					dbMsg += ">>[" + setWidth + "×" +setHeight + "]";
+					mTextureView.setAspectRatio(setWidth , setHeight);  //生成時のみ？
 				} else if ( ma_sarface_view != null ) {
 //					ma_sarfaceeHolder.setFixedSize(setWidth , setHeight);
 				}
@@ -2917,41 +2936,44 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				targetViewId = ma_sarface_view.getId();
 				targetView = ( SurfaceView ) findViewById(targetViewId);        //pereviewVの呼び込み枠       ViewGroup
 			}
-			dbMsg += ";Id=" + targetViewId;
+			int vgWIDTH = ma_preview_fl.getWidth();
+			int vgHEIGHT = ma_preview_fl.getHeight();
+			dbMsg += ",読込みViewGroup[" + vgWIDTH + "×" + vgHEIGHT + "]";
 			Activity activity = MainActivity.this;                //getActivity();
-			ViewGroup.LayoutParams svlp = targetView.getLayoutParams();
-			dbMsg += ",変更前LayoutParams[" + svlp.width + "×" + svlp.height + "]";
-
 			if ( null != targetView && null != mPreviewSize && null != activity ) {
+//				dbMsg += ";Id=" + targetViewId;
+				ViewGroup.LayoutParams svlp = targetView.getLayoutParams();
+	//			dbMsg += ",変更前LayoutParams[" + svlp.width + "×" + svlp.height + "]";
 				int targetViewLeft = targetView.getLeft();
 				int targetViewTop = targetView.getTop();
 				int targetViewWidth = targetView.getWidth();
 				int targetViewHeight = targetView.getHeight();
-				dbMsg += ",変更前(" + targetViewLeft + "×" + targetViewTop + ")[" + targetViewWidth + "×" + targetViewHeight + "]";
-				int vgWIDTH = ma_preview_fl.getWidth();
-				int vgHEIGHT = ma_preview_fl.getHeight();
-				dbMsg += ",読込みViewGroup[" + vgWIDTH + "×" + vgHEIGHT + "]";
+				dbMsg += ",targetVie(" + targetViewLeft + "×" + targetViewTop + ")[" + targetViewWidth + "×" + targetViewHeight + "]";
 				int pvWidth = mPreviewSize.getWidth();
 				int pvHeight = mPreviewSize.getHeight();
 				dbMsg += ",最大プレビューサイズ[" + pvWidth + "×" + pvHeight + "]";
 				int orientation = getResources().getConfiguration().orientation;
 				dbMsg += ",orientation=" + orientation;
+
 				if ( mTextureView != null ) {
+//					dbMsg += ",isAvailable=" + mTextureView.isAvailable();
 					if ( orientation == Configuration.ORIENTATION_LANDSCAPE ) {
 						dbMsg += ";横";
-						pvWidth = vgHEIGHT;
-
+//						pvWidth = viewWidth;
 					} else {
 						dbMsg += ";縦";
-						int retention = pvWidth;
-						pvWidth = pvHeight;
-						pvHeight = retention;
+//						int retention = pvWidth;
+//						pvWidth = pvHeight;
+//						pvHeight = retention;
+//						 retention = viewWidth;
+//						viewWidth = viewHeight;
+//						viewHeight = retention;
 					}
-					dbMsg += ",読込みViewGroup[" + vgWIDTH + "×" + vgHEIGHT + "]";
-					dbMsg += ",>>プレビューサイズ[" + pvWidth + "×" + pvHeight + "]";
-					dbMsg += ",isAvailable=" + mTextureView.isAvailable();
+					dbMsg += ",>>読込みViewGroup[" + vgWIDTH + "×" + vgHEIGHT + "]";
+//					dbMsg += ",>>ビュー[" + viewWidth + "×" + viewHeight + "]";
+//					dbMsg += ",>>プレビュー[" + pvWidth + "×" + pvHeight + "]";
 					Matrix matrix = new Matrix();            //org
-					RectF viewRect = new RectF(0 , 0 , viewWidth , viewHeight);        //org viewWidth , viewHeight        vgWIDTH , vgHEIGHT
+					RectF viewRect = new RectF(0 , 0 ,viewWidth , viewHeight);        //org viewWidth , viewHeight        vgWIDTH , vgHEIGHT
 					RectF bufferRect = new RectF(0 , 0 , pvWidth , pvHeight);			//pvWidth , pvHeight)
 					float centerX = viewRect.centerX();
 					float centerY = viewRect.centerY();
@@ -2959,19 +2981,41 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 					float dx = centerX - bufferRect.centerX();
 					float dy = centerY - bufferRect.centerY();
 					dbMsg += ",shift(" + dx + "," + dy + ")";
+					float scale = Math.max(( float ) viewHeight / pvHeight , ( float ) viewWidth / pvWidth);        //	org
+					dbMsg += ",scale=" + scale;
 					int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
 					dbMsg += ",rotation=" + rotation;
+
+//					if ( Surface.ROTATION_0 == rotation || Surface.ROTATION_180 == rotation ) {            //    0 || 2                                               //org
+//						dbMsg += ";横";
 					if ( Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation ) {   //1||3
+						dbMsg += ";縦";
 						bufferRect.offset(dx , dy);
 						matrix.setRectToRect(viewRect , bufferRect , Matrix.ScaleToFit.FILL);       //org;	FILL		START   ,    CENTER,    END
-						float scale = Math.max(( float ) viewHeight / pvHeight , ( float ) viewWidth / pvWidth);        //	org
-						dbMsg += ",scale=" + scale;
 						matrix.postScale(scale , scale , centerX , centerY);
 						matrix.postRotate(90 * (rotation - 2) , centerX , centerY);                    //  270 || 90
+//					} else if ( Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation ) {   //1||3
+//							dbMsg += ";縦";
 					} else if ( Surface.ROTATION_0 == rotation || Surface.ROTATION_180 == rotation ) {            //    0 || 2                                               //org
+						dbMsg += ";横";
+//						bufferRect.offset(dy , dx);
+//						matrix.setRectToRect(viewRect , viewRect , Matrix.ScaleToFit.FILL);       //org;	FILL		START   ,    CENTER,    END
+//						matrix.postScale(MAX_PREVIEW_ASPECT , MAX_PREVIEW_ASPECT , centerX , centerY);  							//7/8
 						matrix.postRotate(180 * (rotation - 2) , centerX , centerY);                    // -180 || 0
 					}
 					mTextureView.setTransform(matrix);
+					/**
+					 横；縮んで右へすれる
+					 view[1776×1080],TextureView,読込みViewGroup[1776×1080],targetVie(0×0)[1776×1080],最大プレビューサイズ[1440×1080],
+					 orientation=2;横,>>読込みViewGroup[1776×1080],center;ViewGrupe(888.0,540.0)とpreview(720.0,540.0),shift(168.0,0.0),
+					 scale=1.2333333,rotation=1;縦>変更結果>(0×0)[1776×1080]=(0×0)[-1×-1],gravity=17=(0×0)[1776×1080]
+
+					 縦    ;	縦に伸びる
+					 view[1080×1776],TextureView,読込みViewGroup[1080×1776],targetVie(0×0)[1080×1776],最大プレビューサイズ[1080×1440],
+					 orientation=1;縦,>>読込みViewGroup[1080×1776],center;ViewGrupe(540.0,888.0)とpreview(540.0,720.0),shift(0.0,168.0),
+					 scale=1.2333333,rotation=0;横>変更結果>(0×0)[1080×1776]=(0×0)[-1×-1],gravity=17=(0×0)[1080×1776]
+
+					 * */
 				} else if ( ma_sarfaceeHolder != null ) {      //ma_sarfaceeHolder	    ma_sarface_view
 					if ( orientation == Configuration.ORIENTATION_LANDSCAPE ) {
 						dbMsg += ";横";
@@ -2996,6 +3040,10 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 					dbMsg += ",Scale[" + ma_sarface_view.getScaleX() + "×" + ma_sarface_view.getScaleY() + "]";
 
 				}
+				 targetViewLeft = targetView.getLeft();
+				 targetViewTop = targetView.getTop();
+				 targetViewWidth = targetView.getWidth();
+				 targetViewHeight = targetView.getHeight();
 				dbMsg += ">変更結果>(" + targetViewLeft + "×" + targetViewTop + ")[" + targetViewWidth + "×" + targetViewHeight + "]";
 				FrameLayout.LayoutParams sParams = ( FrameLayout.LayoutParams ) targetView.getLayoutParams();
 				dbMsg += "=(" + sParams.leftMargin + "×" + sParams.topMargin + ")[" + sParams.width + "×" + sParams.height + "]";
