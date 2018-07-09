@@ -1423,8 +1423,8 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 					try {
 						if ( OCVFRV != null ) {
 							dbMsg += ",ma_effect_fl(" + ma_effect_fl.getLeft() + "," + ma_effect_fl.getTop() + ")[" + ma_effect_fl.getWidth() + "×" + ma_effect_fl.getHeight() + "]";
-							int pvWidth = mPreviewSize.getWidth();
-							int pvHeight = mPreviewSize.getHeight();
+							int pvWidth = PREVIEW_WIDTH;		//mPreviewSize.getWidth();
+							int pvHeight = PREVIEW_HEIGHT;
 							dbMsg += ",最大プレビューサイズ[" + pvWidth + "×" + pvHeight + "]";
 							int sLeft = (ma_effect_fl.getWidth() - pvWidth);
 							if ( 0 < sLeft ) {
@@ -1867,7 +1867,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 //				dbMsg += ">svlp>[" + svlp.width + "×" + svlp.height + "]";
 ////				ma_sarface_view.setLayoutParams(svlp);          //Viewサイズを合わせる
 //// 		ma_sarfaceeHolder.setFixedSize(PREVIEW_WIDTH , PREVIEW_HEIGHT);	//	ma_sarface_view.getHolder().setFixedSize(PREVIEW_WIDTH, PREVIEW_HEIGHT);			// SurfaceViewにプレビューサイズを設定する(サンプルなので適当な値です)
-//				configureTransform(surfaceWidth , surfaceHeight);
+				configureTransform(surfaceWidth , surfaceHeight);                  //org
 
 				if ( OCVFRV != null ) {
 					dbMsg += ",camera=" + mSensorOrientation + "dig";
@@ -2592,26 +2592,28 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				dbMsg += ",orientation=" + orientation;
 				if ( orientation == Configuration.ORIENTATION_LANDSCAPE ) {
 					dbMsg += ";横;";
-//					setWidth = rotatedPreviewWidth;               //7/8
 				} else {
 					dbMsg += ";縦;";
 					int retention = setWidth;
 					setWidth = setHeight;
 					setHeight = retention;
-					mPreviewSize = new Size(setWidth , setHeight);
-//					dbMsg += ">>[" + mPreviewSize.getWidth() + "×" + setHeight + "]";
+//					mPreviewSize = new Size(setWidth , setHeight);
 				}
+
+				dbMsg += ">>[" + setWidth + "×" +setHeight + "]";
 				if ( mTextureView != null ) {
-					dbMsg += ">>[" + setWidth + "×" +setHeight + "]";
 					mTextureView.setAspectRatio(setWidth , setHeight);  //生成時のみ？
 				} else if ( ma_sarface_view != null ) {
-//					ma_sarfaceeHolder.setFixedSize(setWidth , setHeight);
+					ma_sarfaceeHolder.setFixedSize(setWidth , setHeight);
 				}
 				Boolean available = characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);                // Check if the flash is supported.
 				mFlashSupported = available == null ? false : available;
 				dbMsg += ",mFlashSupported=" + mFlashSupported;
 
 				mCameraId = cameraId;
+				PREVIEW_WIDTH = setWidth  ;     					//effectなどに渡す
+				PREVIEW_HEIGHT = setHeight  ;
+
 //				myLog(TAG , dbMsg);
 //				return;
 			}
@@ -2645,7 +2647,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 		try {
 			dbMsg = "DISP[" + width + "×" + height + "]" + DISP_DEGREES;
 			setUpCameraOutputs(width , height);
-			configureTransform(width , height);
+			configureTransform(width , height);                 //org
 			Activity activity = MainActivity.this;            //getActivity();
 			CameraManager manager = ( CameraManager ) activity.getSystemService(Context.CAMERA_SERVICE);
 			try {
@@ -2797,7 +2799,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 			dbMsg = "PreviewSize[" + tWidth + "×" + tHight + "]mSensorOrientation=" + mSensorOrientation;
 			dbMsg += ",isTexturView=" + isTexturView;                 //高速プレビュー
 			if ( mTextureView != null ) {
-				SurfaceTexture texture = mTextureView.getSurfaceTexture();
+				SurfaceTexture texture = mTextureView.getSurfaceTexture();      //org;ここから
 				assert texture != null;
 				texture.setDefaultBufferSize(tWidth , tHight);     // バッファサイズを、プレビューサイズに合わせる
 				surface = new Surface(texture);   // プレビューが描画されるSurface	This is the output Surface we need to start preview.
@@ -2956,66 +2958,32 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				dbMsg += ",orientation=" + orientation;
 
 				if ( mTextureView != null ) {
-//					dbMsg += ",isAvailable=" + mTextureView.isAvailable();
-					if ( orientation == Configuration.ORIENTATION_LANDSCAPE ) {
-						dbMsg += ";横";
-//						pvWidth = viewWidth;
-					} else {
-						dbMsg += ";縦";
-//						int retention = pvWidth;
-//						pvWidth = pvHeight;
-//						pvHeight = retention;
-//						 retention = viewWidth;
-//						viewWidth = viewHeight;
-//						viewHeight = retention;
-					}
-					dbMsg += ",>>読込みViewGroup[" + vgWIDTH + "×" + vgHEIGHT + "]";
-//					dbMsg += ",>>ビュー[" + viewWidth + "×" + viewHeight + "]";
-//					dbMsg += ",>>プレビュー[" + pvWidth + "×" + pvHeight + "]";
 					Matrix matrix = new Matrix();            //org
 					RectF viewRect = new RectF(0 , 0 ,viewWidth , viewHeight);        //org viewWidth , viewHeight        vgWIDTH , vgHEIGHT
-					RectF bufferRect = new RectF(0 , 0 , pvWidth , pvHeight);			//pvWidth , pvHeight)
+					RectF bufferRect = new RectF(0 , 0 , pvHeight, pvWidth );
+					//org	 mPreviewSize.getHeight(), mPreviewSize.getWidth()
+// pvWidth, pvHeightだと横向きで右によって左が余る
 					float centerX = viewRect.centerX();
 					float centerY = viewRect.centerY();
 					dbMsg += ",center;ViewGrupe(" + centerX + "," + centerY + ")とpreview(" + bufferRect.centerX() + "," + bufferRect.centerY() + ")";
-					float dx = centerX - bufferRect.centerX();
-					float dy = centerY - bufferRect.centerY();
-					dbMsg += ",shift(" + dx + "," + dy + ")";
-					float scale = Math.max(( float ) viewHeight / pvHeight , ( float ) viewWidth / pvWidth);        //	org
-					dbMsg += ",scale=" + scale;
 					int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
 					dbMsg += ",rotation=" + rotation;
-
-//					if ( Surface.ROTATION_0 == rotation || Surface.ROTATION_180 == rotation ) {            //    0 || 2                                               //org
-//						dbMsg += ";横";
 					if ( Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation ) {   //1||3
-						dbMsg += ";縦";
-						bufferRect.offset(dx , dy);
-						matrix.setRectToRect(viewRect , bufferRect , Matrix.ScaleToFit.FILL);       //org;	FILL		START   ,    CENTER,    END
-						matrix.postScale(scale , scale , centerX , centerY);
-						matrix.postRotate(90 * (rotation - 2) , centerX , centerY);                    //  270 || 90
-//					} else if ( Surface.ROTATION_90 == rotation || Surface.ROTATION_270 == rotation ) {   //1||3
-//							dbMsg += ";縦";
-					} else if ( Surface.ROTATION_0 == rotation || Surface.ROTATION_180 == rotation ) {            //    0 || 2                                               //org
 						dbMsg += ";横";
-//						bufferRect.offset(dy , dx);
-//						matrix.setRectToRect(viewRect , viewRect , Matrix.ScaleToFit.FILL);       //org;	FILL		START   ,    CENTER,    END
-//						matrix.postScale(MAX_PREVIEW_ASPECT , MAX_PREVIEW_ASPECT , centerX , centerY);  							//7/8
+						float dx = centerX - bufferRect.centerX();
+						float dy = centerY - bufferRect.centerY();
+						dbMsg += ",shift(" + dx + "," + dy + ")";
+						bufferRect.offset(dx ,dy);
+						matrix.setRectToRect(viewRect , bufferRect , Matrix.ScaleToFit.FILL);       //org;	FILL		START   ,    CENTER,    END
+						float scale = Math.max(( float ) viewHeight / pvHeight , ( float ) viewWidth / pvWidth);        //	org
+						dbMsg += ",scale=" + scale;                     //MAX_PREVIEW_ASPECT;			//
+						matrix.postScale(MAX_PREVIEW_ASPECT , scale , centerX , centerY);
+						matrix.postRotate(90 * (rotation - 2) , centerX , centerY);                    //  270 || 90
+					} else if ( Surface.ROTATION_0 == rotation || Surface.ROTATION_180 == rotation ) {            //    0 || 2                                               //org
+						dbMsg += ";縦";
 						matrix.postRotate(180 * (rotation - 2) , centerX , centerY);                    // -180 || 0
 					}
 					mTextureView.setTransform(matrix);
-					/**
-					 横；縮んで右へすれる
-					 view[1776×1080],TextureView,読込みViewGroup[1776×1080],targetVie(0×0)[1776×1080],最大プレビューサイズ[1440×1080],
-					 orientation=2;横,>>読込みViewGroup[1776×1080],center;ViewGrupe(888.0,540.0)とpreview(720.0,540.0),shift(168.0,0.0),
-					 scale=1.2333333,rotation=1;縦>変更結果>(0×0)[1776×1080]=(0×0)[-1×-1],gravity=17=(0×0)[1776×1080]
-
-					 縦    ;	縦に伸びる
-					 view[1080×1776],TextureView,読込みViewGroup[1080×1776],targetVie(0×0)[1080×1776],最大プレビューサイズ[1080×1440],
-					 orientation=1;縦,>>読込みViewGroup[1080×1776],center;ViewGrupe(540.0,888.0)とpreview(540.0,720.0),shift(0.0,168.0),
-					 scale=1.2333333,rotation=0;横>変更結果>(0×0)[1080×1776]=(0×0)[-1×-1],gravity=17=(0×0)[1080×1776]
-
-					 * */
 				} else if ( ma_sarfaceeHolder != null ) {      //ma_sarfaceeHolder	    ma_sarface_view
 					if ( orientation == Configuration.ORIENTATION_LANDSCAPE ) {
 						dbMsg += ";横";
