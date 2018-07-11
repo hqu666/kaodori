@@ -555,7 +555,7 @@ public class OCVFaceRecognitionVeiw extends View {
 				CascadeClassifier cfs = entry.getValue();
 				detectos dInfo = new detectos();
 				dInfo.note = "";
-if ( rDetectorFile.equals("haarcascade_frontalface_alt2") && is_detector_frontalface_alt2 ) {                //正面顔全体2";
+				if ( rDetectorFile.equals("haarcascade_frontalface_alt2") && is_detector_frontalface_alt2 ) {                //正面顔全体2";
 					dInfo.note = getResources().getString(R.string.mm_detector_frontalface_alt2);
 					dInfo.detector = detectorFrontalface_alt2;
 				} else if ( rDetectorFile.equals("haarcascade_frontalface_alt") && is_detector_frontal_face_alt ) {      //標準顔検出
@@ -684,12 +684,12 @@ if ( rDetectorFile.equals("haarcascade_frontalface_alt2") && is_detector_frontal
 			faces.clear();
 			if ( 0 == facesSize ) {                            //顔が検出できない時は
 				faces.add(new RectF(0 , 0 , 1 , 1));            //プレビュー全体選択に戻す
-			} else if(is_overlap_rejection){
+			} else if ( is_overlap_rejection ) {
 				facesList = deleteOverlapp(facesList);
 				facesSize = facesList.size();
 				dbMsg += ">重複確認後>=" + facesSize + "件";
 			}
-
+			//Only the original thread that created a view hierarchy can touch its views.
 			List< detectos > rInfo = makedetectionList(facesList , dWidth , dHight , correctionH , correctionV , correctionSH , correctionSV);
 			for ( detectos tInfo : rInfo ) {
 				dbMsg += "(" + tInfo.note + ")" + tInfo.andriodtArray.size() + "件";

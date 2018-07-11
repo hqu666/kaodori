@@ -23,6 +23,7 @@ import android.graphics.Matrix;
 import android.graphics.NinePatch;
 import android.graphics.Point;
 import android.graphics.PointF;
+import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.SurfaceTexture;
@@ -1580,18 +1581,24 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 							fpsCount = 0;
 							shotBitmap = null;
 							if ( targetViewID == mTextureViewID ) {
+								dbMsg += ",TextureView" ;
 								shotBitmap = (( TextureView ) findViewById(targetViewID)).getBitmap();
 							} else {
-//								if ( ma_sarfaceeHolder != null ) {
-//									Canvas canvas = ma_sarfaceeHolder.lockCanvas();
-//									int surfaceWidth = ma_sarfaceeHolder.getSurfaceFrame().width();
-//									int surfaceHeight = ma_sarfaceeHolder.getSurfaceFrame().height();
-//									dbMsg += "[" + surfaceWidth + "×" + surfaceHeight + "]";
-//									shotBitmap = Bitmap.createBitmap(surfaceWidth , surfaceHeight , Bitmap.Config.ARGB_8888);          //別途BitmapとCanvasを用意する
-////								Canvas tmpCanvas = new Canvas(shotBitmap);
-////								canvas.drawBitmap(shotBitmap, null, mScreenRect, null); 								//TODO tmpCanvasに対して描画処理を行う
-////								ma_sarfaceeHolder.unlockCanvasAndPost(canvas); //反映
-//								}
+								dbMsg += ",sarfacee" ;
+								if ( ma_sarfaceeHolder != null ) {
+									Canvas canvas = ma_sarfaceeHolder.lockCanvas();
+									int surfaceWidth = ma_sarfaceeHolder.getSurfaceFrame().width();
+									int surfaceHeight = ma_sarfaceeHolder.getSurfaceFrame().height();
+									dbMsg += "[" + surfaceWidth + "×" + surfaceHeight + "]";
+									// canvas object must be the same instance that was previously returned by lockCanvas
+									shotBitmap = Bitmap.createBitmap(surfaceWidth , surfaceHeight , Bitmap.Config.ARGB_8888);          //別途BitmapとCanvasを用意する
+									if (canvas == null) {
+										canvas = new Canvas(shotBitmap);
+									}
+//									canvas.drawColor(0, PorterDuff.Mode.CLEAR);
+//								canvas.drawBitmap(shotBitmap, null, mScreenRect, null); 								//TODO tmpCanvasに対して描画処理を行う
+//								ma_sarfaceeHolder.unlockCanvasAndPost(canvas); //反映
+								}
 							}
 							if ( shotBitmap != null ) {
 								dbMsg += ",bitmap[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]";
@@ -2987,10 +2994,6 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				} else if ( ma_sarfaceeHolder != null ) {      //ma_sarfaceeHolder	    ma_sarface_view
 					if ( orientation == Configuration.ORIENTATION_LANDSCAPE ) {
 						dbMsg += ";横";
-//						int retention = pvWidth;
-//						pvWidth = pvHeight;
-//						pvHeight = retention;
-
 						int retention = vgWIDTH;
 						vgWIDTH = vgHEIGHT;
 						vgHEIGHT = retention;
