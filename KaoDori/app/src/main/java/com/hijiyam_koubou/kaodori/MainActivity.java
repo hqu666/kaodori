@@ -1424,7 +1424,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 					try {
 						if ( OCVFRV != null ) {
 							dbMsg += ",ma_effect_fl(" + ma_effect_fl.getLeft() + "," + ma_effect_fl.getTop() + ")[" + ma_effect_fl.getWidth() + "×" + ma_effect_fl.getHeight() + "]";
-							int pvWidth = PREVIEW_WIDTH;		//mPreviewSize.getWidth();
+							int pvWidth = PREVIEW_WIDTH;        //mPreviewSize.getWidth();
 							int pvHeight = PREVIEW_HEIGHT;
 							dbMsg += ",最大プレビューサイズ[" + pvWidth + "×" + pvHeight + "]";
 							int sLeft = (ma_effect_fl.getWidth() - pvWidth);
@@ -1449,8 +1449,8 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 								OCVFRV.requestLayout();
 								layoutParams = ( FrameLayout.LayoutParams ) OCVFRV.getLayoutParams();
 								dbMsg += ",>>(" + layoutParams.leftMargin + "×" + layoutParams.topMargin + ")[" + layoutParams.width + "×" + layoutParams.height + "]";
-							}else{
-								dbMsg += ",layoutParams=null" ;
+							} else {
+								dbMsg += ",layoutParams=null";
 							}
 
 							dbMsg += ">>OCVFRV(" + OCVFRV.getLeft() + "," + OCVFRV.getTop() + ")[" + OCVFRV.getWidth() + "×" + OCVFRV.getHeight() + "]";
@@ -1581,23 +1581,30 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 							fpsCount = 0;
 							shotBitmap = null;
 							if ( targetViewID == mTextureViewID ) {
-								dbMsg += ",TextureView" ;
+								dbMsg += ",TextureView";
 								shotBitmap = (( TextureView ) findViewById(targetViewID)).getBitmap();
 							} else {
-								dbMsg += ",sarfacee" ;
+								dbMsg += ",sarfacee";
 								if ( ma_sarfaceeHolder != null ) {
-									Canvas canvas = ma_sarfaceeHolder.lockCanvas();
+//									Canvas canvas = ma_sarfaceeHolder.lockCanvas();
 									int surfaceWidth = ma_sarfaceeHolder.getSurfaceFrame().width();
 									int surfaceHeight = ma_sarfaceeHolder.getSurfaceFrame().height();
 									dbMsg += "[" + surfaceWidth + "×" + surfaceHeight + "]";
+//									Bitmap bmpOrig = Bitmap.createBitmap(surfaceWidth , surfaceHeight , Bitmap.Config.ARGB_8888);          //別途BitmapとCanvasを用意する
+									//bitmap[1080×1440]6220800バイト  =  1080×1440*4
+									//bitmap[1080×1440]0バイト
 									// canvas object must be the same instance that was previously returned by lockCanvas
-									shotBitmap = Bitmap.createBitmap(surfaceWidth , surfaceHeight , Bitmap.Config.ARGB_8888);          //別途BitmapとCanvasを用意する
-									if (canvas == null) {
-										canvas = new Canvas(shotBitmap);
-									}
-//									canvas.drawColor(0, PorterDuff.Mode.CLEAR);
-//								canvas.drawBitmap(shotBitmap, null, mScreenRect, null); 								//TODO tmpCanvasに対して描画処理を行う
-//								ma_sarfaceeHolder.unlockCanvasAndPost(canvas); //反映
+//									if (canvas == null) {
+//										canvas = new Canvas(shotBitmap);
+//									}
+//									View の描画キャッシュを使用する方法   			 http://blog.lciel.jp/blog/2013/12/16/android-capture-view-image/
+									ma_sarface_view.setDrawingCacheEnabled(true);      // キャッシュを取得する設定にする
+									ma_sarface_view.destroyDrawingCache();             // 既存のキャッシュをクリアする☆通常はこちらが先
+									shotBitmap = ma_sarface_view.getDrawingCache();    // キャッシュを作成して取得する       Bitmap bmpOrig
+//									Matrix matrix = new Matrix();
+//									matrix.postRotate(270);
+//									shotBitmap= Bitmap.createBitmap(bmpOrig, 0, 0, surfaceWidth, surfaceHeight, matrix, true);  // 回転したビットマップを作成
+
 								}
 							}
 							if ( shotBitmap != null ) {
@@ -1911,11 +1918,11 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 	private CameraCaptureSession mCaptureSession;
 	private CameraDevice mCameraDevice;            // A reference to the opened {@link CameraDevice}.
 	private String mCameraId;        //ID of the current {@link CameraDevice}.
-/**
- *  createCameraPreviewSession で取得
- *  startAutoFocus でcaptureBuilder.addTarget
- * */
-		private Surface surface;
+	/**
+	 * createCameraPreviewSession で取得
+	 * startAutoFocus でcaptureBuilder.addTarget
+	 */
+	private Surface surface;
 	private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
 	private MediaActionSound mSound;    //撮影音のためのMediaActionSound
 
@@ -2607,7 +2614,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 //					mPreviewSize = new Size(setWidth , setHeight);
 				}
 
-				dbMsg += ">>[" + setWidth + "×" +setHeight + "]";
+				dbMsg += ">>[" + setWidth + "×" + setHeight + "]";
 				if ( mTextureView != null ) {
 					mTextureView.setAspectRatio(setWidth , setHeight);  //生成時のみ？
 				} else if ( ma_sarface_view != null ) {
@@ -2618,8 +2625,8 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				dbMsg += ",mFlashSupported=" + mFlashSupported;
 
 				mCameraId = cameraId;
-				PREVIEW_WIDTH = setWidth  ;     					//effectなどに渡す
-				PREVIEW_HEIGHT = setHeight  ;
+				PREVIEW_WIDTH = setWidth;                        //effectなどに渡す
+				PREVIEW_HEIGHT = setHeight;
 
 //				myLog(TAG , dbMsg);
 //				return;
@@ -2814,56 +2821,6 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				ArrayList< Surface > surfaceList = new ArrayList();
 				surfaceList.add(ma_sarface_view.getHolder().getSurface());                // プレビュー用のSurfaceViewをリストに登録
 				surface = ma_sarface_view.getHolder().getSurface();
-//				try {
-//					// プレビューリクエストの設定（SurfaceViewをターゲットに）
-//					mPreviewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
-//					mPreviewRequestBuilder.addTarget(ma_sarface_view.getHolder().getSurface());
-//
-//					// キャプチャーセッションの開始(セッション開始後に第2引数のコールバッククラスが呼ばれる)
-//					mCameraDevice.createCaptureSession(surfaceList, new CameraCaptureSession.StateCallback() {
-//						@Override
-//						public void onConfigured(CameraCaptureSession cameraCaptureSession) {
-//							final String TAG = "CCPS.onConfigured[MA]";
-//							String dbMsg = "";
-//							try {
-//								if ( null != mCameraDevice ) {  // カメラが閉じていなければ	// The camera is already closed
-//									mCaptureSession = cameraCaptureSession;        // When the session is ready, we start displaying the preview.
-//									dbMsg += ",getId=" + mCaptureSession.getDevice().getId();
-//									try {
-//										PointF[] focusPoints = {new PointF(mPreviewSize.getWidth() / 2 , mPreviewSize.getHeight() / 2)};
-//										dbMsg += ",focusPoints(" + focusPoints[0].x + "," + focusPoints[0].y + ")";
-//										startAutoFocus(focusPoints , MainActivity.this);
-//										mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE , CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE);
-//										// オートフォーカスを設定する// Auto focus should be continuous for camera preview.
-//										setAutoFlash(mPreviewRequestBuilder);        // Flash is automatically enabled when necessary.
-//										mPreviewRequest = mPreviewRequestBuilder.build();        // リクエスト作成// Finally, we start displaying the camera preview.
-//										mCaptureSession.setRepeatingRequest(mPreviewRequest , mCaptureCallback , mBackgroundHandler);
-//										//(7)RepeatSession作成 カメラプレビューを表示する	//APIL21;このキャプチャセッションで、イメージのキャプチャを無限に繰り返すように要求:ここの他は unlockFocus()
-//									} catch (CameraAccessException er) {
-//										myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-//									}
-//								} else {
-//									dbMsg += "mCameraDevice = null";
-//								}
-//								myLog(TAG , dbMsg);
-//							} catch (Exception er) {
-//								myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-//							}
-//						}
-//
-//						@Override
-//						public void onConfigureFailed(CameraCaptureSession cameraCaptureSession) {
-//							final String TAG = "CCPS.onConfigureFailed[MA]";
-//							String dbMsg = "";
-//							dbMsg += ",getId=" + cameraCaptureSession.getDevice().getId();
-//							showToast("Failed");
-//							myErrorLog(TAG , dbMsg + "発生；");
-//						}
-//					} , null);
-//				} catch (CameraAccessException e) {
-//					// エラー時の処理を記載
-//				}
-
 			}
 			mPreviewRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);    //(5)CaptureRequest作成	 カメラのプレビューウィンドウに適した;We set up a CaptureRequest.Builder with the output Surface.
 			mPreviewRequestBuilder.addTarget(surface);
@@ -2952,7 +2909,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 			if ( null != targetView && null != mPreviewSize && null != activity ) {
 //				dbMsg += ";Id=" + targetViewId;
 				ViewGroup.LayoutParams svlp = targetView.getLayoutParams();
-	//			dbMsg += ",変更前LayoutParams[" + svlp.width + "×" + svlp.height + "]";
+				//			dbMsg += ",変更前LayoutParams[" + svlp.width + "×" + svlp.height + "]";
 				int targetViewLeft = targetView.getLeft();
 				int targetViewTop = targetView.getTop();
 				int targetViewWidth = targetView.getWidth();
@@ -2966,8 +2923,8 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 
 				if ( mTextureView != null ) {
 					Matrix matrix = new Matrix();            //org
-					RectF viewRect = new RectF(0 , 0 ,viewWidth , viewHeight);        //org viewWidth , viewHeight        vgWIDTH , vgHEIGHT
-					RectF bufferRect = new RectF(0 , 0 , pvHeight, pvWidth );
+					RectF viewRect = new RectF(0 , 0 , viewWidth , viewHeight);        //org viewWidth , viewHeight        vgWIDTH , vgHEIGHT
+					RectF bufferRect = new RectF(0 , 0 , pvHeight , pvWidth);
 					//org	 mPreviewSize.getHeight(), mPreviewSize.getWidth()
 // pvWidth, pvHeightだと横向きで右によって左が余る
 					float centerX = viewRect.centerX();
@@ -2980,7 +2937,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 						float dx = centerX - bufferRect.centerX();
 						float dy = centerY - bufferRect.centerY();
 						dbMsg += ",shift(" + dx + "," + dy + ")";
-						bufferRect.offset(dx ,dy);
+						bufferRect.offset(dx , dy);
 						matrix.setRectToRect(viewRect , bufferRect , Matrix.ScaleToFit.FILL);       //org;	FILL		START   ,    CENTER,    END
 						float scale = Math.max(( float ) viewHeight / pvHeight , ( float ) viewWidth / pvWidth);        //	org
 						dbMsg += ",scale=" + scale;                     //MAX_PREVIEW_ASPECT;			//
@@ -3011,10 +2968,10 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 					dbMsg += ",Scale[" + ma_sarface_view.getScaleX() + "×" + ma_sarface_view.getScaleY() + "]";
 
 				}
-				 targetViewLeft = targetView.getLeft();
-				 targetViewTop = targetView.getTop();
-				 targetViewWidth = targetView.getWidth();
-				 targetViewHeight = targetView.getHeight();
+				targetViewLeft = targetView.getLeft();
+				targetViewTop = targetView.getTop();
+				targetViewWidth = targetView.getWidth();
+				targetViewHeight = targetView.getHeight();
 				dbMsg += ">変更結果>(" + targetViewLeft + "×" + targetViewTop + ")[" + targetViewWidth + "×" + targetViewHeight + "]";
 				FrameLayout.LayoutParams sParams = ( FrameLayout.LayoutParams ) targetView.getLayoutParams();
 				dbMsg += "=(" + sParams.leftMargin + "×" + sParams.topMargin + ")[" + sParams.width + "×" + sParams.height + "]";
