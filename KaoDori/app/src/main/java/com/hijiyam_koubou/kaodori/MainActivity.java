@@ -109,18 +109,20 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 	public int mTextureViewID = -1;
 	public SurfaceView ma_sarface_view;        //  プレビュー用サーフェス
 	public SurfaceHolder ma_sarfaceeHolder;
+	public String saveFileName;                    //プレビュー表示されているファイル名
 
 	public FrameLayout ma_effect_fl;        //OpenCVの呼び込み枠
 	public OCVFaceRecognitionVeiw OCVFRV;            //顔検出View
 
 	public ImageButton ma_shot_bt;      //キャプチャーボタン
+	public ImageButton ma_shot2_bt;      //キャプチャーボタン
 	public ImageButton ma_func_bt;      //設定ボタン
 	public ImageButton ma_detecter_bt;      //検出ボタン
 	public static ImageView ma_iv;                    //撮影結果
 
 	public static SharedPreferences sharedPref;
 	public SharedPreferences.Editor myEditor;
-	public String writeFolder = "";
+	public String writeFolder = "";                        //このアプリで生成するファイルの保存場所
 	public float upScale = 1.2f;
 	public long haarcascadesLastModified = 0;
 	public boolean isReWriteNow = true;                        //リソース書き換え中
@@ -294,6 +296,8 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 
 			ma_shot_bt = ( ImageButton ) findViewById(R.id.ma_shot_bt);      //キャプチャーボタン
 			maxID = Math.max(( float ) R.id.ma_shot_bt , ( float ) maxID);
+			ma_shot2_bt = ( ImageButton ) findViewById(R.id.ma_shot2_bt);      //キャプチャーボタン
+			maxID = Math.max(( float ) R.id.ma_shot2_bt , ( float ) maxID);
 			ma_func_bt = ( ImageButton ) findViewById(R.id.ma_func_bt);      //設定ボタン
 			maxID = Math.max(( float ) R.id.ma_func_bt , ( float ) maxID);
 			ma_detecter_bt = ( ImageButton ) findViewById(R.id.ma_detecter_bt);      //検出ボタン
@@ -301,6 +305,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 			ma_iv = ( ImageView ) findViewById(R.id.ma_iv);                    //撮影結果
 			maxID = Math.max(( float ) R.id.ma_iv , ( float ) maxID);
 			ma_shot_bt.setOnClickListener(this);
+			ma_shot2_bt.setOnClickListener(this);
 			ma_func_bt.setOnClickListener(this);
 			ma_detecter_bt.setOnClickListener(this);
 			ma_iv.setOnClickListener(this);
@@ -667,6 +672,19 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				case R.id.ma_shot_bt: {
 					dbMsg += "=ma_shot_bt";
 					takePicture();
+					break;
+				}
+				case R.id.ma_shot2_bt: {
+					dbMsg += "=ma_shot2_bt";
+//					dbMsg += "=,mTextureView="+mTextureView;
+//					dbMsg += "=,ma_sarface_view="+ma_sarface_view;
+					if ( mTextureView != null ) {
+						dbMsg += ",mTextureView=" + mTextureView.getId();
+						savePreviewBitMap(mTextureView.getId());     //ここから送ると回転動作にストレス発生？ ？
+					} else if ( ma_sarface_view != null ) {
+						dbMsg += ",ma_sarface_view=" + ma_sarface_view.getId();
+						savePreviewBitMap(ma_sarface_view.getId());
+					}
 					break;
 				}
 				case R.id.ma_func_bt: {
@@ -1659,6 +1677,96 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 		}
 	}
 
+	Canvas svCanvas;
+
+	/**
+	 * Bitmapの汎用保存
+	 */
+	public void savePreviewBitMap(int targetViewID) {
+		final String TAG = "savePreviewBitMap[MA]";
+		String dbMsg = "";
+		try {
+//			dbMsg += ",顔検出実行中=" + isFaceRecognition;
+			dbMsg += ",targetViewID=" + targetViewID;
+			if ( -1 < targetViewID ) {               // ;                 //
+//				if ( isFaceRecognition ) {               // ;                 //
+////				dbMsg += "isReWriteNow=" + isReWriteNow;
+////				if ( !isReWriteNow ) {                                    // //書き換え終了(onResume～onPause)
+//					if ( OCVFRV != null ) {
+//						fpsCount++;
+//						dbMsg += "(" + fpsCount + "/" + fpsLimi + "フレーム)";          //実測 8回で送信
+//						dbMsg += ",前回処理終了=" + OCVFRV.getCompletion();
+//						if ( OCVFRV.getCompletion() ) {    //onDrawが終了するまでfalseが返る     && fpsLimi < fpsCount
+//							fpsCount = 0;
+				shotBitmap = null;
+				if ( targetViewID == mTextureViewID ) {
+					dbMsg += ",TextureView";
+					shotBitmap = (( TextureView ) findViewById(targetViewID)).getBitmap();
+				} else {
+					dbMsg += ",sarfacee";
+					if ( ma_sarfaceeHolder != null ) {
+						Canvas svCanvas = ma_sarfaceeHolder.lockCanvas();              //unlockCanvasはAPIL17で廃止
+						int surfaceWidth = ma_sarfaceeHolder.getSurfaceFrame().width();
+						int surfaceHeight = ma_sarfaceeHolder.getSurfaceFrame().height();
+						dbMsg += "[" + surfaceWidth + "×" + surfaceHeight + "]";
+						shotBitmap = Bitmap.createBitmap(surfaceWidth , surfaceHeight , Bitmap.Config.ARGB_8888);  //別途BitmapとCanvasを用意する；この時点は真っ黒
+//						if (svCanvas == null) {
+//										svCanvas = new Canvas(shotBitmap);
+//									}
+//// Viewの描画キャッシュを使用する方法 ;0バイトになる  			 http://blog.lciel.jp/blog/2013/12/16/android-capture-view-image/
+//						ma_sarface_view.setDrawingCacheEnabled(true);      // キャッシュを取得する設定にする
+//						ma_sarface_view.destroyDrawingCache();             // 既存のキャッシュをクリアする☆通常はこちらが先
+//						shotBitmap = ma_sarface_view.getDrawingCache();    // キャッシュを作成して取得する       Bitmap bmpOrig
+////									Matrix matrix = new Matrix();
+////									matrix.postRotate(270);
+////									shotBitmap= Bitmap.createBitmap(bmpOrig, 0, 0, surfaceWidth, surfaceHeight, matrix, true);  // 回転したビットマップを作成
+					}
+				}
+				if ( shotBitmap != null ) {
+					dbMsg += ",shotBitmap[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]";
+					int byteCount = shotBitmap.getByteCount();
+					dbMsg += "" + byteCount + "バイト";
+					if ( 0 < byteCount ) {
+//						dbMsg += ",isPhotography=" + isPhotography;
+//						if ( !isPhotography ) {
+//							isPhotography = true;
+						saveFileName = writeFolder + File.separator + "pre.jpg";
+						dbMsg += ",saveFileName=" + saveFileName;
+						BmpSaver BS = new BmpSaver(this , this , shotBitmap , saveFileName , ma_iv);
+
+//						dbMsg += ",disp=" + DISP_DEGREES + "dig";
+//						mSensorOrientation = getOrientation(DISP_DEGREES);
+//						dbMsg += ",camera=" + mSensorOrientation + "dig";
+
+//								BmpSaver BS = new BmpSaver(this,this,shotBitmap , writeFolder , ma_iv , saveFileName);
+						mBackgroundHandler.post(BS);
+//						shotBitmap.recycle();
+//						}
+					}
+				} else {
+					dbMsg += ",shotBitmap = null";
+				}
+//						} else {
+//							dbMsg = "";    //余計なコメントを出さない
+//						}
+//					} else {
+//						dbMsg += ",OCVFRV = null>>view追加";
+//						setEffectView();
+//					}
+//				} else {                            //顔検出中で無ければ
+//					removetEffectView();            //viewを破棄
+//				}
+			}
+//			if ( !dbMsg.equals("") ) {
+			isPhotography = false;
+			myLog(TAG , dbMsg);
+//			}
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+
 	private class EffectSendData {
 		Bitmap sendBitmap;
 		int sensorOrientation;
@@ -1942,6 +2050,8 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 	 */
 	private ImageReader mImageReader;
 	private int mMaxImages = 2;                                    //読込み枚数
+	private ImageReader mPreviewReader;
+
 	/**
 	 * This is the output file for our picture.
 	 */
@@ -2084,9 +2194,8 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 					dbMsg += ",rImage;Timestamp=" + rImage.getTimestamp();
 					dbMsg += ",isPhotography=" + isPhotography;   //撮影時も falseになっている
 					if ( !isPhotography ) {     //撮影中で無ければ
-//						SendPreview SP = new SendPreview(rImage);
-//						mBackgroundHandler.post(SP);
 						dbMsg += "プレビュー取得";
+
 					} else {
 						dbMsg += ",静止画撮影処理；writeFolder=" + writeFolder;
 						long timestamp = System.currentTimeMillis();
@@ -2542,7 +2651,6 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				//目的のサイズ（利用可能な最大撮影サイズ）とフォーマットの画像用の新しいリーダーを作成
 				mImageReader.setOnImageAvailableListener(mOnImageAvailableListener , mBackgroundHandler);
 				//ImageReaderから新しいイメージが利用可能になったときに呼び出されるリスナーを登録
-//					mImageReader.setOnImageAvailableListener(mOnPreviwListener , mBackgroundHandler);            //プレビューの画像取得
 
 				// Find out if we need to swap dimension to get the preview size relative to sensor coordinate.
 				int displayRotation = activity.getWindowManager().getDefaultDisplay().getRotation();
@@ -2619,6 +2727,8 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 					mTextureView.setAspectRatio(setWidth , setHeight);  //生成時のみ？
 				} else if ( ma_sarface_view != null ) {
 					ma_sarfaceeHolder.setFixedSize(setWidth , setHeight);
+//					mPreviewReader  = ImageReader.newInstance(setWidth , setHeight , ImageFormat.JPEG , 1);
+//					mImageReader.setOnImageAvailableListener(mOnPreviwListener , mBackgroundHandler);            //プレビューの画像取得
 				}
 				Boolean available = characteristics.get(CameraCharacteristics.FLASH_INFO_AVAILABLE);                // Check if the flash is supported.
 				mFlashSupported = available == null ? false : available;
@@ -3392,7 +3502,8 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 					dbMsg += ",bitmap[" + bmWidth + "×" + bmHeigh + "]";
 					int byteCount = shotBitmap.getByteCount();
 					dbMsg += "" + byteCount + "バイト";
-					setThumbnail(shotBitmap);
+					ThumbnailControl TC = new ThumbnailControl(MainActivity.this);
+					TC.setThumbnail(shotBitmap , ma_iv);
 				} catch (IOException er) {
 					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 					isPhotography = false;
@@ -3414,33 +3525,8 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 		}
 	}
 
-	private static Bitmap shotBitmap;
 
-	public void setThumbnail(Bitmap _shotBitmap) {
-		shotBitmap = _shotBitmap;
-		// 別スレッドを実行
-		MainActivity.this.runOnUiThread(new Runnable() {
-			@Override
-			public void run() {
-				final String TAG = "setThumbnail[MA]";
-				String dbMsg = "";
-				try {
-					int ivWidth = ma_iv.getWidth();
-					int ivHeight = ma_iv.getHeight();
-					dbMsg += ",iv[" + ivWidth + "×" + ivHeight + "]";
-					Bitmap thumbNail = Bitmap.createScaledBitmap(shotBitmap , ivWidth , ivHeight , false);
-					int thumbNailHeight = thumbNail.getHeight();
-					dbMsg += ",thumbNail[" + thumbNail.getWidth() + "×" + thumbNailHeight + "]";
-					ma_iv.setImageBitmap(thumbNail);
-					//findViewById(R.id.ma_iv).setImageBitmap(bitmap);;					//撮影結果
-					shotBitmap.recycle();
-					myLog(TAG , dbMsg);
-				} catch (Exception er) {
-					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-				}
-			}
-		});
-	}
+	private static Bitmap shotBitmap;
 
 	///プレビューデータ操作//////////////////////////////////////////////////////////////////撮影操作//
 	private void copyPreview() {
