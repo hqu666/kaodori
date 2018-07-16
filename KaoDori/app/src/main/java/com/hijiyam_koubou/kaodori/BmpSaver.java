@@ -1,8 +1,11 @@
 package com.hijiyam_koubou.kaodori;
 
 import android.app.Activity;
+import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.provider.MediaStore;
 import android.widget.ImageView;
 
 import java.io.File;
@@ -65,6 +68,14 @@ public class BmpSaver implements Runnable {        //static ?必要？
 						output = new FileOutputStream(mFile);
 						shotBitmap.compress(Bitmap.CompressFormat.JPEG , 100 , output);//画像をJPEG形式として保存
 
+						// アンドロイドのデータベースへ登録
+						// (登録しないとギャラリーなどにすぐに反映されないため)
+						ContentValues values = new ContentValues();
+						ContentResolver contentResolver = activity.getContentResolver();
+						values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+						values.put("_data", saveFileName);
+						contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+
 //					ByteBuffer imageBuf = mImage.getPlanes()[0].getBuffer();
 //					byte[] bytes = new byte[imageBuf.remaining()];
 //					dbMsg += ",bytes=" + bytes.length + "バイト";
@@ -105,6 +116,9 @@ public class BmpSaver implements Runnable {        //static ?必要？
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}
+
+
+	
 	///////////////////////////////////////////////////////////////////////////////////
 //	public void messageShow(String titolStr , String mggStr) {
 //		if ( UTIL == null ) {

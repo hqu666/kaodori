@@ -162,9 +162,10 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 		final String TAG = "readPref[MA]";
 		String dbMsg = "許諾済み";//////////////////
 		try {
-			if ( Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ) {                //(初回起動で)全パーミッションの許諾を取る
+			if ( Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ) {                //(初回起動で)全パーミッションの許諾を取る  
+
 				dbMsg = "許諾確認";
-				String[] PERMISSIONS = {Manifest.permission.CAMERA , Manifest.permission.WRITE_EXTERNAL_STORAGE , Manifest.permission.READ_EXTERNAL_STORAGE};
+				String[] PERMISSIONS = {Manifest.permission.CAMERA , Manifest.permission.RECORD_AUDIO , Manifest.permission.WRITE_EXTERNAL_STORAGE , Manifest.permission.READ_EXTERNAL_STORAGE};
 				boolean isNeedParmissionReqest = false;
 				for ( String permissionName : PERMISSIONS ) {
 					dbMsg += "," + permissionName;
@@ -254,7 +255,8 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 	}
 
 	static final int REQUEST_PREF = 100;                          //Prefarensからの戻り
-	static final int REQUEST_SWOPEN = REQUEST_PREF + 1;        //skyway接続開始
+	static final int REQUEST_VIDEO = REQUEST_PREF + 1;        //カメラモード切替
+
 
 	/**
 	 * Cameraパーミッションが通った時点でstartLocalStream
@@ -267,12 +269,14 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 			dbMsg = "requestCode=" + requestCode;
 			switch ( requestCode ) {
 				case REQUEST_PREF:
+				case REQUEST_VIDEO:
 					Intent intent = new Intent();
 					intent.setClass(this , this.getClass());
 					this.startActivity(intent);
 					this.finish();                    //http://attyo0.blog.fc2.com/blog-entry-9.html
 //					readPref();        //ループする？
 					break;
+
 			}
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
@@ -313,6 +317,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 			ma_func_bt.setOnLongClickListener(this);
 			ma_detecter_bt.setOnLongClickListener(this);
 			ma_iv.setOnLongClickListener(this);
+
 //			findViewById(R.id.ma_shot_bt).setOnClickListener(this);
 //			findViewById(R.id.ma_func_bt).setOnClickListener(this);
 //			findViewById(R.id.ma_iv).setOnClickListener(this);
@@ -738,7 +743,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 			switch ( view.getId() ) {
 				case R.id.ma_shot_bt: {
 					dbMsg += "=ma_shot_bt";
-					messageShow(titolStr , mggStr);
+					showMenuDialog(menuID_cameara_mode_select);
 					break;
 				}
 				case R.id.ma_func_bt: {
@@ -755,7 +760,6 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 					showMenuDialog(menuID_detector_select);
 					break;
 				}
-
 				case R.id.ma_iv: {
 					dbMsg += "=ma_iv";
 					messageShow(titolStr , mggStr);
@@ -799,6 +803,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 	static int menuID_effect = menuID_phot_onoff + 1;
 	static int menuID_effect_onnoff = menuID_effect + 1;
 	static int menuID_detector_select = menuID_effect_onnoff + 1;
+	static int menuID_cameara_mode_select = menuID_detector_select + 1;
 
 	public void detectersPref() {
 		final String TAG = "detectersPref[MA}";
@@ -908,9 +913,11 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 					menuItemChecks[setCount] = entry.getValue();
 					setCount++;
 				}
+			} else if ( menuId == menuID_cameara_mode_select ) {
+				menuItems = new CharSequence[]{getResources().getString(R.string.mm_mode_still) , getResources().getString(R.string.mm_mode_move) , getResources().getString(R.string.mm_mode_preview_save)};
 			}
 
-			if ( menuId == menuID_root || menuId == menuID_phot || menuId == menuID_effect ) {          //プレーンリスト
+			if ( menuId == menuID_root || menuId == menuID_phot || menuId == menuID_effect  || menuId == menuID_cameara_mode_select) {          //プレーンリスト
 				listDlg.setItems(menuItems , new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog , int which) {
 						// リスト選択時の処理
@@ -1079,7 +1086,22 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				isRumbling = !isRumbling;
 				dbMsg += ">>" + isRumbling;
 				messageShow(titolStr , mggStr);
-			}
+			} else if ( selctItem.equals(getResources().getString(R.string.mm_mode_still)) ) {
+				dbMsg += ",静止画" ;
+			} else if ( selctItem.equals(getResources().getString(R.string.mm_mode_move)) ) {
+				dbMsg += ",動画" ;
+				laterDestroy();
+				Intent settingsIntent = new Intent(MainActivity.this , VideoActivity.class);
+				startActivityForResult(settingsIntent , REQUEST_VIDEO);  //startActivity(settingsIntent);      //
+			} else if ( selctItem.equals(getResources().getString(R.string.mm_mode_preview_save)) ) {
+				dbMsg += ",プレビュー保存" ;
+				if ( mTextureView != null ) {
+					dbMsg += ",mTextureView=" + mTextureView.getId();
+					savePreviewBitMap(mTextureView.getId());     //ここから送ると回転動作にストレス発生？ ？
+				} else if ( ma_sarface_view != null ) {
+					dbMsg += ",ma_sarface_view=" + ma_sarface_view.getId();
+					savePreviewBitMap(ma_sarface_view.getId());
+				}			}
 			myLog(TAG , dbMsg);
 
 //			switch ( itemId ) {

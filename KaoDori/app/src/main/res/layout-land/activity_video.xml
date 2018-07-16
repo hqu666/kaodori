@@ -1,0 +1,60 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+			  xmlns:app="http://schemas.android.com/apk/res-auto"
+			  xmlns:tools="http://schemas.android.com/tools"
+			  android:layout_width="match_parent"
+			  android:layout_height="match_parent"
+			  android:orientation="horizontal"
+			  tools:context="com.hijiyam_koubou.kaodori.MainActivity">
+
+	<FrameLayout
+		android:id="@+id/va_preview_fl"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:layout_alignParentBottom="false"
+		android:layout_alignParentEnd="false"
+		android:layout_alignParentTop="false"
+		android:layout_gravity="center"
+		android:orientation="horizontal"
+		android:textAlignment="center">
+
+		<!--<com.hijiyam_koubou.kaodori.AutoFitTextureView-->
+		<!--android:id="@+id/ma_aft"-->
+		<!--android:layout_width="match_parent"-->
+		<!--android:layout_height="match_parent"-->
+		<!--android:layout_alignParentBottom="false"-->
+		<!--android:layout_alignParentStart="false"-->
+		<!--android:layout_alignParentTop="false"-->
+		<!--android:layout_gravity="center"-->
+		<!--android:layout_weight="1"/>-->
+		<!--<SurfaceView-->
+			<!--android:id="@+id/ma_sarface_view"-->
+			<!--android:layout_width="match_parent"-->
+			<!--android:layout_height="match_parent"/>-->
+	</FrameLayout>
+
+	<FrameLayout
+		android:id="@+id/va_effect_fl"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:layout_alignParentBottom="false"
+		android:layout_alignParentEnd="false"
+		android:layout_alignParentTop="false"
+		android:layout_gravity="center"
+		android:orientation="horizontal">
+
+		<!--<com.hijiyam_koubou.kaodori.OCVFaceRecognitionVeiw-->
+			<!--android:id="@+id/ma_effect_view"-->
+			<!--android:layout_width="match_parent"-->
+			<!--android:layout_height="match_parent"-->
+			<!--android:layout_weight="1"-->
+			<!--android:gravity="center"-->
+			<!--android:orientation="vertical"/>-->
+
+	</FrameLayout>
+
+	<include
+		layout="@layout/video_control"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"/>
+
+</FrameLayout>

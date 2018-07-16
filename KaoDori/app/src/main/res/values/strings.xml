@@ -43,6 +43,11 @@
 	<string name="mm_detector_frontalface_alt_tree">鼻(正面)？</string>
 
 	<string name="mm_ohter">その他</string>
+
+	<string name="mm_mode_still">静止画</string>
+	<string name="mm_mode_move">動画</string>
+	<string name="mm_mode_preview_save">プレビュー保存</string>
+
 	<!--<string name="write_folder_key"/>-->
 	<string name="write_folder">書込みフォルダ</string>
 	<string name="up_scale">保存時の枠拡大倍数(検出枠から)</string>

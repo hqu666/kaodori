@@ -1,0 +1,76 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+			  xmlns:app="http://schemas.android.com/apk/res-auto"
+			  xmlns:tools="http://schemas.android.com/tools"
+			  android:layout_width="match_parent"
+			  android:layout_height="match_parent"
+			  android:orientation="horizontal"
+			  tools:context="com.hijiyam_koubou.kaodori.VideoActivity">
+
+		<ImageView
+			android:id="@+id/va_iv"
+			android:layout_width="60dp"
+			android:layout_height="60dp"
+			android:layout_marginLeft="5dp"
+			android:layout_marginTop="5dp"
+			android:src="@android:color/transparent"/>
+
+	<ImageButton
+		android:id="@+id/va_shot_bt"
+		android:layout_width="48dp"
+		android:layout_height="48dp"
+		android:layout_gravity="bottom|center"
+		android:layout_marginBottom="5dp"
+		android:background="@drawable/bottom_selecter"
+		android:padding="5dp"
+		android:scaleType="fitXY"
+		android:src="@android:drawable/presence_video_busy"/>
+
+	<ImageButton
+		android:id="@+id/va_func_bt"
+		android:layout_width="48dp"
+		android:layout_height="48dp"
+		android:layout_gravity="top|right"
+		android:layout_marginRight="5dp"
+		android:layout_marginTop="5dp"
+		android:background="@drawable/bottom_selecter"
+		android:src="@android:drawable/ic_menu_info_details"/>
+
+	<ImageButton
+		android:id="@+id/va_detecter_bt"
+		style="@android:style/Widget.Material.Light.Button.Borderless"
+		android:layout_width="48dp"
+		android:layout_height="48dp"
+		android:layout_gravity="bottom|left"
+		android:layout_marginBottom="5dp"
+		android:layout_marginLeft="5dp"
+		android:background="@drawable/bottom_selecter"
+		android:scaleType="fitXY"
+		android:src="@android:drawable/star_on"/>
+
+	<ImageButton
+		android:id="@+id/va_shot2_bt"
+		android:layout_width="48dp"
+		android:layout_height="48dp"
+		android:layout_gravity="bottom|right"
+		android:layout_marginBottom="5dp"
+		android:background="@drawable/bottom_selecter"
+		android:scaleType="fitCenter"
+		android:src="@android:drawable/ic_menu_compass"/>
+
+	<Chronometer
+		android:id="@+id/va_chronometer"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:layout_gravity="bottom|center_horizontal"
+		android:layout_marginBottom="60dp"/>
+	<!--<TextClock-->
+		<!--android:layout_width="wrap_content"-->
+		<!--android:layout_height="wrap_content"-->
+		<!--android:layout_gravity="bottom|center_horizontal"-->
+		<!--android:format12Hour="hh:mm:ss"-->
+		<!--android:format24Hour="HH:mm:ss"-->
+		<!--android:paddingBottom="55dp"-->
+		<!--android:text="23:59:59"-->
+		<!--android:timeZone="GMT+900"/>-->
+
+</FrameLayout>
