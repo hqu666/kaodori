@@ -12,6 +12,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
 import android.graphics.Matrix;
 import android.graphics.Point;
 import android.graphics.RectF;
@@ -25,13 +26,18 @@ import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.MediaRecorder;
+import android.media.ThumbnailUtils;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.SystemClock;
 import android.preference.PreferenceManager;
+import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 //			   import android.support.v4.app.ActivityCompat;
+import android.text.format.DateFormat;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
@@ -55,9 +61,11 @@ import android.widget.Toast;
 
 import java.io.File;
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
@@ -83,7 +91,7 @@ public class VideoActivity extends Activity implements View.OnClickListener, Vie
 	public ImageButton va_func_bt;      //設定ボタン
 	public ImageButton va_detecter_bt;      //検出ボタン
 	public static ImageView va_iv;                    //撮影結果
-	public   Chronometer va_chronometer;                    //撮影時間
+	public Chronometer va_chronometer;                    //撮影時間
 
 	private static final int SENSOR_ORIENTATION_DEFAULT_DEGREES = 90;
 	private static final int SENSOR_ORIENTATION_INVERSE_DEGREES = 270;
@@ -114,6 +122,7 @@ public class VideoActivity extends Activity implements View.OnClickListener, Vie
 	public static SharedPreferences sharedPref;
 	public SharedPreferences.Editor myEditor;
 	public String writeFolder = "";                        //このアプリで生成するファイルの保存場所
+	public String saveFolder = "";                        //最終保存フォルダ
 	public float upScale = 1.2f;
 	public long haarcascadesLastModified = 0;
 	public boolean isReWriteNow = true;                        //リソース書き換え中
@@ -651,6 +660,14 @@ public class VideoActivity extends Activity implements View.OnClickListener, Vie
 			} else {
 				mTextureView.setSurfaceTextureListener(mSurfaceTextureListener);
 			}
+			writeFolder += File.separator + "vodeo";
+			dbMsg += "writeFolder=" + writeFolder;
+			if ( UTIL == null ) {
+				UTIL = new CS_Util();
+			}
+			mNextVideoAbsolutePath = UTIL.getSaveFiles(writeFolder);
+			dbMsg += ",mNextVideoAbsolutePath=" + mNextVideoAbsolutePath;
+			setLastThumbnail(mNextVideoAbsolutePath);
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -686,6 +703,23 @@ public class VideoActivity extends Activity implements View.OnClickListener, Vie
 					}
 					break;
 				}
+				case R.id.va_iv: {     //プレビュー
+					Activity activity = VideoActivity.this;    // getActivity();
+					dbMsg += "=va_iv";
+					if ( null != activity ) {
+						Intent fIntent = new Intent(Intent.ACTION_GET_CONTENT);
+//						String fName = mFile.getPath();                    //フルパスファイル名
+						dbMsg += ",mNextVideoAbsolutePath=" + mNextVideoAbsolutePath;
+						fIntent.setData(Uri.parse(mNextVideoAbsolutePath));       //これだけでは開かない
+						fIntent.setType("video/*"); //fIntent.setDataAndType(Uri.parse(fName), "image/*");では関連無い処まで開く
+						if ( fIntent.resolveActivity(getPackageManager()) != null ) {
+							startActivity(fIntent);
+						}
+					}
+					break;
+				}
+
+
 				case R.id.info: {
 					Activity activity = VideoActivity.this;    // getActivity();
 					if ( null != activity ) {
@@ -705,6 +739,30 @@ public class VideoActivity extends Activity implements View.OnClickListener, Vie
 	public boolean onLongClick(View v) {
 		return false;
 	}
+
+	//追加機能/////////////////////////////////////////////////////////////////////////////////
+
+	/**
+	 * 最後に保存されたサムネイルを表示する
+	 */
+	public void setLastThumbnail(String _mNextVideoAbsolutePath) {
+		final String TAG = "setLastThumbnail[VA]";
+		String dbMsg = "";
+		try {
+			mNextVideoAbsolutePath = _mNextVideoAbsolutePath;
+			dbMsg += "、mNextVideoAbsolutePath=" + mNextVideoAbsolutePath;
+			ThumbnailUtils tu = new ThumbnailUtils();
+			Bitmap shotBitmap = tu.createVideoThumbnail(mNextVideoAbsolutePath , MediaStore.Images.Thumbnails.MINI_KIND);                // sample.3gpのサムネイルを作成して表示する
+			dbMsg += "[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]" + shotBitmap.getByteCount() + "バイト";
+			ThumbnailControl TC = new ThumbnailControl(VideoActivity.this);
+			TC.setThumbnail(shotBitmap , va_iv);
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
+
+/////////////////////////////////////////////////////////////////////////////////追加機能//
 
 	/**
 	 * Starts a background thread and its {@link Handler}.
@@ -728,15 +786,15 @@ public class VideoActivity extends Activity implements View.OnClickListener, Vie
 	private void stopBackgroundThread() {
 		final String TAG = "stopBackgroundThread[VA]";
 		String dbMsg = "";
-			mBackgroundThread.quitSafely();
-			try {
-				mBackgroundThread.join();
-				mBackgroundThread = null;
-				mBackgroundHandler = null;
-				myLog(TAG , dbMsg);
-			} catch (InterruptedException er) {
-				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
-			} catch (Exception er) {
+		mBackgroundThread.quitSafely();
+		try {
+			mBackgroundThread.join();
+			mBackgroundThread = null;
+			mBackgroundHandler = null;
+			myLog(TAG , dbMsg);
+		} catch (InterruptedException er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 		}
 	}
@@ -988,8 +1046,7 @@ public class VideoActivity extends Activity implements View.OnClickListener, Vie
 
 	/**
 	 * mMediaRecorderの設定と保存先
-	 *
-	 * */
+	 */
 	private void setUpMediaRecorder() throws IOException {
 		final String TAG = "setUpMediaRecorder[VA]";
 		String dbMsg = "";
@@ -1001,19 +1058,40 @@ public class VideoActivity extends Activity implements View.OnClickListener, Vie
 			mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
 			mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
 			mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
-			if ( mNextVideoAbsolutePath == null || mNextVideoAbsolutePath.isEmpty() ) {
-				mNextVideoAbsolutePath = getVideoFilePath(VideoActivity.this);
-			}
-			dbMsg = "mNextVideoAbsolutePath="+mNextVideoAbsolutePath;
-			mMediaRecorder.setOutputFile(mNextVideoAbsolutePath);
+//			dbMsg += "mNextVideoAbsolutePath=" + mNextVideoAbsolutePath;
+////			if ( mNextVideoAbsolutePath == null || mNextVideoAbsolutePath.isEmpty() ) {
+//				mNextVideoAbsolutePath = getVideoFilePath(VideoActivity.this);
+//				dbMsg += "mNextVideoAbsolutePath=" + mNextVideoAbsolutePath;
+//				final SimpleDateFormat cdf = new SimpleDateFormat("yyyy/MM/dd HHmmss");
+//				final Date date = new Date(System.currentTimeMillis());
+//				String currenTime = cdf.format(date);
+//				String[] currenDTs = currenTime.split(" ");
+//				String currenDataStr = currenDTs[0];
+//				String currenTimeStr = currenDTs[1];
+//				dbMsg += "currenTime=" + currenDataStr + " の　" + currenTimeStr;
+//				writeFolder += File.separator + "vodeo";
+//				dbMsg += "writeFolder=" + writeFolder;
+//				if ( UTIL == null ) {
+//					UTIL = new CS_Util();
+//				}
+//				UTIL.maikOrgPass(writeFolder);
+//				String[] currenDatas = currenDataStr.split("/");
+//				for ( String cDay : currenDatas ) {
+//					writeFolder += File.separator + cDay;
+//					UTIL.maikOrgPass(writeFolder);
+//				}
+//				mNextVideoAbsolutePath = writeFolder + File.separator + currenTimeStr + ".mp4";
+////			}
+//			dbMsg += ">>=" + mNextVideoAbsolutePath;
+//			mMediaRecorder.setOutputFile(mNextVideoAbsolutePath);
 			mMediaRecorder.setVideoEncodingBitRate(10000000);
 			mMediaRecorder.setVideoFrameRate(30);
-			dbMsg = "["+mVideoSize.getWidth() +"×"+mVideoSize.getHeight() +"]";
+			dbMsg += "[" + mVideoSize.getWidth() + "×" + mVideoSize.getHeight() + "]";
 			mMediaRecorder.setVideoSize(mVideoSize.getWidth() , mVideoSize.getHeight());
 			mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
 			mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
 			int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
-			dbMsg = "、rotation="+rotation;
+			dbMsg += "、rotation=" + rotation;
 			switch ( mSensorOrientation ) {
 				case SENSOR_ORIENTATION_DEFAULT_DEGREES:
 					mMediaRecorder.setOrientationHint(DEFAULT_ORIENTATIONS.get(rotation));
@@ -1034,21 +1112,60 @@ public class VideoActivity extends Activity implements View.OnClickListener, Vie
 		return (dir == null ? "" : (dir.getAbsolutePath() + "/")) + System.currentTimeMillis() + ".mp4";
 	}
 
+	/**
+	 * ここで録画開始
+	 */
 	private void startRecordingVideo() {
 		final String TAG = "startRecordingVideo[VA]";
 		String dbMsg = "";
 		try {
-			dbMsg += "mCameraDevice="+mCameraDevice;
+//			dbMsg += "mCameraDevice=" + mCameraDevice;
 
 			if ( null == mCameraDevice || !mTextureView.isAvailable() || null == mPreviewSize ) {
 				return;
 			}
-
-			dbMsg += "["+mPreviewSize.getWidth() + "×"+mPreviewSize.getHeight() +"]";
+			dbMsg += ",writeFolder=" + writeFolder;
+			dbMsg += ",mNextVideoAbsolutePath=" + mNextVideoAbsolutePath;
+			int point = mNextVideoAbsolutePath.lastIndexOf("/");  //	String[] fNames = fName.split(".");が効かない
+			saveFolder = "";
+			if ( point != -1 ) {
+				saveFolder = mNextVideoAbsolutePath.substring(0 , point);
+			}
+			dbMsg += ",saveFolder=" + saveFolder;
+////			if ( mNextVideoAbsolutePath == null || mNextVideoAbsolutePath.isEmpty() ) {
+////			mNextVideoAbsolutePath = getVideoFilePath(VideoActivity.this);
+////			dbMsg += "mNextVideoAbsolutePath=" + mNextVideoAbsolutePath;
+			final SimpleDateFormat cdf = new SimpleDateFormat("yyyy/MM/dd HHmmss");
+			final Date date = new Date(System.currentTimeMillis());
+			String currenTime = cdf.format(date);
+			String[] currenDTs = currenTime.split(" ");
+			String currenDataStr = currenDTs[0];
+			String currenTimeStr = currenDTs[1];
+			dbMsg += ",curren=" + currenDataStr + " の　" + currenTimeStr;
+			if ( saveFolder.contains(currenDataStr) ) {
+				dbMsg += "；フォルダ作成済み";
+			} else {
+				dbMsg += "；フォルダ作成";
+				saveFolder=	writeFolder;	// + File.separator + "vodeo";
+				dbMsg += "saveFolder=" + saveFolder;
+				if ( UTIL == null ) {
+					UTIL = new CS_Util();
+				}
+				UTIL.maikOrgPass(saveFolder);
+				String[] currenDatas = currenDataStr.split("/");
+				for ( String cDay : currenDatas ) {
+					saveFolder += File.separator + cDay;
+					UTIL.maikOrgPass(saveFolder);
+				}
+			}
+			mNextVideoAbsolutePath = saveFolder + File.separator + currenTimeStr + ".mp4";
+			dbMsg += ">これから撮るのは>=" + mNextVideoAbsolutePath;
+			mMediaRecorder.setOutputFile(mNextVideoAbsolutePath);
+			dbMsg += "[" + mPreviewSize.getWidth() + "×" + mPreviewSize.getHeight() + "]";
 			closePreviewSession();
 			setUpMediaRecorder();
 			SurfaceTexture texture = mTextureView.getSurfaceTexture();
-			dbMsg += "texture="+texture;
+			dbMsg += "texture=" + texture;
 			assert texture != null;
 			texture.setDefaultBufferSize(mPreviewSize.getWidth() , mPreviewSize.getHeight());
 			mPreviewBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
@@ -1056,7 +1173,7 @@ public class VideoActivity extends Activity implements View.OnClickListener, Vie
 
 			// Set up Surface for the camera preview
 			Surface previewSurface = new Surface(texture);
-			dbMsg += "previewSurface="+previewSurface;
+			dbMsg += "previewSurface=" + previewSurface;
 			surfaces.add(previewSurface);
 			mPreviewBuilder.addTarget(previewSurface);
 
@@ -1068,7 +1185,6 @@ public class VideoActivity extends Activity implements View.OnClickListener, Vie
 			// Start a capture session
 			// Once the session starts, we can update the UI and start recording
 			mCameraDevice.createCaptureSession(surfaces , new CameraCaptureSession.StateCallback() {
-
 				/**
 				 * ここで録画開始
 				 * */
@@ -1084,6 +1200,7 @@ public class VideoActivity extends Activity implements View.OnClickListener, Vie
 							mIsRecordingVideo = true;
 							mMediaRecorder.start();                                        // Start recording
 							va_shot_bt.setImageResource(android.R.drawable.ic_media_pause);
+							va_chronometer.setBase(SystemClock.elapsedRealtime());                // リセット
 							va_chronometer.start();
 						}
 					});
@@ -1119,6 +1236,9 @@ public class VideoActivity extends Activity implements View.OnClickListener, Vie
 		}
 	}
 
+	/**
+	 * 保存動作
+	 */
 	private void stopRecordingVideo() {
 		final String TAG = "stopRecordingVideo[VA]";
 		String dbMsg = "";
@@ -1133,10 +1253,19 @@ public class VideoActivity extends Activity implements View.OnClickListener, Vie
 			va_chronometer.stop();
 			Activity activity = VideoActivity.this;    // this.getActivity();
 			if ( null != activity ) {
+				if ( UTIL == null ) {
+					UTIL = new CS_Util();
+				}
+				UTIL.setContentValues(activity , "video/mp4" , mNextVideoAbsolutePath);
+				setLastThumbnail(mNextVideoAbsolutePath);
+
+
 				Toast.makeText(activity , "Video saved: " + mNextVideoAbsolutePath , Toast.LENGTH_SHORT).show();
 				dbMsg = ",Video saved: " + mNextVideoAbsolutePath;
 			}
-			mNextVideoAbsolutePath = null;
+//			mNextVideoAbsolutePath = null;
+			va_chronometer.setBase(SystemClock.elapsedRealtime());                // リセット
+
 			startPreview();
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
@@ -1158,31 +1287,31 @@ public class VideoActivity extends Activity implements View.OnClickListener, Vie
 
 	}
 
-	public static class ErrorDialog extends DialogFragment {
-
-		private static final String ARG_MESSAGE = "message";
-
-		public static ErrorDialog newInstance(String message) {
-
-			ErrorDialog dialog = new ErrorDialog();
-			Bundle args = new Bundle();
-			args.putString(ARG_MESSAGE , message);
-			dialog.setArguments(args);
-			return dialog;
-		}
-
-		@Override
-		public Dialog onCreateDialog(Bundle savedInstanceState) {
-			final Activity activity = getActivity();
-			return new AlertDialog.Builder(activity).setMessage(getArguments().getString(ARG_MESSAGE)).setPositiveButton(android.R.string.ok , new DialogInterface.OnClickListener() {
-				@Override
-				public void onClick(DialogInterface dialogInterface , int i) {
-					activity.finish();
-				}
-			}).create();
-		}
-
-	}
+//	public static class ErrorDialog extends DialogFragment {
+//
+//		private static final String ARG_MESSAGE = "message";
+//
+//		public static ErrorDialog newInstance(String message) {
+//
+//			ErrorDialog dialog = new ErrorDialog();
+//			Bundle args = new Bundle();
+//			args.putString(ARG_MESSAGE , message);
+//			dialog.setArguments(args);
+//			return dialog;
+//		}
+//
+//		@Override
+//		public Dialog onCreateDialog(Bundle savedInstanceState) {
+//			final Activity activity = getActivity();
+//			return new AlertDialog.Builder(activity).setMessage(getArguments().getString(ARG_MESSAGE)).setPositiveButton(android.R.string.ok , new DialogInterface.OnClickListener() {
+//				@Override
+//				public void onClick(DialogInterface dialogInterface , int i) {
+//					activity.finish();
+//				}
+//			}).create();
+//		}
+//
+//	}
 
 //	public static class ConfirmationDialog extends DialogFragment {
 //
@@ -1230,7 +1359,7 @@ public class VideoActivity extends Activity implements View.OnClickListener, Vie
 }
 
 /**
- *android-Camera2Video		 https://github.com/googlesamples/android-Camera2Video/tree/master/Application/src/main/java/com/example/android/camera2video
- *
+ * android-Camera2Video		 https://github.com/googlesamples/android-Camera2Video/tree/master/Application/src/main/java/com/example/android/camera2video
+ * <p>
  * バックグラウンド常時録画		     https://qiita.com/sckzw/items/a2a8e59d8eed19b77905
- * **/
+ **/

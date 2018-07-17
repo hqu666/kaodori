@@ -67,14 +67,18 @@ public class BmpSaver implements Runnable {        //static ?必要？
 						dbMsg += ",mFile=" + mFile.toString();
 						output = new FileOutputStream(mFile);
 						shotBitmap.compress(Bitmap.CompressFormat.JPEG , 100 , output);//画像をJPEG形式として保存
+						if ( UTIL == null ) {
+							UTIL = new CS_Util();
+						}
+						UTIL.setContentValues( activity, "image/jpeg", saveFileName);
 
-						// アンドロイドのデータベースへ登録
-						// (登録しないとギャラリーなどにすぐに反映されないため)
-						ContentValues values = new ContentValues();
-						ContentResolver contentResolver = activity.getContentResolver();
-						values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
-						values.put("_data", saveFileName);
-						contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+//						// アンドロイドのデータベースへ登録
+//						// (登録しないとギャラリーなどにすぐに反映されないため)
+//						ContentValues values = new ContentValues();
+//						ContentResolver contentResolver = activity.getContentResolver();
+//						values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+//						values.put("_data", saveFileName);
+//						contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
 
 //					ByteBuffer imageBuf = mImage.getPlanes()[0].getBuffer();
 //					byte[] bytes = new byte[imageBuf.remaining()];

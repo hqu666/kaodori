@@ -2498,7 +2498,6 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 			} catch (Exception er) {
 				myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 			}
-
 		}
 
 		/**

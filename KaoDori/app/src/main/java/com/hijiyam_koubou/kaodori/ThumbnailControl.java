@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 
 import static com.hijiyam_koubou.kaodori.MainActivity.ma_iv;
@@ -39,13 +40,16 @@ public class ThumbnailControl {
 				final String TAG = "setThumbnail[TC]";
 				String dbMsg = "";
 				try {
-					int ivWidth = imgView.getWidth();
-					int ivHeight = imgView.getHeight();
+					dbMsg = "imgView="+imgView;
+					ViewGroup.LayoutParams svlp = imgView.getLayoutParams();
+//							dbMsg += ",[" + svlp.width + "×" + svlp.height + "]";
+					int ivWidth =svlp.width ;			// imgView.getWidth();
+					int ivHeight =svlp.height ;				// imgView.getHeight();
 					dbMsg += ",iv[" + ivWidth + "×" + ivHeight + "]";
 					Bitmap thumbNail = Bitmap.createScaledBitmap(shotBitmap , ivWidth , ivHeight , false);
 					int thumbNailHeight = thumbNail.getHeight();
 					dbMsg += ",thumbNail[" + thumbNail.getWidth() + "×" + thumbNailHeight + "]";
-					ma_iv.setImageBitmap(thumbNail);
+					imgView.setImageBitmap(thumbNail);
 					//findViewById(R.id.ma_iv).setImageBitmap(bitmap);;					//撮影結果
 					shotBitmap.recycle();
 					myLog(TAG , dbMsg);
