@@ -185,7 +185,7 @@ public class VideoActivity extends Activity implements View.OnClickListener, Vie
 			prefs.readPref(this);
 			isTexturView = prefs.isTexturView;     // = true;                 //
 			dbMsg += ",高速プレビュー=" + isTexturView;
-			isTexturView = prefs.isTexturView;     // = true;                 //
+			isTexturView = true;				//prefs.isTexturView;     // = true;                 //
 			dbMsg += ",高速プレビュー=" + isTexturView;
 
 			isFaceRecognition = prefs.isFaceRecognition;
@@ -667,7 +667,16 @@ public class VideoActivity extends Activity implements View.OnClickListener, Vie
 			}
 			mNextVideoAbsolutePath = UTIL.getSaveFiles(writeFolder);
 			dbMsg += ",mNextVideoAbsolutePath=" + mNextVideoAbsolutePath;
-			setLastThumbnail(mNextVideoAbsolutePath);
+			File dFile = new File(mNextVideoAbsolutePath);
+			if(dFile.exists()){
+				if(dFile.isFile()){
+					setLastThumbnail(mNextVideoAbsolutePath);
+				}else{
+					dbMsg += ";ファイルでは無い" ;
+				}
+			}else{
+				dbMsg += ";無い" ;
+			}
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -1107,10 +1116,10 @@ public class VideoActivity extends Activity implements View.OnClickListener, Vie
 		}
 	}
 
-	private String getVideoFilePath(Context context) {
-		final File dir = context.getExternalFilesDir(null);
-		return (dir == null ? "" : (dir.getAbsolutePath() + "/")) + System.currentTimeMillis() + ".mp4";
-	}
+//	private String getVideoFilePath(Context context) {
+//		final File dir = context.getExternalFilesDir(null);
+//		return (dir == null ? "" : (dir.getAbsolutePath() + "/")) + System.currentTimeMillis() + ".mp4";
+//	}
 
 	/**
 	 * ここで録画開始
@@ -1132,9 +1141,6 @@ public class VideoActivity extends Activity implements View.OnClickListener, Vie
 				saveFolder = mNextVideoAbsolutePath.substring(0 , point);
 			}
 			dbMsg += ",saveFolder=" + saveFolder;
-////			if ( mNextVideoAbsolutePath == null || mNextVideoAbsolutePath.isEmpty() ) {
-////			mNextVideoAbsolutePath = getVideoFilePath(VideoActivity.this);
-////			dbMsg += "mNextVideoAbsolutePath=" + mNextVideoAbsolutePath;
 			final SimpleDateFormat cdf = new SimpleDateFormat("yyyy/MM/dd HHmmss");
 			final Date date = new Date(System.currentTimeMillis());
 			String currenTime = cdf.format(date);

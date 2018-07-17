@@ -42,6 +42,7 @@ import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
 import android.media.MediaActionSound;
+import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -49,6 +50,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.preference.PreferenceManager;
+import android.provider.MediaStore;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.Size;
@@ -72,8 +74,10 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import java.io.BufferedInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -493,7 +497,23 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 			} else {
 				ma_detecter_bt.setImageResource(android.R.drawable.star_off);
 			}
-
+			writeFolder += File.separator + "phot";
+			dbMsg += "writeFolder=" + writeFolder;
+			if ( UTIL == null ) {
+				UTIL = new CS_Util();
+			}
+			saveFileName = UTIL.getSaveFiles(writeFolder);
+			dbMsg += ",saveFileName=" + saveFileName;
+			File dFile = new File(saveFileName);
+			if(dFile.exists()){
+				if(dFile.isFile()){
+					setLastThumbnail(saveFileName);
+				}else{
+					dbMsg += ";ファイルでは無い" ;
+				}
+			}else{
+				dbMsg += ";無い" ;
+			}
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
@@ -1225,6 +1245,34 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 		}
 	}
 
+
+	/**
+	 * 最後に保存されたサムネイルを表示する
+	 */
+	public void setLastThumbnail(String _saveFileName) {
+		final String TAG = "setLastThumbnail[MA]";
+		String dbMsg = "";
+		try {
+			saveFileName = _saveFileName;
+			dbMsg += "、saveFileName=" + saveFileName;
+//			File srcFile = new File(saveFileName);
+//			FileInputStream fis = new FileInputStream(srcFile);
+// 		Bitmap shotBitmap = BitmapFactory.decodeStream(fis);           			//画像をファイルとして取り出す
+//			Bitmap shotBitmap = BitmapFactory.decodeFile(saveFileName);
+			File file = new File(saveFileName);
+			Uri uri = Uri.fromFile(file);
+			dbMsg += "、uri=" + uri;
+			InputStream stream = MainActivity.this.getContentResolver().openInputStream(uri);
+			Bitmap shotBitmap = BitmapFactory.decodeStream(new BufferedInputStream(stream));
+			dbMsg += "[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]" ;
+			dbMsg += shotBitmap.getByteCount() + "バイト";
+			ThumbnailControl TC = new ThumbnailControl(MainActivity.this);
+			TC.setThumbnail(shotBitmap , ma_iv);
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+	}
 
 	/**
 	 * プレビューの幅と角度を更新する

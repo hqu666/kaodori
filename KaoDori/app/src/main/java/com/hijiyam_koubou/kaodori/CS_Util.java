@@ -190,7 +190,7 @@ public class CS_Util {
 					if ( Integer.parseInt(retStr) < Integer.parseInt(fName) ) {
 						retStr = fName;
 					}
-				} else {
+				} else 	if ( fObj.isFile() && ! fName.equals("pre.jpg") ) {
 					int point = fName.lastIndexOf(".");  //	String[] fNames = fName.split(".");が効かない
 					String cName = "";
 					if ( point != -1 ) {
@@ -198,7 +198,7 @@ public class CS_Util {
 						extentionStr = fName.substring(point + 1);
 					}
 					dbMsg += ",cName=" + cName + ",extentionStr=" + extentionStr;
-					if ( Integer.parseInt(retStr) < Integer.parseInt(cName) ) {
+					if ( Long.parseLong(retStr) <  Long.parseLong(cName) ) {
 						retStr = cName;
 						dbMsg += ">>retStr=" + retStr;
 					}
