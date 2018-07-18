@@ -6,6 +6,8 @@ import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.graphics.Matrix;
+import android.media.ExifInterface;
 import android.net.Uri;
 import android.provider.MediaStore;
 import android.text.format.DateFormat;
@@ -13,6 +15,7 @@ import android.util.Log;
 import android.view.Surface;
 
 import java.io.File;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -190,15 +193,15 @@ public class CS_Util {
 					if ( Integer.parseInt(retStr) < Integer.parseInt(fName) ) {
 						retStr = fName;
 					}
-				} else 	if ( fObj.isFile() && ! fName.equals("pre.jpg") ) {
+				} else if ( fObj.isFile() && !fName.equals("pre.jpg") ) {
 					int point = fName.lastIndexOf(".");  //	String[] fNames = fName.split(".");が効かない
 					String cName = "";
 					if ( point != -1 ) {
-						cName = fName.substring(0,point );
+						cName = fName.substring(0 , point);
 						extentionStr = fName.substring(point + 1);
 					}
 					dbMsg += ",cName=" + cName + ",extentionStr=" + extentionStr;
-					if ( Long.parseLong(retStr) <  Long.parseLong(cName) ) {
+					if ( Long.parseLong(retStr) < Long.parseLong(cName) ) {
 						retStr = cName;
 						dbMsg += ">>retStr=" + retStr;
 					}
@@ -223,8 +226,119 @@ public class CS_Util {
 		}
 		return retStr;
 	}
+	//画像操作//////////////ファイル操作///
 
-	//////////////////ファイル操作///
+	public int getRotatedPhotFile(File file) {
+		final String TAG = "getRotatedPhotFile[util]";
+		String dbMsg = "";
+		int orientation = 0;
+		try {
+			ExifInterface exifInterface = null;
+
+			try {
+				exifInterface = new ExifInterface(file.getPath());
+			} catch (IOException e) {
+				e.printStackTrace();
+				return orientation;
+			}
+
+			 orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION , ExifInterface.ORIENTATION_UNDEFINED);        // 画像の向きを取得
+			// 画像を回転させる処理をマトリクスに追加
+			dbMsg += ",orientation="+orientation;
+			switch ( orientation ) {
+				case ExifInterface.ORIENTATION_UNDEFINED:			//0;
+					break;
+				case ExifInterface.ORIENTATION_NORMAL:  		//1:
+					break;
+				case ExifInterface.ORIENTATION_FLIP_HORIZONTAL:	//2; 水平方向にリフレクト
+//					matrix.postScale(-1f , 1f);
+					break;
+				case ExifInterface.ORIENTATION_ROTATE_180:		//3; 180度回転
+//					matrix.postRotate(180f);
+					break;
+				case ExifInterface.ORIENTATION_FLIP_VERTICAL:	//4; 垂直方向にリフレクト
+//					matrix.postScale(1f , -1f);
+					break;
+				case ExifInterface.ORIENTATION_ROTATE_90:		//6; 反時計回り90度回転
+//					matrix.postRotate(90f);
+					break;
+				case ExifInterface.ORIENTATION_TRANSVERSE:		//7; 時計回り90度回転し、垂直方向にリフレクト
+//					matrix.postRotate(-90f);
+//					matrix.postScale(1f , -1f);
+					break;
+				case ExifInterface.ORIENTATION_TRANSPOSE:		//5; 反時計回り90度回転し、垂直方向にリフレクト
+//					matrix.postRotate(90f);
+//					matrix.postScale(1f , -1f);
+					break;
+				case ExifInterface.ORIENTATION_ROTATE_270:		//8; 反時計回りに270度回転（時計回りに90度回転）
+//					matrix.postRotate(-90f);
+					break;
+			}
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+		return orientation;
+	}
+
+	/**
+	 * 画像の回転後のマトリクスを取得
+	 * @param file   入力画像
+	 * @param matrix 元のマトリクス
+	 * @return matrix 回転後のマトリクス
+	 *   https://qiita.com/sutchan/items/6ef7216cb8221bbf3894
+	 */
+	public Matrix getRotatedMatrix(File file , Matrix matrix) {
+		final String TAG = "getRotatedMatrix[util]";
+		String dbMsg = "";
+		try {
+			ExifInterface exifInterface = null;
+
+			try {
+				exifInterface = new ExifInterface(file.getPath());
+			} catch (IOException e) {
+				e.printStackTrace();
+				return matrix;
+			}
+
+			int orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION , ExifInterface.ORIENTATION_UNDEFINED);        // 画像の向きを取得
+			// 画像を回転させる処理をマトリクスに追加
+			dbMsg += ",orientation="+orientation;
+			switch ( orientation ) {
+				case ExifInterface.ORIENTATION_UNDEFINED:   				//0;
+					break;
+				case ExifInterface.ORIENTATION_NORMAL:  					//1;
+					break;
+				case ExifInterface.ORIENTATION_FLIP_HORIZONTAL:				//2; 水平方向にリフレクト
+					matrix.postScale(-1f , 1f);
+					break;
+				case ExifInterface.ORIENTATION_ROTATE_180:					//3; 180度回転
+					matrix.postRotate(180f);
+					break;
+				case ExifInterface.ORIENTATION_FLIP_VERTICAL:				//4; 垂直方向にリフレクト
+					matrix.postScale(1f , -1f);
+					break;
+				case ExifInterface.ORIENTATION_ROTATE_90:					//6; 反時計回り90度回転
+					matrix.postRotate(90f);
+					break;
+				case ExifInterface.ORIENTATION_TRANSVERSE:					//7; 時計回り90度回転し、垂直方向にリフレクト
+					matrix.postRotate(-90f);
+					matrix.postScale(1f , -1f);
+					break;
+				case ExifInterface.ORIENTATION_TRANSPOSE:					//5; 反時計回り90度回転し、垂直方向にリフレクト
+					matrix.postRotate(90f);
+					matrix.postScale(1f , -1f);
+					break;
+				case ExifInterface.ORIENTATION_ROTATE_270:					//8; 反時計回りに270度回転（時計回りに90度回転）
+					matrix.postRotate(-90f);
+					break;
+			}
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
+		}
+		return matrix;
+	}
 
 	public int getDisplayOrientation(Activity activity) {
 		final String TAG = "getDisplayOrientation[util}";

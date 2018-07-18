@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Matrix;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
@@ -40,13 +41,24 @@ public class ThumbnailControl {
 				final String TAG = "setThumbnail[TC]";
 				String dbMsg = "";
 				try {
-					dbMsg = "imgView="+imgView;
+//					dbMsg = "imgView="+imgView;
 					ViewGroup.LayoutParams svlp = imgView.getLayoutParams();
 //							dbMsg += ",[" + svlp.width + "×" + svlp.height + "]";
 					int ivWidth =svlp.width ;			// imgView.getWidth();
 					int ivHeight =svlp.height ;				// imgView.getHeight();
 					dbMsg += ",iv[" + ivWidth + "×" + ivHeight + "]";
-					Bitmap thumbNail = Bitmap.createScaledBitmap(shotBitmap , ivWidth , ivHeight , false);
+					dbMsg += ",shotBitmap[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]";
+					Bitmap thumbNail;
+//					if(shotBitmap.getWidth()< shotBitmap.getHeight()){
+//						dbMsg += ";縦";
+//						Matrix mat = new Matrix();
+//						mat.postRotate(90); 						// 回転マトリックス作成（90度回転）
+//						thumbNail = Bitmap.createBitmap(shotBitmap, 0, 0, ivWidth, ivHeight, mat, true);  // 回転したビットマップを作成
+//					}else{
+//						dbMsg += ";横";
+						 thumbNail = Bitmap.createScaledBitmap(shotBitmap , ivWidth , ivHeight , false);
+//					}
+
 					int thumbNailHeight = thumbNail.getHeight();
 					dbMsg += ",thumbNail[" + thumbNail.getWidth() + "×" + thumbNailHeight + "]";
 					imgView.setImageBitmap(thumbNail);

@@ -505,14 +505,14 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 			saveFileName = UTIL.getSaveFiles(writeFolder);
 			dbMsg += ",saveFileName=" + saveFileName;
 			File dFile = new File(saveFileName);
-			if(dFile.exists()){
-				if(dFile.isFile()){
+			if ( dFile.exists() ) {
+				if ( dFile.isFile() ) {
 					setLastThumbnail(saveFileName);
-				}else{
-					dbMsg += ";ファイルでは無い" ;
+				} else {
+					dbMsg += ";ファイルでは無い";
 				}
-			}else{
-				dbMsg += ";無い" ;
+			} else {
+				dbMsg += ";無い";
 			}
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
@@ -937,7 +937,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				menuItems = new CharSequence[]{getResources().getString(R.string.mm_mode_still) , getResources().getString(R.string.mm_mode_move) , getResources().getString(R.string.mm_mode_preview_save)};
 			}
 
-			if ( menuId == menuID_root || menuId == menuID_phot || menuId == menuID_effect  || menuId == menuID_cameara_mode_select) {          //プレーンリスト
+			if ( menuId == menuID_root || menuId == menuID_phot || menuId == menuID_effect || menuId == menuID_cameara_mode_select ) {          //プレーンリスト
 				listDlg.setItems(menuItems , new DialogInterface.OnClickListener() {
 					public void onClick(DialogInterface dialog , int which) {
 						// リスト選択時の処理
@@ -1107,21 +1107,22 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				dbMsg += ">>" + isRumbling;
 				messageShow(titolStr , mggStr);
 			} else if ( selctItem.equals(getResources().getString(R.string.mm_mode_still)) ) {
-				dbMsg += ",静止画" ;
+				dbMsg += ",静止画";
 			} else if ( selctItem.equals(getResources().getString(R.string.mm_mode_move)) ) {
-				dbMsg += ",動画" ;
+				dbMsg += ",動画";
 				laterDestroy();
 				Intent settingsIntent = new Intent(MainActivity.this , VideoActivity.class);
 				startActivityForResult(settingsIntent , REQUEST_VIDEO);  //startActivity(settingsIntent);      //
 			} else if ( selctItem.equals(getResources().getString(R.string.mm_mode_preview_save)) ) {
-				dbMsg += ",プレビュー保存" ;
+				dbMsg += ",プレビュー保存";
 				if ( mTextureView != null ) {
 					dbMsg += ",mTextureView=" + mTextureView.getId();
 					savePreviewBitMap(mTextureView.getId());     //ここから送ると回転動作にストレス発生？ ？
 				} else if ( ma_sarface_view != null ) {
 					dbMsg += ",ma_sarface_view=" + ma_sarface_view.getId();
 					savePreviewBitMap(ma_sarface_view.getId());
-				}			}
+				}
+			}
 			myLog(TAG , dbMsg);
 
 //			switch ( itemId ) {
@@ -1253,19 +1254,25 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 		final String TAG = "setLastThumbnail[MA]";
 		String dbMsg = "";
 		try {
-			saveFileName = _saveFileName;
+			saveFileName = _saveFileName;                //	/storage/emulated/0/Pictures/KaoDori/phot/2018/07/17/20180717150637.jpg
 			dbMsg += "、saveFileName=" + saveFileName;
-//			File srcFile = new File(saveFileName);
-//			FileInputStream fis = new FileInputStream(srcFile);
-// 		Bitmap shotBitmap = BitmapFactory.decodeStream(fis);           			//画像をファイルとして取り出す
-//			Bitmap shotBitmap = BitmapFactory.decodeFile(saveFileName);
-			File file = new File(saveFileName);
-			Uri uri = Uri.fromFile(file);
-			dbMsg += "、uri=" + uri;
-			InputStream stream = MainActivity.this.getContentResolver().openInputStream(uri);
+			File srcFile = new File(saveFileName);
+			FileInputStream stream = new FileInputStream(srcFile);
+			dbMsg += "、stream=" + stream.available() + "バイト";                    //	file:///storage/emulated/0/Pictures/KaoDori/phot/2018/07/17/20180717150637.jpg
 			Bitmap shotBitmap = BitmapFactory.decodeStream(new BufferedInputStream(stream));
-			dbMsg += "[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]" ;
+			dbMsg += "[" + shotBitmap.getWidth() + "×" + shotBitmap.getHeight() + "]";
 			dbMsg += shotBitmap.getByteCount() + "バイト";
+
+			if ( UTIL == null ) {
+				UTIL = new CS_Util();
+			}
+			Matrix matrix = new Matrix();
+//			matrix = getResizedMatrix(srcFile, matrix);
+			matrix = UTIL.getRotatedMatrix(srcFile, matrix);
+			shotBitmap = Bitmap.createBitmap(shotBitmap, 0, 0, shotBitmap.getWidth(), shotBitmap.getHeight(), matrix, true);  // 回転したビットマップを作成
+
+
+
 			ThumbnailControl TC = new ThumbnailControl(MainActivity.this);
 			TC.setThumbnail(shotBitmap , ma_iv);
 			myLog(TAG , dbMsg);
@@ -2270,13 +2277,11 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 						dbMsg += ",静止画撮影処理；writeFolder=" + writeFolder;
 						long timestamp = System.currentTimeMillis();
 						dbMsg += ",timestamp=" + timestamp;
-						File saveFolder = new File(writeFolder);
-						if ( !saveFolder.exists() ) {
-							saveFolder.mkdir();
-							dbMsg += "作成";
-						} else {
-							dbMsg += "有り";
+						if ( UTIL == null ) {
+							UTIL = new CS_Util();
 						}
+						UTIL.maikOrgPass( writeFolder);
+						File saveFolder = new File(writeFolder);
 						java.text.DateFormat df = new SimpleDateFormat("yyyy/MM/dd/HH:mm:ssZ" , Locale.JAPAN);
 						String dtStr = df.format(timestamp);
 						dbMsg += ",dtStr=" + dtStr;
@@ -2287,13 +2292,8 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 							dbMsg += "(" + lCount + ")" + rStr;
 							if ( lCount < 3 ) {
 								File pFolder = new File(pFolderName , rStr);
-								if ( !pFolder.exists() ) {
-									pFolder.mkdir();
-									dbMsg += "作成";
-								} else {
-									dbMsg += "有り";
-								}
 								pFolderName = pFolder.toString();
+								UTIL.maikOrgPass( pFolderName);
 								dbMsg += ",dtStr=" + pFolderName;
 							}
 							lCount++;
@@ -3550,6 +3550,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				FileOutputStream output = null;
 				try {
 					dbMsg += ",saveFolder=" + saveFolderName;
+					dbMsg += ",saveFileName=" + saveFileName;
 					mFile = new File(saveFolderName , saveFileName);                 //getActivity().getExternalFilesDir(null)
 					dbMsg += ",mFile=" + mFile.toString();
 					output = new FileOutputStream(mFile);
@@ -3560,7 +3561,6 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 					byte[] bytes = new byte[imageBuf.remaining()];
 					dbMsg += ",bytes=" + bytes.length + "バイト";
 					imageBuf.get(bytes);
-
 					output.write(bytes);                    //書込み
 
 					Bitmap shotBitmap = BitmapFactory.decodeByteArray(bytes , 0 , bytes.length);
@@ -3571,8 +3571,9 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 					dbMsg += ",bitmap[" + bmWidth + "×" + bmHeigh + "]";
 					int byteCount = shotBitmap.getByteCount();
 					dbMsg += "" + byteCount + "バイト";
-					ThumbnailControl TC = new ThumbnailControl(MainActivity.this);
-					TC.setThumbnail(shotBitmap , ma_iv);
+//					ThumbnailControl TC = new ThumbnailControl(MainActivity.this);
+//					TC.setThumbnail(shotBitmap , ma_iv);
+					setLastThumbnail(  mFile.toString()) ;
 				} catch (IOException er) {
 					myErrorLog(TAG , dbMsg + ";でエラー発生；" + er);
 					isPhotography = false;
@@ -3752,59 +3753,59 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 		}
 	}
 
-	/**
-	 * Shows an error message dialog.
-	 */
-	public static class ErrorDialog extends DialogFragment {
-
-		private static final String ARG_MESSAGE = "message";
-
-		public static ErrorDialog newInstance(String message) {
-			ErrorDialog dialog = new ErrorDialog();
-			Bundle args = new Bundle();
-			args.putString(ARG_MESSAGE , message);
-			dialog.setArguments(args);
-			return dialog;
-		}
-
-		@Override
-		public Dialog onCreateDialog(Bundle savedInstanceState) {
-			final Activity activity = getActivity();
-			return new AlertDialog.Builder(activity).setMessage(getArguments().getString(ARG_MESSAGE)).setPositiveButton(android.R.string.ok , new DialogInterface.OnClickListener() {
-				@Override
-				public void onClick(DialogInterface dialogInterface , int i) {
-					activity.finish();
-				}
-			}).create();
-		}
-
-	}
-
-	/**
-	 * Shows OK/Cancel confirmation dialog about camera permission.
-	 */
-	public static class ConfirmationDialog extends DialogFragment {
-
-		@Override
-		public Dialog onCreateDialog(Bundle savedInstanceState) {
-			final Fragment parent = getParentFragment();
-			return new AlertDialog.Builder(getActivity()).setMessage(R.string.request_permission).setPositiveButton(android.R.string.ok , new DialogInterface.OnClickListener() {
-				@TargetApi ( Build.VERSION_CODES.M )
-				@Override
-				public void onClick(DialogInterface dialog , int which) {
-					parent.requestPermissions(new String[]{Manifest.permission.CAMERA} , REQUEST_CAMERA_PERMISSION);
-				}
-			}).setNegativeButton(android.R.string.cancel , new DialogInterface.OnClickListener() {
-				@Override
-				public void onClick(DialogInterface dialog , int which) {
-					Activity activity = parent.getActivity();
-					if ( activity != null ) {
-						activity.finish();
-					}
-				}
-			}).create();
-		}
-	}
+//	/**
+//	 * Shows an error message dialog.
+//	 */
+//	public static class ErrorDialog extends DialogFragment {
+//
+//		private static final String ARG_MESSAGE = "message";
+//
+//		public static ErrorDialog newInstance(String message) {
+//			ErrorDialog dialog = new ErrorDialog();
+//			Bundle args = new Bundle();
+//			args.putString(ARG_MESSAGE , message);
+//			dialog.setArguments(args);
+//			return dialog;
+//		}
+//
+//		@Override
+//		public Dialog onCreateDialog(Bundle savedInstanceState) {
+//			final Activity activity = getActivity();
+//			return new AlertDialog.Builder(activity).setMessage(getArguments().getString(ARG_MESSAGE)).setPositiveButton(android.R.string.ok , new DialogInterface.OnClickListener() {
+//				@Override
+//				public void onClick(DialogInterface dialogInterface , int i) {
+//					activity.finish();
+//				}
+//			}).create();
+//		}
+//
+//	}
+//
+//	/**
+//	 * Shows OK/Cancel confirmation dialog about camera permission.
+//	 */
+//	public static class ConfirmationDialog extends DialogFragment {
+//
+//		@Override
+//		public Dialog onCreateDialog(Bundle savedInstanceState) {
+//			final Fragment parent = getParentFragment();
+//			return new AlertDialog.Builder(getActivity()).setMessage(R.string.request_permission).setPositiveButton(android.R.string.ok , new DialogInterface.OnClickListener() {
+//				@TargetApi ( Build.VERSION_CODES.M )
+//				@Override
+//				public void onClick(DialogInterface dialog , int which) {
+//					parent.requestPermissions(new String[]{Manifest.permission.CAMERA} , REQUEST_CAMERA_PERMISSION);
+//				}
+//			}).setNegativeButton(android.R.string.cancel , new DialogInterface.OnClickListener() {
+//				@Override
+//				public void onClick(DialogInterface dialog , int which) {
+//					Activity activity = parent.getActivity();
+//					if ( activity != null ) {
+//						activity.finish();
+//					}
+//				}
+//			}).create();
+//		}
+//	}
 
 	///////////////////////////////////////////////////////////////////////////////////
 	public void messageShow(String titolStr , String mggStr) {
