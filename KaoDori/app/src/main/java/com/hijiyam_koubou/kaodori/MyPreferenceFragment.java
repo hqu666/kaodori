@@ -2,6 +2,7 @@ package com.hijiyam_koubou.kaodori;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -95,15 +96,24 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 	public boolean is_detector_russian_plate_number = false;                //ナンバープレート・ロシア
 	public boolean is_detector_ricence_plate_rus_16stages = false;     //ナンバープレートRUS
 
+	public int vi_audioSource = MediaRecorder.AudioSource.MIC;            //1;mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+	public int vi_videoSource = MediaRecorder.VideoSource.SURFACE;        //2;mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
+	public int vi_outputFormat = MediaRecorder.OutputFormat.MPEG_4;        //2;mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+	public int vi_videoEncodingBitRate = 10000000;                        //mMediaRecorder.setVideoEncodingBitRate(10000000);
+	public int vi_videoFrameRate = 30;                                    //mMediaRecorder.setVideoFrameRate(30);
+	public int vi_videoEncoder = MediaRecorder.VideoEncoder.H264;        //mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
+	public int vi_audioEncoder = MediaRecorder.AudioEncoder.AAC;            //mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+
+
 	public String write_folder = "";            //書込みルートフォルダ
 	public String haarcascades_last_modified = "0";
-	public String haarcascades_last_modifiedStr = haarcascades_last_modified+"";
+	public String haarcascades_last_modifiedStr = haarcascades_last_modified + "";
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		final String TAG = "onCreate[MPF]";
-		String dbMsg= "";
+		String dbMsg = "";
 		try {
 			MyPreferenceFragment.this.addPreferencesFromResource(R.xml.preferences);
 			dbMsg += "isTexturView=" + isTexturView;
@@ -151,13 +161,13 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 
 			phot_key = ( PreferenceScreen ) sps.findPreference("phot_key");        //
 			isSubCamera_key = ( CheckBoxPreference ) sps.findPreference("isSubCamera_key");        //サブカメラに切り替え
-			dbMsg +=",サブカメラに切り替え=" + isSubCamera;
+			dbMsg += ",サブカメラに切り替え=" + isSubCamera;
 			if ( findPreference("isSubCamera_key") != null ) {
 				isSubCamera_key.setChecked(isSubCamera);
 			}
 
 			isAutoFlash_key = ( CheckBoxPreference ) sps.findPreference("isAutoFlash_key");        //サブカメラに切り替え
-			dbMsg +=",オートフラッシュ=" + isAutoFlash;
+			dbMsg += ",オートフラッシュ=" + isAutoFlash;
 			if ( findPreference("isAutoFlash_key") != null ) {
 				isAutoFlash_key.setChecked(isAutoFlash);
 			}
@@ -210,13 +220,13 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 			}
 
 			is_detector_upperbody_key = ( CheckBoxPreference ) sps.findPreference("is_detector_upperbody_key");
-			dbMsg +=",上半身=" + is_detector_upperbody;
+			dbMsg += ",上半身=" + is_detector_upperbody;
 			if ( findPreference("is_detector_upperbody_key") != null ) {
 				is_detector_upperbody_key.setChecked(is_detector_upperbody);
 			}
 
 			is_detector_fullbody_key = ( CheckBoxPreference ) sps.findPreference("is_detector_fullbody_key");
-			dbMsg +=",全身=" + is_detector_fullbody;
+			dbMsg += ",全身=" + is_detector_fullbody;
 			if ( findPreference("is_detector_fullbody_key") != null ) {
 				is_detector_fullbody_key.setChecked(is_detector_fullbody);
 			}
@@ -282,7 +292,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 			}
 
 			is_detector_smile_key = ( CheckBoxPreference ) sps.findPreference("is_detector_smile_key");
-			dbMsg +=",笑顔？=" + is_detector_smile;
+			dbMsg += ",笑顔？=" + is_detector_smile;
 			if ( findPreference("is_detector_smile_key") != null ) {
 				is_detector_smile_key.setChecked(is_detector_smile);
 			}
@@ -309,23 +319,23 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 			write_folder_key = ( EditTextPreference ) sps.findPreference("write_folder_key");        //書込みルートフォルダ
 			dbMsg += ",書込みルートフォルダ=" + write_folder;
 			if ( findPreference("write_folder_key") != null ) {
-				write_folder_key.setDefaultValue(write_folder+"");
-				write_folder_key.setSummary(write_folder+"");
+				write_folder_key.setDefaultValue(write_folder + "");
+				write_folder_key.setSummary(write_folder + "");
 				dbMsg += "更新";
 			} else {
 				(( EditTextPreference ) findPreference("write_folder_key")).setText(write_folder);
 				dbMsg += "追加";
 			}
 			dbMsg += ",顔認証プロファイルの最新更新日=" + haarcascades_last_modified;
-			 haarcascades_last_modified_key =( Preference ) sps.findPreference("haarcascades_last_modified_key");            //顔認証プロファイルの最新更新日
-				if ( findPreference("haarcascades_last_modified_key") != null ) {
-					haarcascades_last_modified_key.setDefaultValue(haarcascades_last_modifiedStr);
-					haarcascades_last_modified_key.setSummary(haarcascades_last_modifiedStr);
-					dbMsg += "更新";
-				} else {
-					(( Preference ) findPreference("haarcascades_last_modified_key")).setSummary(haarcascades_last_modifiedStr);
-					dbMsg +="追加";
-				}
+			haarcascades_last_modified_key = ( Preference ) sps.findPreference("haarcascades_last_modified_key");            //顔認証プロファイルの最新更新日
+			if ( findPreference("haarcascades_last_modified_key") != null ) {
+				haarcascades_last_modified_key.setDefaultValue(haarcascades_last_modifiedStr);
+				haarcascades_last_modified_key.setSummary(haarcascades_last_modifiedStr);
+				dbMsg += "更新";
+			} else {
+				(( Preference ) findPreference("haarcascades_last_modified_key")).setSummary(haarcascades_last_modifiedStr);
+				dbMsg += "追加";
+			}
 			reloadSummary();
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
@@ -538,7 +548,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 						if ( isAutoFlash ) {
 							wrString += "," + getResources().getString(R.string.mm_phot_flash) + " : " + "On";
 						}
-						dbMsg +=",シャッター音の鳴動=" + isRumbling;
+						dbMsg += ",シャッター音の鳴動=" + isRumbling;
 //						isRumbling_key = ( CheckBoxPreference ) sps.findPreference("isRumbling_key");        //サブカメラに切り替え
 //						if ( findPreference("isRumbling_key") != null ) {
 //							isRumbling_key.setChecked(isRumbling);
@@ -554,9 +564,9 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 						if ( isTexturView ) {
 							wrString += "\n" + getResources().getString(R.string.mm_effect_preview_tv);
 						} else {
-							wrString += "\n" +getResources().getString(R.string.mm_effect_preview_sufece);
+							wrString += "\n" + getResources().getString(R.string.mm_effect_preview_sufece);
 						}
-						dbMsg +=",顔から何割増しの枠で保存するか=" + up_scale;
+						dbMsg += ",顔から何割増しの枠で保存するか=" + up_scale;
 //						up_scale_key = ( EditTextPreference ) sps.findPreference("up_scale_key");            //顔から何割増しの枠で保存するか
 //						if ( findPreference("up_scale_key") != null ) {
 //							up_scale_key.setDefaultValue(up_scale);
@@ -574,7 +584,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 //						}
 						wrString += getResources().getString(R.string.mm_effect_face_recgnition);
 						if ( isFaceRecognition ) {
-							wrString +=  getResources().getString(R.string.mm_effect_in_process);
+							wrString += getResources().getString(R.string.mm_effect_in_process);
 						} else {
 							wrString += getResources().getString(R.string.mm_effect_under_suspension);
 						}
@@ -584,7 +594,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 //							is_overlap_rejection_key.setChecked(is_overlap_rejection);
 //						}
 						if ( is_overlap_rejection ) {
-							wrString +=  getResources().getString(R.string.mm_effect_in_process);
+							wrString += getResources().getString(R.string.mm_effect_in_process);
 						} else {
 							wrString += getResources().getString(R.string.mm_effect_under_suspension);
 						}
@@ -601,7 +611,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 						}
 
 					} else if ( key.equals("detector_select_key") ) {
-						dbMsg +=",顔検出(標準)=" + is_detector_frontal_face_alt;
+						dbMsg += ",顔検出(標準)=" + is_detector_frontal_face_alt;
 //						detector_select_key = ( PreferenceScreen ) sps.findPreference("detector_select_key");        //検出対象選択
 //						is_detector_frontal_face_alt_key = ( CheckBoxPreference ) sps.findPreference("is_detector_frontal_face_alt_key");
 //						if ( findPreference("is_detector_frontal_face_alt_key") != null ) {
@@ -626,7 +636,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 						if ( is_detector_upperbody ) {
 							wrString += "," + getResources().getString(R.string.mm_detector_upperbody);
 						}
-						dbMsg +=",全身=" + is_detector_fullbody;
+						dbMsg += ",全身=" + is_detector_fullbody;
 //						is_detector_fullbody_key = ( CheckBoxPreference ) sps.findPreference("is_detector_fullbody_key");
 //						if ( findPreference("is_detector_fullbody_key") != null ) {
 //							is_detector_fullbody_key.setChecked(is_detector_fullbody);
@@ -658,7 +668,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 						if ( is_detector_frontalcatface_extended ) {
 							wrString += "," + getResources().getString(R.string.mm_detector_frontalcatface_extended);
 						}
-						dbMsg +=",正面顔全体2？=" + is_detector_frontalface_alt2;
+						dbMsg += ",正面顔全体2？=" + is_detector_frontalface_alt2;
 //						is_detector_frontalface_alt2_key = ( CheckBoxPreference ) sps.findPreference("is_detector_frontalface_alt2_key");
 //						if ( findPreference("is_detector_frontalface_alt2_key") != null ) {
 //							is_detector_frontalface_alt2_key.setChecked(is_detector_frontalface_alt2);
@@ -674,7 +684,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 						if ( is_detector_frontalface_default ) {
 							wrString += "," + getResources().getString(R.string.mm_detector_frontalface_default);
 						}
-						dbMsg +=  ",笑顔？=" + is_detector_smile;
+						dbMsg += ",笑顔？=" + is_detector_smile;
 //						is_detector_smile_key = ( CheckBoxPreference ) sps.findPreference("is_detector_smile_key");
 //						if ( findPreference("is_detector_smile_key") != null ) {
 //							is_detector_smile_key.setChecked(is_detector_smile);
@@ -690,7 +700,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 						if ( is_detector_russian_plate_number ) {
 							wrString += "," + getResources().getString(R.string.mm_detector_russian_plate_number);
 						}
-						dbMsg +=",ナンバープレートRUS=" + is_detector_ricence_plate_rus_16stages;
+						dbMsg += ",ナンバープレートRUS=" + is_detector_ricence_plate_rus_16stages;
 //						is_detector_ricence_plate_rus_16stages_key = ( CheckBoxPreference ) sps.findPreference("is_detector_ricence_plate_rus_16stages_key");
 //						if ( findPreference("is_detector_ricence_plate_rus_16stages_key") != null ) {
 //							is_detector_ricence_plate_rus_16stages_key.setChecked(is_detector_ricence_plate_rus_16stages);
@@ -706,7 +716,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 						if ( is_detector_eye ) {
 							wrString += "," + getResources().getString(R.string.mm_detector_eye);
 						}
-						dbMsg +=",右目=" + is_detector_righteye_2splits;
+						dbMsg += ",右目=" + is_detector_righteye_2splits;
 //						is_detector_righteye_2splits_key = ( CheckBoxPreference ) sps.findPreference("is_detector_righteye_2splits_key");
 //						if ( findPreference("is_detector_righteye_2splits_key") != null ) {
 //							is_detector_righteye_2splits_key.setChecked(is_detector_righteye_2splits);
@@ -722,7 +732,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 						if ( is_detector_lefteye_2splits ) {
 							wrString += "," + getResources().getString(R.string.mm_detector_lefteye_2splits);
 						}
-						dbMsg +=  ",眼鏡=" + is_detector_eyeglasses;
+						dbMsg += ",眼鏡=" + is_detector_eyeglasses;
 //						is_detector_eyeglasses_key = ( CheckBoxPreference ) sps.findPreference("is_detector_eyeglasses_key");
 //						if ( findPreference("is_detector_eyeglasses_key") != null ) {
 //							is_detector_eyeglasses_key.setChecked(is_detector_eyeglasses);
@@ -730,7 +740,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 						if ( is_detector_eyeglasses ) {
 							wrString += "," + getResources().getString(R.string.mm_detector_eyeglasses);
 						}
-						dbMsg +=  ",正面の顔高い木？=" + is_detector_frontalface_alt_tree;
+						dbMsg += ",正面の顔高い木？=" + is_detector_frontalface_alt_tree;
 //						is_detector_frontalface_alt_tree_key = ( CheckBoxPreference ) sps.findPreference("is_detector_frontalface_alt_tree_key");
 //						if ( findPreference("is_detector_frontalface_alt_tree_key") != null ) {
 //							is_detector_frontalface_alt_tree_key.setChecked(is_detector_frontalface_alt_tree);
@@ -741,7 +751,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 					} else if ( key.equals("other_key") ) {
 //						other_key = ( PreferenceScreen ) sps.findPreference("other_key");        //その他
 //						write_folder_key = ( EditTextPreference ) sps.findPreference("service_id_key");        //書込みルートフォルダ
-						dbMsg +=  ",書込みルートフォルダ=" + write_folder;
+						dbMsg += ",書込みルートフォルダ=" + write_folder;
 						wrString += "," + getResources().getString(R.string.write_folder) + ":" + write_folder;
 						dbMsg += ",顔認証プロファイルの最新更新日=" + haarcascades_last_modified;
 //						if ( findPreference("write_folder_key") != null ) {
@@ -775,7 +785,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 //							//grCount++;
 //						}
 //					}
-					dbMsg +=  ",wrString=" + wrString;
+					dbMsg += ",wrString=" + wrString;
 					pref.setSummary(wrString);
 				} else if ( item instanceof Preference ) {
 					dbMsg += "Preference;";
@@ -974,10 +984,10 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 					}
 				}
 				CS_Util UTIL = new CS_Util();
-				haarcascades_last_modifiedStr =UTIL.retDateStr(haarcascadesLastMdified,"yyyy年MM月dd日 hh:mm:ss") ;
+				haarcascades_last_modifiedStr = UTIL.retDateStr(haarcascadesLastMdified , "yyyy年MM月dd日 hh:mm:ss");
 			}
 			dbMsg += ",>最終更新日>" + haarcascades_last_modifiedStr;
-			myEditor.putString("haarcascades_last_modified_key" , haarcascadesLastMdified+"");
+			myEditor.putString("haarcascades_last_modified_key" , haarcascadesLastMdified + "");
 			dbMsg += ",更新";
 			myEditor.commit();
 			dbMsg += "完了";
@@ -987,6 +997,173 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 		}
 	}            //顔認証プロファイルの情報
 
+	//Video/////////////////////////////////////////////////////////////////////////////////////////////////////
+	public int setVideoAudioSource(int selectIndex) {
+		final String TAG = "setVideoAudioSource[MPF]";
+		String dbMsg = "開始";
+		int retInt = MediaRecorder.AudioSource.DEFAULT;            //0
+		try {
+			dbMsg += ",selectIndex=" + selectIndex;
+			switch ( selectIndex ) {
+				case 1:
+					retInt = MediaRecorder.AudioSource.MIC;
+					break;
+				case 2:
+					retInt = MediaRecorder.AudioSource.VOICE_UPLINK;
+					break;
+				case 3:
+					retInt = MediaRecorder.AudioSource.VOICE_DOWNLINK;
+					break;
+				case 4:
+					retInt = MediaRecorder.AudioSource.VOICE_CALL;
+					break;
+				case 5:
+					retInt = MediaRecorder.AudioSource.CAMCORDER;
+					break;
+				case 6:
+					retInt = MediaRecorder.AudioSource.VOICE_RECOGNITION;
+					break;
+				case 7:
+					retInt = MediaRecorder.AudioSource.VOICE_COMMUNICATION;
+					break;
+				case 8:
+					retInt = MediaRecorder.AudioSource.REMOTE_SUBMIX;
+					break;
+				case 9:
+					retInt = MediaRecorder.AudioSource.UNPROCESSED;
+					break;
+			}
+			dbMsg += ",retInt=" + retInt;
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + "でエラー発生；" + er);
+		}
+		return retInt;
+	}
+
+	public int setVideoVideoSource(int selectIndex) {
+		final String TAG = "setVideoVideoSource[MPF]";
+		String dbMsg = "開始";
+		int retInt =  MediaRecorder.VideoSource.DEFAULT;        //0
+		try {
+			dbMsg += ",selectIndex="+selectIndex;
+			switch ( selectIndex ) {
+				case 1:
+					retInt = MediaRecorder.VideoSource.CAMERA;
+					break;
+				case 2:
+					retInt = MediaRecorder.VideoSource.SURFACE;
+					break;
+			}
+			dbMsg += ",retInt="+retInt;
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + "でエラー発生；" + er);
+		}
+		return retInt;
+	}
+
+	public int setVideOutputFormat(int selectIndex) {
+		final String TAG = "setVideOutputFormat[MPF]";
+		String dbMsg = "開始";
+		int retInt =  MediaRecorder.OutputFormat.DEFAULT;        //0
+		try {
+			dbMsg += ",selectIndex="+selectIndex;
+			switch ( selectIndex ) {
+				case 1:
+					retInt = MediaRecorder.OutputFormat.THREE_GPP;
+					break;
+				case 2:
+					retInt = MediaRecorder.OutputFormat.MPEG_4;
+					break;
+				case 3:                     //3  RAW_AMRから変更
+					retInt = MediaRecorder.OutputFormat.AMR_NB;
+					break;
+				case 4:
+					retInt = MediaRecorder.OutputFormat.AMR_WB;
+					break;
+				case 5:
+					retInt = MediaRecorder.OutputFormat.AAC_ADTS;        //6(5は欠番)
+					break;
+				case 6:
+					retInt = MediaRecorder.OutputFormat.MPEG_2_TS;        //8(7は欠番)
+					break;
+				case 7:
+					retInt = MediaRecorder.OutputFormat.WEBM;        //9
+					break;
+			}
+			dbMsg += ",retInt="+retInt;
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + "でエラー発生；" + er);
+		}
+		return retInt;
+	}
+
+	public int setVideoVideoEncoder(int selectIndex) {
+		final String TAG = "setVideoVideoEncoder[MPF]";
+		String dbMsg = "開始";
+		int retInt =   MediaRecorder.VideoEncoder.DEFAULT;        //0
+		try {
+			dbMsg += ",selectIndex="+selectIndex;
+			switch ( selectIndex ) {
+				case 1:
+					retInt = MediaRecorder.VideoEncoder.H263;
+					break;
+				case 2:
+					retInt = MediaRecorder.VideoEncoder.H264;
+					break;
+				case 3:
+					retInt = MediaRecorder.VideoEncoder.MPEG_4_SP;
+					break;
+				case 4:
+					retInt = MediaRecorder.VideoEncoder.VP8;
+					break;
+				case 5:
+					retInt = MediaRecorder.VideoEncoder.HEVC;
+					break;
+			}
+			dbMsg += ",retInt="+retInt;
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + "でエラー発生；" + er);
+		}
+		return retInt;
+	}
+
+	public int setVideoAudioEncoder(int selectIndex) {
+		final String TAG = "setVideoAudioEncoder[MPF]";
+		String dbMsg = "開始";
+		int retInt = MediaRecorder.AudioEncoder.DEFAULT;            //0
+		try {
+			dbMsg += ",selectIndex="+selectIndex;
+			switch ( selectIndex ) {
+				case 1:
+					retInt = MediaRecorder.AudioEncoder.AMR_NB;
+					break;
+				case 2:
+					retInt = MediaRecorder.AudioEncoder.AMR_WB;
+					break;
+				case 3:
+					retInt = MediaRecorder.AudioEncoder.AAC;
+					break;
+				case 4:
+					retInt = MediaRecorder.AudioEncoder.HE_AAC;
+					break;
+				case 5:
+					retInt = MediaRecorder.AudioEncoder.AAC_ELD;
+					break;
+				case 6:
+					retInt = MediaRecorder.AudioEncoder.VORBIS;
+					break;
+			}
+			dbMsg += ",retInt="+retInt;
+			myLog(TAG , dbMsg);
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + "でエラー発生；" + er);
+		}
+		return retInt;
+	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////
 	public interface OnFragmentInteractionListener {

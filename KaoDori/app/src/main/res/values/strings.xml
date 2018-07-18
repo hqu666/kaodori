@@ -53,7 +53,49 @@
 	<string name="up_scale">保存時の枠拡大倍数(検出枠から)</string>
 	<string name="haarcascades_last_modified">最新の顔認証プロファイル</string>
 
+	<string name="audio_source">音声入力</string>
+	<string name="audio_source_defalt">DEFAULT</string>
+	<string name="audio_source_mic">MIC</string>
+	<string name="audio_source_voice_uplink">VOICE_UPLINK</string>
+	<string name="audio_source_voice_downlink">VOICE_DOWNLINK</string>
+	<string name="audio_source_voice_call">VOICE_CALL</string>
+	<string name="audio_source_voice_cancorder">CAMCORDER</string>
+	<string name="audio_source_voice_recongnition">VOICE_RECOGNITION</string>
+	<string name="audio_source_voice_comunication">VOICE_COMMUNICATION</string>
+	<string name="audio_source_remote_submix">REMOTE_SUBMIX</string>
+	<string name="audio_source_unprocessed">UNPROCESSED</string>
 
+	<string name="video_source">取得元</string>
+	<string name="video_source_defalt">DEFAULT</string>
+	<string name="video_source_camera">CAMERA</string>
+	<string name="video_source_surface">SURFACE</string>
+
+	<string name="video_output_format">出力フォーマット</string>
+	<string name="video_output_format_default">DEFAULT</string>
+	<string name="video_output_format_three_gpp">THREE_GPP</string>
+	<string name="video_output_format_mpeg_4">MPEG_4</string>
+	<string name="video_output_format_amr_nb">AMR_NB</string>
+	<string name="video_output_format_amr_wb">AMR_WB</string>
+	<string name="video_output_format_aac_adts">AAC_ADTS</string>
+	<string name="video_output_format_mpeg_2_ts">MPEG_2_TS</string>
+	<string name="video_output_format_webm">WEBM</string>
+
+	<string name="video_videdo_encorde">ビデオエンコーダ</string>
+	<string name="video_videdo_encorde_default">DEFAULT</string>
+	<string name="video_videdo_encorde_h263">H263</string>
+	<string name="video_videdo_encorde_h264">H264</string>
+	<string name="video_videdo_encorde_mpeg_4_sp">MPEG_4_SP</string>
+	<string name="video_videdo_encorde_vp8">VP8</string>
+	<string name="video_videdo_encorde_hevc">HEVC</string>
+
+	<string name="video_audio_encorde">オーディオエンコーダ</string>
+	<string name="video_audio_encorde_default">DEFAULT</string>
+	<string name="video_audio_encorde_arm_nb">AMR_NB</string>
+	<string name="video_audio_encorde_arm_wb">AMR_WB</string>
+	<string name="video_audio_encorde_aac">AAC</string>
+	<string name="video_audio_encorde_he_aac">HE_AAC</string>
+	<string name="video_audio_encorde_aac_eld">AAC_ELD</string>
+	<string name="video_audio_encorde_vorbis">VORBIS</string>
 
 	<!--<item>-->
 			<string name="mm_quit_titol">終了</string>

@@ -155,6 +155,16 @@ public class VideoActivity extends Activity implements View.OnClickListener, Vie
 	public boolean is_detector_ricence_plate_rus_16stages = false;     //ナンバープレートRUS
 	public boolean is_overlap_rejection = true;     //重複棄却
 
+	public int vi_audioSource = MediaRecorder.AudioSource.MIC;			//1;mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+	public int vi_videoSource = MediaRecorder.VideoSource.SURFACE;		//2;mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
+	public int vi_outputFormat = MediaRecorder.OutputFormat.MPEG_4;		//2;mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+	public int vi_videoEncodingBitRate = 10000000;						//mMediaRecorder.setVideoEncodingBitRate(10000000);
+	public int vi_videoFrameRate = 30;									//mMediaRecorder.setVideoFrameRate(30);
+	public int vi_videoEncoder= MediaRecorder.VideoEncoder.H264;		//mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
+	public int vi_audioEncoder= MediaRecorder.AudioEncoder.AAC;			//mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+
+
+
 	/**
 	 * このアプリケーションの設定ファイル読出し
 	 **/
@@ -1064,41 +1074,18 @@ public class VideoActivity extends Activity implements View.OnClickListener, Vie
 			if ( null == activity ) {
 				return;
 			}
-			mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-			mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
-			mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
-//			dbMsg += "mNextVideoAbsolutePath=" + mNextVideoAbsolutePath;
-////			if ( mNextVideoAbsolutePath == null || mNextVideoAbsolutePath.isEmpty() ) {
-//				mNextVideoAbsolutePath = getVideoFilePath(VideoActivity.this);
-//				dbMsg += "mNextVideoAbsolutePath=" + mNextVideoAbsolutePath;
-//				final SimpleDateFormat cdf = new SimpleDateFormat("yyyy/MM/dd HHmmss");
-//				final Date date = new Date(System.currentTimeMillis());
-//				String currenTime = cdf.format(date);
-//				String[] currenDTs = currenTime.split(" ");
-//				String currenDataStr = currenDTs[0];
-//				String currenTimeStr = currenDTs[1];
-//				dbMsg += "currenTime=" + currenDataStr + " の　" + currenTimeStr;
-//				writeFolder += File.separator + "vodeo";
-//				dbMsg += "writeFolder=" + writeFolder;
-//				if ( UTIL == null ) {
-//					UTIL = new CS_Util();
-//				}
-//				UTIL.maikOrgPass(writeFolder);
-//				String[] currenDatas = currenDataStr.split("/");
-//				for ( String cDay : currenDatas ) {
-//					writeFolder += File.separator + cDay;
-//					UTIL.maikOrgPass(writeFolder);
-//				}
-//				mNextVideoAbsolutePath = writeFolder + File.separator + currenTimeStr + ".mp4";
-////			}
-//			dbMsg += ">>=" + mNextVideoAbsolutePath;
-//			mMediaRecorder.setOutputFile(mNextVideoAbsolutePath);
-			mMediaRecorder.setVideoEncodingBitRate(10000000);
-			mMediaRecorder.setVideoFrameRate(30);
+			dbMsg += ",audioSource=" + vi_audioSource + ",videoSource=" + vi_videoSource;
+			mMediaRecorder.setAudioSource(vi_audioSource);     	        //setUpMediaRecorder.VideoSource	;1;MediaRecorder.AudioSource.MIC
+			mMediaRecorder.setVideoSource(vi_videoSource); 	        //setUpMediaRecorder.VideoSource	;2;MediaRecorder.VideoSource.SURFACE
+			dbMsg += ",outputFormat=" + vi_outputFormat + ",BitRate=" + vi_videoEncodingBitRate + ",FrameRate=" + vi_videoFrameRate;
+			mMediaRecorder.setOutputFormat(vi_outputFormat);           //setUpMediaRecorder.OutputFormat 	;2;MediaRecorder.OutputFormat.MPEG_4
+			mMediaRecorder.setVideoEncodingBitRate(vi_videoEncodingBitRate);      //setUpMediaRecorder.setVideoEncodingBitRate 			;10000000
+			mMediaRecorder.setVideoFrameRate(vi_videoFrameRate);                             //setUpMediaRecorder.setVideoFrameRate 		; 30
 			dbMsg += "[" + mVideoSize.getWidth() + "×" + mVideoSize.getHeight() + "]";
 			mMediaRecorder.setVideoSize(mVideoSize.getWidth() , mVideoSize.getHeight());
-			mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
-			mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+			dbMsg += ",videoEncoder=" + vi_videoEncoder + ",audioEncoder=" + vi_audioEncoder;
+			mMediaRecorder.setVideoEncoder(vi_videoEncoder);             //setUpMediaRecorder.setVideoEncoder 	;2; MediaRecorder.VideoEncoder.H264
+			mMediaRecorder.setAudioEncoder(vi_audioEncoder);             //setUpMediaRecorder.AudioEncoder  		;3; MediaRecorder.AudioEncoder.AAC
 			int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
 			dbMsg += "、rotation=" + rotation;
 			switch ( mSensorOrientation ) {
