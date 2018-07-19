@@ -156,13 +156,13 @@ public class VideoActivity extends Activity implements View.OnClickListener, Vie
 	public boolean is_detector_ricence_plate_rus_16stages = false;     //ナンバープレートRUS
 	public boolean is_overlap_rejection = true;     //重複棄却
 
-	public int vi_audioSource = MediaRecorder.AudioSource.MIC;			//1;mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
-	public int vi_videoSource = MediaRecorder.VideoSource.SURFACE;		//2;mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
-	public int vi_outputFormat = MediaRecorder.OutputFormat.MPEG_4;		//2;mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
+	public int vi_audioSource = ( int )MediaRecorder.AudioSource.MIC;			//1;mMediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+	public int vi_videoSource =( int ) MediaRecorder.VideoSource.SURFACE;		//2;mMediaRecorder.setVideoSource(MediaRecorder.VideoSource.SURFACE);
+	public int vi_outputFormat =( int ) MediaRecorder.OutputFormat.MPEG_4;		//2;mMediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4);
 	public int vi_videoEncodingBitRate = 10000000;						//mMediaRecorder.setVideoEncodingBitRate(10000000);
 	public int vi_videoFrameRate = 30;									//mMediaRecorder.setVideoFrameRate(30);
-	public int vi_videoEncoder= MediaRecorder.VideoEncoder.H264;		//mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
-	public int vi_audioEncoder= MediaRecorder.AudioEncoder.AAC;			//mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
+	public int vi_videoEncoder= ( int )MediaRecorder.VideoEncoder.H264;		//mMediaRecorder.setVideoEncoder(MediaRecorder.VideoEncoder.H264);
+	public int vi_audioEncoder=( int ) MediaRecorder.AudioEncoder.AAC;			//mMediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AAC);
 
 
 
