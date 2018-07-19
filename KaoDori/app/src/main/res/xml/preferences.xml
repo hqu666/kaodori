@@ -31,6 +31,67 @@
 	</PreferenceScreen>
 
 	<PreferenceScreen
+		android:key="video_key"
+		android:title="@string/mm_video">
+		<ListPreference
+			android:defaultValue="@string/video_output_format_mpeg_4"
+			android:entries="@array/video_output_array"
+			android:entryValues="@array/video_output_array"
+			android:key="video_output_format_key"
+			android:summary="@string/video_output_format_mpeg_4"
+			android:title="@string/video_output_format"/>
+
+		<ListPreference
+			android:defaultValue="10000000"
+			android:entries="@array/video_bit_rate_array"
+			android:entryValues="@array/video_bit_rate_array"
+			android:key="video_rencoding_bit_rate_key"
+			android:summary="10000000"
+			android:title="@string/mm_video_rencoding_bit_rate"/>
+
+		<ListPreference
+			android:defaultValue="30"
+			android:entries="@array/video_frame_rate_array"
+			android:entryValues="@array/video_frame_rate_array"
+			android:key="video_rencoding_frame_rate_key"
+			android:summary="30"
+			android:title="@string/mm_video_frame_rate"/>
+
+		<ListPreference
+			android:defaultValue="@string/audio_source_mic"
+			android:entries="@array/video_audio_source_array"
+			android:entryValues="@array/video_audio_source_array"
+			android:key="video_audio_source_key"
+			android:summary="@string/audio_source_mic"
+			android:title="@string/audio_source"/>
+
+		<ListPreference
+			android:defaultValue="@string/video_source_surface"
+			android:entries="@array/video_data_source_array"
+			android:entryValues="@array/video_data_source_array"
+			android:key="video_data_source_key"
+			android:summary="@string/video_source_surface"
+			android:title="@string/video_source"/>
+
+		<ListPreference
+			android:defaultValue="@string/video_videdo_encorde_h264"
+			android:entries="@array/video_encorde_array"
+			android:entryValues="@array/video_encorde_array"
+			android:key="video_encorde_key"
+			android:summary="@string/video_videdo_encorde_h264"
+			android:title="@string/video_videdo_encorde"/>
+
+		<ListPreference
+			android:defaultValue="@string/video_audio_encorde_aac"
+			android:entries="@array/video_audio_encorde_array"
+			android:entryValues="@array/video_audio_encorde_array"
+			android:key="video_audio_encorde_key"
+			android:summary="@string/video_audio_encorde_aac"
+			android:title="@string/video_audio_encorde"/>
+
+	</PreferenceScreen>
+
+	<PreferenceScreen
 		android:key="effect_key"
 		android:title="@string/mm_effect">
 		<CheckBoxPreference
@@ -137,16 +198,16 @@
 		android:key="other_key"
 		android:title="@string/mm_ohter">
 		<EditTextPreference
-			android:key="write_folder_key"
 			android:defaultValue="12345native"
 			android:inputType="text"
+			android:key="write_folder_key"
 			android:summary="9999999999"
 			android:title="@string/write_folder"/>
 
 		<Preference
+			android:defaultValue="0"
 			android:key="haarcascades_last_modified_key"
 			android:selectable="false"
-			android:defaultValue="0"
 			android:summary="0"
 			android:title="@string/haarcascades_last_modified"/>
 	</PreferenceScreen>

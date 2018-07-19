@@ -53,6 +53,10 @@
 	<string name="up_scale">保存時の枠拡大倍数(検出枠から)</string>
 	<string name="haarcascades_last_modified">最新の顔認証プロファイル</string>
 
+	<string name="mm_video">動画設定</string>
+	<string name="mm_video_rencoding_bit_rate">ビットレート</string>
+	<string name="mm_video_frame_rate">フレームレート</string>
+
 	<string name="audio_source">音声入力</string>
 	<string name="audio_source_defalt">DEFAULT</string>
 	<string name="audio_source_mic">MIC</string>
@@ -65,14 +69,14 @@
 	<string name="audio_source_remote_submix">REMOTE_SUBMIX</string>
 	<string name="audio_source_unprocessed">UNPROCESSED</string>
 
-	<string name="video_source">取得元</string>
+	<string name="video_source">データの取得元</string>
 	<string name="video_source_defalt">DEFAULT</string>
-	<string name="video_source_camera">CAMERA</string>
-	<string name="video_source_surface">SURFACE</string>
+	<string name="video_source_camera">カメラ</string>
+	<string name="video_source_surface">プレビュー画面</string>
 
 	<string name="video_output_format">出力フォーマット</string>
 	<string name="video_output_format_default">DEFAULT</string>
-	<string name="video_output_format_three_gpp">THREE_GPP</string>
+	<string name="video_output_format_three_gpp">3GPP</string>
 	<string name="video_output_format_mpeg_4">MPEG_4</string>
 	<string name="video_output_format_amr_nb">AMR_NB</string>
 	<string name="video_output_format_amr_wb">AMR_WB</string>

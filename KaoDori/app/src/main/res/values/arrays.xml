@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string-array name="video_bit_rate_array">
+		<item>1000000000</item>
+		<item>10000000</item>
+		<item>100000</item>
+	</string-array>
+
+	<string-array name="video_frame_rate_array">
+		<item>60</item>
+		<item>30</item>
+		<item>15</item>
+		<item>5</item>
+	</string-array>
+
+	<array name="video_audio_source_array">
+		<item>@string/audio_source_defalt</item>
+		<item>@string/audio_source_mic</item>
+		<item>@string/audio_source_voice_uplink</item>
+		<item>@string/audio_source_voice_downlink</item>
+		<item>@string/audio_source_voice_call</item>
+		<item>@string/audio_source_voice_cancorder</item>
+		<item>@string/audio_source_voice_recongnition</item>
+		<item>@string/audio_source_voice_comunication</item>
+		<item>@string/audio_source_remote_submix</item>
+		<item>@string/audio_source_unprocessed</item>
+	</array>
+
+	<array name="video_data_source_array">
+		<item>@string/video_source_defalt</item>
+		<item>@string/video_source_camera</item>
+		<item>@string/video_source_surface</item>
+	</array>
+
+	<array name="video_output_array">
+		<item>@string/video_output_format_default</item>
+		<item>@string/video_output_format_three_gpp</item>
+		<item>@string/video_output_format_mpeg_4</item>
+		<item>@string/video_output_format_amr_nb</item>
+		<item>@string/video_output_format_amr_wb</item>
+		<item>@string/video_output_format_aac_adts</item>
+		<item>@string/video_output_format_mpeg_2_ts</item>
+		<item>@string/video_output_format_webm</item>
+	</array>
+
+	<array name="video_encorde_array">
+		<item>@string/video_videdo_encorde_default</item>
+		<item>@string/video_videdo_encorde_h263</item>
+		<item>@string/video_videdo_encorde_h264</item>
+		<item>@string/video_videdo_encorde_mpeg_4_sp</item>
+		<item>@string/video_videdo_encorde_vp8</item>
+		<item>@string/video_videdo_encorde_hevc</item>
+	</array>
+
+	<array name="video_audio_encorde_array">
+		<item>@string/video_audio_encorde_default</item>
+		<item>@string/video_audio_encorde_arm_nb</item>
+		<item>@string/video_audio_encorde_arm_wb</item>
+		<item>@string/video_audio_encorde_aac</item>
+		<item>@string/video_audio_encorde_he_aac</item>
+		<item>@string/video_audio_encorde_aac_eld</item>
+		<item>@string/video_audio_encorde_aac_eld</item>
+		<item>@string/video_audio_encorde_vorbis</item>
+	</array>
+
+</resources>

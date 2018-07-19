@@ -2,6 +2,7 @@ package com.hijiyam_koubou.kaodori;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.res.TypedArray;
 import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Build;
@@ -38,6 +39,23 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 	public CheckBoxPreference isRumbling_key;                    //シャッター音の鳴動
 	public CheckBoxPreference isTexturView_key;
 	public EditTextPreference up_scale_key;                        //顔から何割増しの枠で保存するか
+
+	public PreferenceScreen video_key;                                //動画設定
+	public ListPreference video_output_format_key;                    //出力フォーマット
+	public ListPreference video_rencoding_bit_rate_key;                //ビットレート
+	public ListPreference video_rencoding_frame_rate_key;            //フレームレート
+	public ListPreference video_audio_source_key;                    //音声入力
+	public ListPreference video_data_source_key;                    //取得元
+	public ListPreference video_encorde_key;                        //ビデオエンコーダ
+	public ListPreference video_audio_encorde_key;                    //オーディオエンコーダ
+
+	public TypedArray videoOutputArray;                            //出力フォーマット
+	public TypedArray bitRateeArray;                                //ビットレート
+	public TypedArray videoFrameRateArray;                            //フレームレート
+	public TypedArray videoAudioSourceArray;                        //音声入力
+	public TypedArray videoDataSourceArray;                        //取得元
+	public TypedArray videoEncordeArray;                            //ビデオエンコーダ
+	public TypedArray audioEncordeArray;                            //オーディオエンコーダ
 
 	public PreferenceScreen effect_key;                                    //エフェクト
 	public CheckBoxPreference is_face_recognition_key;                 //顔検出実行中
@@ -158,30 +176,45 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 		try {
 			sps = this.getPreferenceScreen();            //☆PreferenceFragmentなら必要  .
 			dbMsg += ",sps=" + sps;
+			String summaryStr = "";
 
 			phot_key = ( PreferenceScreen ) sps.findPreference("phot_key");        //
 			isSubCamera_key = ( CheckBoxPreference ) sps.findPreference("isSubCamera_key");        //サブカメラに切り替え
 			dbMsg += ",サブカメラに切り替え=" + isSubCamera;
 			if ( findPreference("isSubCamera_key") != null ) {
 				isSubCamera_key.setChecked(isSubCamera);
+//				if(isSubCamera){
+//					summaryStr +=getResources().getString(R.string.mm_phot_sub_main) ;
+//				}
 			}
 
 			isAutoFlash_key = ( CheckBoxPreference ) sps.findPreference("isAutoFlash_key");        //サブカメラに切り替え
 			dbMsg += ",オートフラッシュ=" + isAutoFlash;
 			if ( findPreference("isAutoFlash_key") != null ) {
 				isAutoFlash_key.setChecked(isAutoFlash);
+//				if(isAutoFlash){
+//					summaryStr +=","+ getResources().getString(R.string.mm_phot_flash) ;
+//				}
 			}
 
 			isRumbling_key = ( CheckBoxPreference ) sps.findPreference("isRumbling_key");        //サブカメラに切り替え
 			dbMsg += ",シャッター音の鳴動=" + isRumbling;
 			if ( findPreference("isRumbling_key") != null ) {
 				isRumbling_key.setChecked(isRumbling);
+//				if(isRumbling){
+//					summaryStr +=","+ getResources().getString(R.string.mm_phot_rumbling) ;
+//				}
 			}
 
 			isTexturView_key = ( CheckBoxPreference ) sps.findPreference("isTexturView_key");        //  = true;                 //
 			dbMsg += ",高速プレビュー=" + isTexturView;
 			if ( findPreference("isTexturView_key") != null ) {
 				isTexturView_key.setChecked(isTexturView);
+//				if(isTexturView){
+//					summaryStr +=","+ getResources().getString(R.string.mm_effect_preview_tv) ;
+//				} else{
+//					summaryStr +=","+ getResources().getString(R.string.mm_effect_preview_sufece) ;
+//				}
 			}
 
 			up_scale_key = ( EditTextPreference ) sps.findPreference("up_scale_key");            //顔から何割増しの枠で保存するか
@@ -192,6 +225,80 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 			} else {
 				(( EditTextPreference ) findPreference("up_scale_key")).setText(up_scale);
 			}
+//			phot_key.setSummary(summaryStr);
+
+			video_key = ( PreferenceScreen ) sps.findPreference("video_key");                                //動画設定
+
+			video_output_format_key = ( ListPreference ) sps.findPreference("video_output_format_key");    //
+			dbMsg += ",出力フォーマット=" + vi_outputFormat;
+			if ( findPreference("vi_outputFormat") != null ) {
+				videoOutputArray = getResources().obtainTypedArray(R.array.video_output_array);
+				String outputName = videoOutputArray.getString(vi_outputFormat);
+				video_output_format_key.setSummary(outputName);
+				video_output_format_key.setValue(outputName);
+//				summaryStr = getResources().getString(R.string.video_output_format) + ":" + outputName;
+			}
+
+			video_rencoding_bit_rate_key = ( ListPreference ) sps.findPreference("video_rencoding_bit_rate_key");    //
+			dbMsg += ",ビットレート=" + vi_videoEncodingBitRate;
+			if ( findPreference("vi_videoEncodingBitRate") != null ) {
+				bitRateeArray = getResources().obtainTypedArray(R.array.video_bit_rate_array);
+				String videoEncodingBitRateeName = vi_videoEncodingBitRate + "";
+				video_rencoding_bit_rate_key.setSummary(videoEncodingBitRateeName);
+				video_rencoding_bit_rate_key.setValue(videoEncodingBitRateeName);
+//				summaryStr += "," + getResources().getString(R.string.mm_video_rencoding_bit_rate) + ":" + videoEncodingBitRateeName;
+			}
+
+			video_rencoding_frame_rate_key = ( ListPreference ) sps.findPreference("video_rencoding_frame_rate_key");    //
+			dbMsg += ",フレームレート=" + vi_videoFrameRate;
+			if ( findPreference("vi_videoFrameRate") != null ) {
+				videoFrameRateArray = getResources().obtainTypedArray(R.array.video_frame_rate_array);
+				String videoFreamRateeName = vi_videoFrameRate + "";
+				video_rencoding_frame_rate_key.setSummary(videoFreamRateeName);
+				video_rencoding_frame_rate_key.setValue(videoFreamRateeName);
+//				summaryStr += "," + getResources().getString(R.string.mm_video_frame_rate) + ":" + videoFreamRateeName;
+			}
+
+			video_audio_source_key = ( ListPreference ) sps.findPreference("video_audio_source_key");        //
+			dbMsg += ",音声入力=" + vi_audioSource;
+			if ( findPreference("vi_audioSource") != null ) {
+				videoAudioSourceArray = getResources().obtainTypedArray(R.array.video_audio_source_array);
+				String audioSourceName = videoAudioSourceArray.getString(vi_audioSource);
+				video_audio_source_key.setSummary(audioSourceName);
+				video_audio_source_key.setValue(audioSourceName);
+//				summaryStr += "," + getResources().getString(R.string.audio_source) + ":" + audioSourceName;
+			}
+
+			video_data_source_key = ( ListPreference ) sps.findPreference("video_data_source_key");    //
+			dbMsg += ",取得元=" + vi_videoSource;
+			if ( findPreference("vi_videoSource") != null ) {
+				videoDataSourceArray = getResources().obtainTypedArray(R.array.video_data_source_array);
+				String datsSourceName = videoDataSourceArray.getString(vi_videoSource);
+				video_data_source_key.setSummary(datsSourceName);
+				video_data_source_key.setValue(datsSourceName);
+//				summaryStr += "," + getResources().getString(R.string.video_source) + ":" + datsSourceName;
+			}
+
+			video_encorde_key = ( ListPreference ) sps.findPreference("video_encorde_key");    //
+			dbMsg += ",ビデオエンコーダ=" + vi_videoEncoder;
+			if ( findPreference("vi_outputFormat") != null ) {
+				videoEncordeArray = getResources().obtainTypedArray(R.array.video_encorde_array);
+				String videoEncordeName = videoEncordeArray.getString(vi_videoEncoder);
+				video_encorde_key.setSummary(videoEncordeName);
+				video_encorde_key.setValue(videoEncordeName);
+//				summaryStr += "," + getResources().getString(R.string.video_videdo_encorde) + ":" + videoEncordeName;
+			}
+
+			video_audio_encorde_key = ( ListPreference ) sps.findPreference("video_audio_encorde_key");    //
+			dbMsg += ",オーディオエンコーダ=" + vi_audioEncoder;
+			if ( findPreference("vi_outputFormat") != null ) {
+				audioEncordeArray = getResources().obtainTypedArray(R.array.video_audio_encorde_array);
+				String audioEncordeName = audioEncordeArray.getString(vi_audioEncoder);
+				video_audio_encorde_key.setSummary(audioEncordeName);
+				video_audio_encorde_key.setValue(audioEncordeName);
+				summaryStr += "," + getResources().getString(R.string.video_audio_encorde) + ":" + audioEncordeName;
+			}
+//			video_key.setSummary(summaryStr);
 
 			effect_key = ( PreferenceScreen ) sps.findPreference("effect_key");        //エフェクト
 			is_face_recognition_key = ( CheckBoxPreference ) sps.findPreference("is_face_recognition_key");        //顔検出実行中
@@ -610,6 +717,34 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 							wrString += getResources().getString(R.string.mm_effect_preview_sufece);
 						}
 
+					} else if ( key.equals("video_key") ) {
+						dbMsg += ",動画設定;出力フォーマット=" + vi_outputFormat;
+						videoOutputArray = getResources().obtainTypedArray(R.array.video_output_array);
+						String wrVal = videoOutputArray.getString(vi_outputFormat);
+						wrString = getResources().getString(R.string.video_output_format)+ ":"+ wrVal;
+						dbMsg += ",ビットレート=" + vi_videoEncodingBitRate;
+						wrString += "," + vi_videoEncodingBitRate + "bps";
+						dbMsg += ",フレームレート=" + vi_videoFrameRate;
+						wrString += "," + vi_videoFrameRate + "fps";
+
+						dbMsg += ",音声入力=" + vi_audioSource;
+						videoAudioSourceArray = getResources().obtainTypedArray(R.array.video_audio_source_array);
+						wrVal = videoAudioSourceArray.getString(vi_audioSource);
+						wrString += "," + getResources().getString(R.string.audio_source)+ ":"+ wrVal;
+
+						dbMsg += ",取得元=" + vi_videoSource;
+						videoDataSourceArray = getResources().obtainTypedArray(R.array.video_data_source_array);
+						wrVal= videoDataSourceArray.getString(vi_videoSource);
+						wrString += "," + getResources().getString(R.string.video_source)+ ":"+ wrVal;
+						dbMsg += ",ビデオエンコーダ=" + vi_videoEncoder;
+						videoEncordeArray = getResources().obtainTypedArray(R.array.video_encorde_array);
+						wrVal= videoEncordeArray.getString(vi_videoEncoder);
+						wrString += "," + getResources().getString(R.string.video_videdo_encorde)+ ":"+ wrVal;
+						dbMsg += ",オーディオエンコーダ=" + vi_audioEncoder;
+						audioEncordeArray = getResources().obtainTypedArray(R.array.video_audio_encorde_array);
+						wrVal = audioEncordeArray.getString(vi_audioEncoder);
+						wrString += "," + getResources().getString(R.string.video_audio_encorde)+ ":"+ wrVal;
+
 					} else if ( key.equals("detector_select_key") ) {
 						dbMsg += ",顔検出(標準)=" + is_detector_frontal_face_alt;
 //						detector_select_key = ( PreferenceScreen ) sps.findPreference("detector_select_key");        //検出対象選択
@@ -917,6 +1052,36 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 				} else if ( key.equals("up_scale_key") ) {
 					up_scale = sharedPref.getString(key , up_scale);
 					dbMsg += ",顔から何割増しの枠で保存するか=" + up_scale;
+
+				} else if ( key.equals("video_output_format_key") ) {
+					vi_outputFormat = sharedPref.getInt(key,vi_outputFormat);
+//					vi_outputFormat = Integer.parseInt(sharedPref.getString(key , vi_outputFormat + ""));
+					dbMsg += ",出力フォーマット=" + vi_outputFormat;
+				} else if ( key.equals("video_rencoding_bit_rate_key") ) {
+					vi_videoEncodingBitRate = sharedPref.getInt(key,vi_videoEncodingBitRate);
+//					vi_videoEncodingBitRate = Integer.parseInt(sharedPref.getString(key , vi_videoEncodingBitRate + ""));
+					dbMsg += ",ビットレート=" + vi_videoEncodingBitRate;
+				} else if ( key.equals("video_rencoding_frame_rate_key") ) {
+					vi_videoFrameRate = sharedPref.getInt(key,vi_videoFrameRate);
+//					vi_videoFrameRate = Integer.parseInt(sharedPref.getString(key , vi_videoFrameRate + ""));
+					dbMsg += ",フレームレート=" + vi_videoFrameRate;
+				} else if ( key.equals("video_audio_source_key") ) {
+					vi_audioSource = sharedPref.getInt(key,vi_audioSource);
+//					vi_audioSource = Integer.parseInt(sharedPref.getString(key , vi_audioSource + ""));
+					dbMsg += ",音声入力=" + vi_audioSource;
+				} else if ( key.equals("video_data_source_key") ) {
+					vi_videoSource = sharedPref.getInt(key,vi_videoSource);
+//					vi_videoSource = Integer.parseInt(sharedPref.getString(key , vi_videoSource + ""));
+					dbMsg += ",取得元=" + vi_videoSource;
+				} else if ( key.equals("video_encorde_key") ) {
+					vi_videoEncoder = sharedPref.getInt(key,vi_videoEncoder);
+//					vi_videoEncoder = Integer.parseInt(sharedPref.getString(key , vi_videoEncoder + ""));
+					dbMsg += ",ビデオエンコーダ=" + vi_videoEncoder;   //java.lang.NumberFormatException: For input string: "H264"
+				} else if ( key.equals("video_audio_encorde_key") ) {
+					vi_audioEncoder = sharedPref.getInt(key,vi_audioEncoder);
+//					vi_audioEncoder = Integer.parseInt(sharedPref.getString(key , vi_audioEncoder + ""));
+					dbMsg += ",オーディオエンコーダ=" + vi_audioEncoder;
+
 				} else if ( key.equals("haarcascades_last_modified_key") ) {
 					haarcascades_last_modified = sharedPref.getString(key , haarcascades_last_modified);
 					dbMsg += ",顔認証プロファイルの最新更新日=" + haarcascades_last_modifiedStr;
@@ -1044,9 +1209,9 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 	public int setVideoVideoSource(int selectIndex) {
 		final String TAG = "setVideoVideoSource[MPF]";
 		String dbMsg = "開始";
-		int retInt =  MediaRecorder.VideoSource.DEFAULT;        //0
+		int retInt = MediaRecorder.VideoSource.DEFAULT;        //0
 		try {
-			dbMsg += ",selectIndex="+selectIndex;
+			dbMsg += ",selectIndex=" + selectIndex;
 			switch ( selectIndex ) {
 				case 1:
 					retInt = MediaRecorder.VideoSource.CAMERA;
@@ -1055,7 +1220,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 					retInt = MediaRecorder.VideoSource.SURFACE;
 					break;
 			}
-			dbMsg += ",retInt="+retInt;
+			dbMsg += ",retInt=" + retInt;
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + "でエラー発生；" + er);
@@ -1066,9 +1231,9 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 	public int setVideOutputFormat(int selectIndex) {
 		final String TAG = "setVideOutputFormat[MPF]";
 		String dbMsg = "開始";
-		int retInt =  MediaRecorder.OutputFormat.DEFAULT;        //0
+		int retInt = MediaRecorder.OutputFormat.DEFAULT;        //0
 		try {
-			dbMsg += ",selectIndex="+selectIndex;
+			dbMsg += ",selectIndex=" + selectIndex;
 			switch ( selectIndex ) {
 				case 1:
 					retInt = MediaRecorder.OutputFormat.THREE_GPP;
@@ -1092,7 +1257,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 					retInt = MediaRecorder.OutputFormat.WEBM;        //9
 					break;
 			}
-			dbMsg += ",retInt="+retInt;
+			dbMsg += ",retInt=" + retInt;
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + "でエラー発生；" + er);
@@ -1103,9 +1268,9 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 	public int setVideoVideoEncoder(int selectIndex) {
 		final String TAG = "setVideoVideoEncoder[MPF]";
 		String dbMsg = "開始";
-		int retInt =   MediaRecorder.VideoEncoder.DEFAULT;        //0
+		int retInt = MediaRecorder.VideoEncoder.DEFAULT;        //0
 		try {
-			dbMsg += ",selectIndex="+selectIndex;
+			dbMsg += ",selectIndex=" + selectIndex;
 			switch ( selectIndex ) {
 				case 1:
 					retInt = MediaRecorder.VideoEncoder.H263;
@@ -1123,7 +1288,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 					retInt = MediaRecorder.VideoEncoder.HEVC;
 					break;
 			}
-			dbMsg += ",retInt="+retInt;
+			dbMsg += ",retInt=" + retInt;
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + "でエラー発生；" + er);
@@ -1136,7 +1301,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 		String dbMsg = "開始";
 		int retInt = MediaRecorder.AudioEncoder.DEFAULT;            //0
 		try {
-			dbMsg += ",selectIndex="+selectIndex;
+			dbMsg += ",selectIndex=" + selectIndex;
 			switch ( selectIndex ) {
 				case 1:
 					retInt = MediaRecorder.AudioEncoder.AMR_NB;
@@ -1157,7 +1322,7 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 					retInt = MediaRecorder.AudioEncoder.VORBIS;
 					break;
 			}
-			dbMsg += ",retInt="+retInt;
+			dbMsg += ",retInt=" + retInt;
 			myLog(TAG , dbMsg);
 		} catch (Exception er) {
 			myErrorLog(TAG , dbMsg + "でエラー発生；" + er);

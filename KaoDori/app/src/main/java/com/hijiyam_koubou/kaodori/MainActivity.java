@@ -757,6 +757,7 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 		final String TAG = "onLongClick[MA]";
 		String dbMsg = "";
 		try {
+			Activity activity = MainActivity.this;            //getActivity();
 			String titolStr = "作成中です";
 			String mggStr = "次回リリースまでお待ちください。";
 			dbMsg += ",getId=" + view.getId();
@@ -768,9 +769,8 @@ public class MainActivity extends Activity implements View.OnClickListener, View
 				}
 				case R.id.ma_func_bt: {
 					dbMsg += "=ma_func_bt";
-					Activity activity = MainActivity.this;            //getActivity();
 					if ( null != activity ) {
-						Intent settingsIntent = new Intent(MainActivity.this , MyPreferencesActivty.class);
+						Intent settingsIntent = new Intent(activity , MyPreferencesActivty.class);
 						startActivityForResult(settingsIntent , REQUEST_PREF);  //startActivity(settingsIntent);      //
 					}
 					break;
