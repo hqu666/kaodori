@@ -38,56 +38,63 @@
 			android:entries="@array/video_output_array"
 			android:entryValues="@array/video_output_array"
 			android:key="video_output_format_key"
-			android:summary="@string/video_output_format_mpeg_4"
+			android:summary="%s"
 			android:title="@string/video_output_format"/>
+		<!--android:summary="@string/video_output_format_mpeg_4"-->
 
 		<ListPreference
 			android:defaultValue="10000000"
 			android:entries="@array/video_bit_rate_array"
 			android:entryValues="@array/video_bit_rate_array"
 			android:key="video_rencoding_bit_rate_key"
-			android:summary="10000000"
+			android:summary="%s"
 			android:title="@string/mm_video_rencoding_bit_rate"/>
+		<!--android:summary="10000000"-->
 
 		<ListPreference
 			android:defaultValue="30"
 			android:entries="@array/video_frame_rate_array"
 			android:entryValues="@array/video_frame_rate_array"
 			android:key="video_rencoding_frame_rate_key"
-			android:summary="30"
+			android:summary="%s"
 			android:title="@string/mm_video_frame_rate"/>
+		<!--android:summary="30"   では更新されな-->
 
 		<ListPreference
 			android:defaultValue="@string/audio_source_mic"
 			android:entries="@array/video_audio_source_array"
 			android:entryValues="@array/video_audio_source_array"
 			android:key="video_audio_source_key"
-			android:summary="@string/audio_source_mic"
+			android:summary="%s"
 			android:title="@string/audio_source"/>
+		<!--android:summary="@string/audio_source_mic"-->
 
 		<ListPreference
 			android:defaultValue="@string/video_source_surface"
 			android:entries="@array/video_data_source_array"
 			android:entryValues="@array/video_data_source_array"
 			android:key="video_data_source_key"
-			android:summary="@string/video_source_surface"
+			android:summary="%s"
 			android:title="@string/video_source"/>
+		<!--android:summary="@string/video_source_surface"-->
 
 		<ListPreference
 			android:defaultValue="@string/video_videdo_encorde_h264"
 			android:entries="@array/video_encorde_array"
 			android:entryValues="@array/video_encorde_array"
 			android:key="video_encorde_key"
-			android:summary="@string/video_videdo_encorde_h264"
+			android:summary="%s"
 			android:title="@string/video_videdo_encorde"/>
+		<!--android:summary="@string/video_videdo_encorde_h264"-->
 
 		<ListPreference
 			android:defaultValue="@string/video_audio_encorde_aac"
 			android:entries="@array/video_audio_encorde_array"
 			android:entryValues="@array/video_audio_encorde_array"
 			android:key="video_audio_encorde_key"
-			android:summary="@string/video_audio_encorde_aac"
+			android:summary="%s"
 			android:title="@string/video_audio_encorde"/>
+		<!--android:summary="@string/video_audio_encorde_aac"-->
 
 	</PreferenceScreen>
 

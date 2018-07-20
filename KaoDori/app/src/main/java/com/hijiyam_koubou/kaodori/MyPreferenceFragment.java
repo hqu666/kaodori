@@ -24,7 +24,7 @@ import java.util.Map;
 
 
 public class MyPreferenceFragment extends PreferenceFragment implements SharedPreferences.OnSharedPreferenceChangeListener {
-
+	private CS_Util UTIL;
 	private OnFragmentInteractionListener mListener;
 
 	public PreferenceScreen sps;
@@ -201,20 +201,12 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 			dbMsg += ",シャッター音の鳴動=" + isRumbling;
 			if ( findPreference("isRumbling_key") != null ) {
 				isRumbling_key.setChecked(isRumbling);
-//				if(isRumbling){
-//					summaryStr +=","+ getResources().getString(R.string.mm_phot_rumbling) ;
-//				}
 			}
 
 			isTexturView_key = ( CheckBoxPreference ) sps.findPreference("isTexturView_key");        //  = true;                 //
 			dbMsg += ",高速プレビュー=" + isTexturView;
 			if ( findPreference("isTexturView_key") != null ) {
 				isTexturView_key.setChecked(isTexturView);
-//				if(isTexturView){
-//					summaryStr +=","+ getResources().getString(R.string.mm_effect_preview_tv) ;
-//				} else{
-//					summaryStr +=","+ getResources().getString(R.string.mm_effect_preview_sufece) ;
-//				}
 			}
 
 			up_scale_key = ( EditTextPreference ) sps.findPreference("up_scale_key");            //顔から何割増しの枠で保存するか
@@ -225,18 +217,15 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 			} else {
 				(( EditTextPreference ) findPreference("up_scale_key")).setText(up_scale);
 			}
-//			phot_key.setSummary(summaryStr);
 
 			video_key = ( PreferenceScreen ) sps.findPreference("video_key");                                //動画設定
-
+	 //出力フォーマット=2,ビットレート=100000,フレームレート=5,音声入力=1,取得元=2,ビデオエンコーダ=2,オーディオエンコーダ=3
 			video_output_format_key = ( ListPreference ) sps.findPreference("video_output_format_key");    //
 			dbMsg += ",出力フォーマット=" + vi_outputFormat;
 			if ( findPreference("vi_outputFormat") != null ) {
 				videoOutputArray = getResources().obtainTypedArray(R.array.video_output_array);
 				String outputName = videoOutputArray.getString(vi_outputFormat);
 				video_output_format_key.setSummary(outputName);
-//				video_output_format_key.setValue(outputName);
-//				summaryStr = getResources().getString(R.string.video_output_format) + ":" + outputName;
 			}
 
 			video_rencoding_bit_rate_key = ( ListPreference ) sps.findPreference("video_rencoding_bit_rate_key");    //
@@ -514,13 +503,13 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 	@Override
 	public void onSharedPreferenceChanged(SharedPreferences sharedPreferences , String key) {
 		final String TAG = "onSharedPrefChd[MPF]";
-		String dbMsg = "設定変更";/////////////////////////////////////////////////
+		String dbMsg = "設定変更;";/////////////////////////////////////////////////
 		try {
+			dbMsg +=key;
 			reloadSummary();
 			myLog(TAG , dbMsg);
-		} catch (Exception e) {
-			Log.e(TAG , dbMsg + "で" + e.toString());
-			//      myLog(TAG, dbMsg + "で" + e.toString(), "e");
+		} catch (Exception er) {
+			myErrorLog(TAG , dbMsg + "でエラー発生；" + er);
 		}
 	}
 
@@ -688,6 +677,80 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 							dbMsg += "完了";
 						}
 					}
+/*
+ video_output_format_key = ( ListPreference ) sps.findPreference("video_output_format_key");    //
+ dbMsg += ",出力フォーマット=" + vi_outputFormat;
+ if ( findPreference("vi_outputFormat") != null ) {
+ String outputName = videoOutputArray.getString(vi_outputFormat);
+ video_output_format_key.setSummary(outputName);
+ }
+
+ video_rencoding_bit_rate_key = ( ListPreference ) sps.findPreference("video_rencoding_bit_rate_key");    //
+ dbMsg += ",ビットレート=" + vi_videoEncodingBitRate;
+ if ( findPreference("vi_videoEncodingBitRate") != null ) {
+ bitRateeArray = getResources().obtainTypedArray(R.array.video_bit_rate_array);
+ String videoEncodingBitRateeName = vi_videoEncodingBitRate + "";
+ video_rencoding_bit_rate_key.setSummary(videoEncodingBitRateeName);
+ //				video_rencoding_bit_rate_key.setValue(videoEncodingBitRateeName);
+ //				summaryStr += "," + getResources().getString(R.string.mm_video_rencoding_bit_rate) + ":" + videoEncodingBitRateeName;
+ }
+
+ video_rencoding_frame_rate_key = ( ListPreference ) sps.findPreference("video_rencoding_frame_rate_key");    //
+ dbMsg += ",フレームレート=" + vi_videoFrameRate;
+ if ( findPreference("vi_videoFrameRate") != null ) {
+ videoFrameRateArray = getResources().obtainTypedArray(R.array.video_frame_rate_array);
+ String videoFreamRateeName = vi_videoFrameRate + "";
+ video_rencoding_frame_rate_key.setSummary(videoFreamRateeName);
+ //				video_rencoding_frame_rate_key.setValue(videoFreamRateeName);
+ //				summaryStr += "," + getResources().getString(R.string.mm_video_frame_rate) + ":" + videoFreamRateeName;
+ }
+
+ video_audio_source_key = ( ListPreference ) sps.findPreference("video_audio_source_key");        //
+ dbMsg += ",音声入力=" + vi_audioSource;
+ if ( findPreference("vi_audioSource") != null ) {
+ videoAudioSourceArray = getResources().obtainTypedArray(R.array.video_audio_source_array);
+ String audioSourceName = videoAudioSourceArray.getString(vi_audioSource);
+ video_audio_source_key.setSummary(audioSourceName);
+ //				video_audio_source_key.setValue(audioSourceName);
+ //				summaryStr += "," + getResources().getString(R.string.audio_source) + ":" + audioSourceName;
+ }
+
+ video_data_source_key = ( ListPreference ) sps.findPreference("video_data_source_key");    //
+ dbMsg += ",取得元=" + vi_videoSource;
+ if ( findPreference("vi_videoSource") != null ) {
+ videoDataSourceArray = getResources().obtainTypedArray(R.array.video_data_source_array);
+ String datsSourceName = videoDataSourceArray.getString(vi_videoSource);
+ video_data_source_key.setSummary(datsSourceName);
+ //				video_data_source_key.setValue(datsSourceName);
+ //				summaryStr += "," + getResources().getString(R.string.video_source) + ":" + datsSourceName;
+ }
+
+ video_encorde_key = ( ListPreference ) sps.findPreference("video_encorde_key");    //
+ dbMsg += ",ビデオエンコーダ=" + vi_videoEncoder;
+ if ( findPreference("vi_outputFormat") != null ) {
+ videoEncordeArray = getResources().obtainTypedArray(R.array.video_encorde_array);
+ String videoEncordeName = videoEncordeArray.getString(vi_videoEncoder);
+ video_encorde_key.setSummary(videoEncordeName);
+ //				video_encorde_key.setValue(videoEncordeName);
+ }
+
+ video_audio_encorde_key = ( ListPreference ) sps.findPreference("video_audio_encorde_key");    //
+ dbMsg += ",オーディオエンコーダ=" + vi_audioEncoder;
+ if ( findPreference("vi_outputFormat") != null ) {
+ audioEncordeArray = getResources().obtainTypedArray(R.array.video_audio_encorde_array);
+ String audioEncordeName = audioEncordeArray.getString(vi_audioEncoder);
+ video_audio_encorde_key.setSummary(audioEncordeName);
+ //				video_audio_encorde_key.setValue(audioEncordeName);
+ summaryStr += "," + getResources().getString(R.string.video_audio_encorde) + ":" + audioEncordeName;
+ }
+ * */
+
+
+
+
+
+
+
 				} else if ( item instanceof PreferenceScreen ) {
 					dbMsg += "PreferenceScreen;";
 					PreferenceScreen pref = ( PreferenceScreen ) item;
@@ -1031,9 +1094,13 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 			setHaarcascadesParameter(context);
 			Map< String, ? > keys = sharedPref.getAll();                          //System.collections.Generic.IDictionary<string, object>
 			dbMsg += ",読み込み開始;keys=" + keys.size() + "件";        // keys.size()
+			if ( UTIL == null ) {
+				UTIL = new CS_Util();
+			}
 			int i = 0;
 			for ( String key : keys.keySet() ) {
 				i++;
+				String rStr = "";
 				dbMsg += "\n" + i + "/" + keys.size() + ")" + key;// + "は" + rStr;
 				if ( key.equals("is_face_recognition_key") ) {
 					isFaceRecognition = sharedPref.getBoolean(key , isFaceRecognition);
@@ -1115,40 +1182,111 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 					dbMsg += ",顔から何割増しの枠で保存するか=" + up_scale;
 
 				} else if ( key.equals("video_output_format_key") ) {
-					videoOutputArray = getResources().obtainTypedArray(R.array.video_output_array);
-//					vi_outputFormat = sharedPref.getInt(key , vi_outputFormat);
-					vi_outputFormat = Integer.parseInt(sharedPref.getString(key , vi_outputFormat + ""));
-					dbMsg += ",出力フォーマット=" + vi_outputFormat;
+					rStr =sharedPref.getString(key , vi_outputFormat + "");
+					dbMsg += ",出力フォーマット=" + rStr;
+					if(rStr != null) {
+						if(UTIL.isIntVar(rStr)){
+							vi_outputFormat = Integer.parseInt(rStr);
+						}
+					}  else{
+						myEditor.putInt("video_output_format_key" , vi_outputFormat);
+						dbMsg += ",更新";
+						myEditor.commit();
+						dbMsg += "完了";
+					}
+					dbMsg += ">>" + vi_outputFormat;    //=MPEG_4>>2
+//					videoOutputArray = getResources().obtainTypedArray(R.array.video_output_array);
 				} else if ( key.equals("video_rencoding_bit_rate_key") ) {
-					bitRateeArray = getResources().obtainTypedArray(R.array.video_bit_rate_array);
-//					vi_videoEncodingBitRate = sharedPref.getInt(key , vi_videoEncodingBitRate);
-					vi_videoEncodingBitRate = Integer.parseInt(sharedPref.getString(key , vi_videoEncodingBitRate + ""));
-					dbMsg += ",ビットレート=" + vi_videoEncodingBitRate;
+					rStr =sharedPref.getString(key , vi_videoEncodingBitRate + "");
+					dbMsg += ",ビットレート=" + rStr;
+					if(rStr != null) {
+						if ( UTIL.isIntVar(rStr) ) {
+							vi_videoEncodingBitRate = Integer.parseInt(rStr);
+						}
+					}  else{
+						myEditor.putInt("video_output_format_key" , vi_videoEncodingBitRate);
+						dbMsg += ",更新";
+						myEditor.commit();
+						dbMsg += "完了";
+					}
+					dbMsg += ">>" + vi_videoEncodingBitRate;
+//					bitRateeArray = getResources().obtainTypedArray(R.array.video_bit_rate_array);
+					//java.lang.IllegalStateException: Fragment MyPreferenceFragment{379f43} not attached to Activity
 				} else if ( key.equals("video_rencoding_frame_rate_key") ) {
-					videoFrameRateArray = getResources().obtainTypedArray(R.array.video_frame_rate_array);
-//					vi_videoFrameRate = sharedPref.getInt(key , vi_videoFrameRate);
-					vi_videoFrameRate = Integer.parseInt(sharedPref.getString(key , vi_videoFrameRate + ""));
-					dbMsg += ",フレームレート=" + vi_videoFrameRate;
+					rStr =sharedPref.getString(key , vi_videoFrameRate + "");
+					dbMsg += ",フレームレート=" + rStr;
+					if(rStr != null) {
+						if(UTIL.isIntVar(rStr)){
+							vi_videoFrameRate = Integer.parseInt(rStr);
+						}
+					}  else{
+						myEditor.putInt("video_output_format_key" , vi_videoFrameRate);
+						dbMsg += ",更新";
+						myEditor.commit();
+						dbMsg += "完了";
+					}
+					dbMsg += ">>" + vi_videoFrameRate;
+//					videoFrameRateArray = getResources().obtainTypedArray(R.array.video_frame_rate_array);
 				} else if ( key.equals("video_audio_source_key") ) {
-					video_audio_source_key = ( ListPreference ) sps.findPreference("video_audio_source_key");        //
-//					vi_audioSource = sharedPref.getInt(key , vi_audioSource);
-					vi_audioSource = Integer.parseInt(sharedPref.getString(key , vi_audioSource + ""));
-					dbMsg += ",音声入力=" + vi_audioSource;
+					rStr =sharedPref.getString(key , vi_audioSource + "");
+					dbMsg += ",音声入力=" + rStr;
+					if(rStr != null) {
+						if(UTIL.isIntVar(rStr)){
+							vi_audioSource = Integer.parseInt(rStr);
+						}
+					}  else{
+						myEditor.putInt("video_output_format_key" , vi_audioSource);
+						dbMsg += ",更新";
+						myEditor.commit();
+						dbMsg += "完了";
+					}
+					dbMsg += ">>" + vi_audioSource;
+//					video_audio_source_key = ( ListPreference ) sps.findPreference("video_audio_source_key");        //
 				} else if ( key.equals("video_data_source_key") ) {
-					videoDataSourceArray = getResources().obtainTypedArray(R.array.video_data_source_array);
-//					vi_videoSource = sharedPref.getInt(key , vi_videoSource);
-					vi_videoSource = Integer.parseInt(sharedPref.getString(key , vi_videoSource + ""));
-					dbMsg += ",取得元=" + vi_videoSource;
+					rStr =sharedPref.getString(key , vi_videoSource + "");
+					dbMsg += ",取得元=" +  rStr;
+					if(rStr != null) {
+						if(UTIL.isIntVar(rStr)){
+							vi_videoSource = Integer.parseInt(rStr);
+						}
+					}  else{
+						myEditor.putInt("video_output_format_key" , vi_videoSource);
+						dbMsg += ",更新";
+						myEditor.commit();
+						dbMsg += "完了";
+					}
+					dbMsg += ">>" + vi_videoSource;
+//					videoDataSourceArray = getResources().obtainTypedArray(R.array.video_data_source_array);
 				} else if ( key.equals("video_encorde_key") ) {
-					videoEncordeArray = getResources().obtainTypedArray(R.array.video_encorde_array);
-//					vi_videoEncoder = sharedPref.getInt(key , vi_videoEncoder);
-					vi_videoEncoder = Integer.parseInt(sharedPref.getString(key , vi_videoEncoder + ""));
-					dbMsg += ",ビデオエンコーダ=" + vi_videoEncoder;   //java.lang.NumberFormatException: For input string: "H264"
+					rStr =sharedPref.getString(key , vi_videoEncoder + "");
+					dbMsg += ",ビデオエンコーダ=" + rStr;
+					if(rStr != null) {
+						if(UTIL.isIntVar(rStr)){
+							vi_videoEncoder = Integer.parseInt(rStr);
+						}
+					}  else{
+						myEditor.putInt("video_output_format_key" , vi_videoEncoder);
+						dbMsg += ",更新";
+						myEditor.commit();
+						dbMsg += "完了";
+					}
+					dbMsg += ">>" + vi_videoEncoder;
+//					videoEncordeArray = getResources().obtainTypedArray(R.array.video_encorde_array);
 				} else if ( key.equals("video_audio_encorde_key") ) {
-					audioEncordeArray = getResources().obtainTypedArray(R.array.video_audio_encorde_array);
-//					vi_audioEncoder = sharedPref.getInt(key , vi_audioEncoder);
-					vi_audioEncoder = Integer.parseInt(sharedPref.getString(key , vi_audioEncoder + ""));
-					dbMsg += ",オーディオエンコーダ=" + vi_audioEncoder;
+					rStr =sharedPref.getString(key , vi_audioEncoder + "");
+					dbMsg += ",オーディオエンコーダ=" + rStr;
+					if(rStr != null) {
+						if(UTIL.isIntVar(rStr)){
+							vi_audioEncoder = Integer.parseInt(rStr);
+						}
+					}  else{
+						myEditor.putInt("video_output_format_key" , vi_audioEncoder);
+						dbMsg += ",更新";
+						myEditor.commit();
+						dbMsg += "完了";
+					}
+					dbMsg += ">>" + vi_audioEncoder;     //AAC>>3
+//					audioEncordeArray = getResources().obtainTypedArray(R.array.video_audio_encorde_array);
 
 				} else if ( key.equals("haarcascades_last_modified_key") ) {
 					haarcascades_last_modified = sharedPref.getString(key , haarcascades_last_modified);
@@ -1410,13 +1548,17 @@ public class MyPreferenceFragment extends PreferenceFragment implements SharedPr
 		void onFragmentInteraction(Uri uri);
 	}
 
-	public static void myLog(String TAG , String dbMsg) {
-		CS_Util UTIL = new CS_Util();
+	public  void myLog(String TAG , String dbMsg) {
+		if ( UTIL == null ) {
+			UTIL = new CS_Util();
+		}
 		UTIL.myLog(TAG , dbMsg);
 	}
 
-	public static void myErrorLog(String TAG , String dbMsg) {
-		CS_Util UTIL = new CS_Util();
+	public  void myErrorLog(String TAG , String dbMsg) {
+		if ( UTIL == null ) {
+			UTIL = new CS_Util();
+		}
 		UTIL.myErrorLog(TAG , dbMsg);
 	}
 
